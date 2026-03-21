@@ -1,0 +1,1751 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Tour Intelligence — Golf Analytics</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap');
+:root {
+  --bg:#0a0f0a;--surface:#111811;--surface2:#162016;--surface3:#1e2a1e;
+  --border:#2a3a2a;--green:#4ade80;--blue:#60a5fa;--blue-dim:#3b82f6;
+  --red:#f87171;--amber:#fbbf24;
+  --text:#e8f0e8;--text-dim:#8fa88f;--text-faint:#4a5e4a;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;overflow-x:auto}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh}
+/* LOGIN */
+#login-screen{display:flex;align-items:center;justify-content:center;min-height:100vh;
+  background:radial-gradient(ellipse at 30% 40%,rgba(96,165,250,0.07) 0%,transparent 60%),
+  radial-gradient(ellipse at 70% 70%,rgba(59,130,246,0.04) 0%,transparent 50%),var(--bg);position:relative}
+#login-screen::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  opacity:0.3;pointer-events:none}
+.login-card{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--blue);
+  padding:48px;width:440px;position:relative;box-shadow:0 0 60px rgba(96,165,250,0.08),0 32px 64px rgba(0,0,0,0.5)}
+.login-logo{font-family:'Bebas Neue',sans-serif;font-size:38px;letter-spacing:3px;color:var(--blue);margin-bottom:4px}
+.login-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:40px}
+.login-field{margin-bottom:20px}
+.login-field label{display:block;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.login-field input,.login-field select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:12px 16px;font-family:'DM Mono',monospace;font-size:14px;outline:none;transition:border-color 0.2s}
+.login-field input:focus,.login-field select:focus{border-color:var(--blue)}
+.login-field select option{background:var(--surface)}
+.btn-login{width:100%;background:var(--blue);color:#0a0f1a;border:none;padding:14px;font-family:'Bebas Neue',sans-serif;
+  font-size:20px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;margin-top:8px}
+.btn-login:hover{background:#93c5fd;box-shadow:0 0 20px rgba(96,165,250,0.3)}
+.login-error{color:var(--red);font-size:12px;margin-top:12px;font-family:'DM Mono',monospace;display:none}
+/* APP SHELL */
+#app{display:none}
+header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;
+  align-items:center;gap:24px;height:60px;position:sticky;top:0;z-index:100}
+.app-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--blue);white-space:nowrap}
+nav{display:flex;gap:2px;flex:1;overflow-x:auto}
+nav::-webkit-scrollbar{display:none}
+.nav-btn{background:none;border:none;color:var(--text-dim);padding:8px 14px;font-family:'DM Mono',monospace;
+  font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;
+  transition:all 0.15s;border-bottom:2px solid transparent;position:relative;top:1px}
+.nav-btn:hover{color:var(--text)}
+.nav-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
+.header-right{display:flex;align-items:center;gap:16px;margin-left:auto}
+.player-badge{display:flex;align-items:center;gap:8px;background:var(--surface2);border:1px solid var(--border);padding:6px 14px;font-size:13px;font-weight:500}
+.player-badge .dot{width:8px;height:8px;background:var(--blue);border-radius:50%}
+.btn-logout{background:none;border:1px solid var(--border);color:var(--text-dim);padding:6px 12px;
+  font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.15s}
+.btn-logout:hover{border-color:var(--red);color:var(--red)}
+main{padding:32px;max-width:1400px;margin:0 auto}
+.section{display:none}
+.section.active{display:block}
+/* STATS GRID */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:16px;margin-bottom:32px}
+.stat-card{background:var(--surface);border:1px solid var(--border);padding:20px;position:relative;overflow:visible;transition:border-color 0.2s}
+.stat-card::before{content:'';position:absolute;top:0;left:0;right:0;height:2px;background:var(--blue);opacity:0.7}
+.stat-card:hover{border-color:var(--blue)}
+.stat-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px;display:flex;align-items:center;gap:5px}
+.stat-value{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;line-height:1;color:var(--text)}
+.stat-sub{font-size:11px;color:var(--text-dim);margin-top:4px}
+.stat-good{color:var(--green)}.stat-bad{color:var(--red)}.stat-neutral{color:var(--amber)}
+/* TOOLTIP */
+.tooltip-icon{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+  background:var(--surface3);border:1px solid var(--border);border-radius:50%;font-size:9px;
+  color:var(--text-dim);cursor:help;flex-shrink:0;position:relative}
+.tooltip-icon:hover .tooltip-box{display:block}
+.tooltip-box{display:none;position:absolute;bottom:calc(100% + 8px);left:50%;transform:translateX(-50%);
+  background:#1a2a1a;border:1px solid var(--border);padding:10px 14px;width:240px;
+  font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);line-height:1.5;
+  z-index:999;box-shadow:0 8px 24px rgba(0,0,0,0.5);pointer-events:none;text-transform:none;letter-spacing:0;font-weight:400}
+.tooltip-box::after{content:'';position:absolute;top:100%;left:50%;transform:translateX(-50%);
+  border:5px solid transparent;border-top-color:#1a2a1a}
+/* CARDS */
+.card{background:var(--surface);border:1px solid var(--border);margin-bottom:24px}
+.card-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.card-title{font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--blue)}
+table{width:100%;border-collapse:collapse}
+th{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);
+  text-align:right;padding:8px 12px;border-bottom:1px solid var(--border);white-space:nowrap}
+th:first-child{text-align:left}
+td{font-family:'DM Mono',monospace;font-size:12px;padding:10px 12px;border-bottom:1px solid rgba(42,58,42,0.5);text-align:right;color:var(--text-dim)}
+td:first-child{text-align:left;color:var(--text);font-weight:500}
+tr:hover td{background:var(--surface2)}
+.val-green{color:var(--green)}.val-red{color:var(--red)}.val-amber{color:var(--amber)}.val-blue{color:var(--blue)}
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:24px}
+.chart-full{grid-column:1/-1}
+.chart-card{background:var(--surface);border:1px solid var(--border);padding:20px}
+.chart-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--blue);margin-bottom:16px}
+/* TIGER */
+.tiger-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
+.tiger-card{background:var(--surface);border:1px solid var(--border);padding:24px 16px;text-align:center}
+.tiger-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;min-height:32px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+.tiger-pct{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-bottom:4px}
+.tiger-goal{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)}
+.tiger-diff{font-family:'DM Mono',monospace;font-size:12px;margin-top:6px;font-weight:600}
+.tiger-pass{border-top:2px solid var(--green)}.tiger-fail{border-top:2px solid var(--red)}
+/* ROLLING CONTROLS */
+.rolling-controls{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap}
+.roll-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:4px 12px;
+  font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.15s}
+.roll-btn:hover,.roll-btn.active{background:var(--surface3);color:var(--blue);border-color:var(--blue)}
+/* SECTION HEADER */
+.section-header{margin-bottom:28px}
+.section-title{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:3px;color:var(--text);line-height:1}
+.section-title span{color:var(--blue)}
+.section-meta{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:4px;letter-spacing:1px}
+/* H-BAR */
+.h-bar-list{display:flex;flex-direction:column;gap:10px}
+.h-bar-item{display:flex;align-items:center;gap:10px}
+.h-bar-label{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);width:180px;flex-shrink:0;text-align:right}
+.h-bar-track{flex:1;height:18px;background:var(--surface2);border:1px solid var(--border);position:relative}
+.h-bar-fill{height:100%;transition:width 0.8s ease}
+.h-bar-val{font-family:'DM Mono',monospace;font-size:11px;color:var(--text);width:30px;flex-shrink:0}
+.empty-state{padding:40px;text-align:center;color:var(--text-dim);font-family:'DM Mono',monospace;font-size:12px;line-height:1.6}
+/* DRILL-DOWN */
+.drill-btn{background:var(--surface2);border:1px solid var(--border);color:var(--blue);padding:2px 8px;
+  font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;transition:all 0.15s}
+.drill-btn:hover{background:var(--surface3)}
+.drill-row td{background:rgba(22,32,22,0.5)!important;font-size:11px}
+.drill-row td:first-child{padding-left:32px;color:var(--text-dim)}
+@media(max-width:900px){.chart-grid{grid-template-columns:1fr}.tiger-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}main{padding:16px}header{padding:0 16px}}
+
+/* UPLOAD SCREEN */
+#upload-screen{display:none;align-items:center;justify-content:center;min-height:100vh;
+  background:radial-gradient(ellipse at 60% 30%,rgba(96,165,250,0.06) 0%,transparent 55%),var(--bg);position:relative}
+#upload-screen::before{content:'';position:absolute;inset:0;
+  background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),
+  repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);
+  opacity:0.25;pointer-events:none}
+.upload-card{background:var(--surface);border:1px solid var(--border);border-top:2px solid var(--blue);
+  padding:48px;width:600px;max-width:95vw;position:relative;z-index:1;
+  box-shadow:0 0 60px rgba(96,165,250,0.08),0 32px 64px rgba(0,0,0,0.5)}
+.upload-logo{font-family:'Bebas Neue',sans-serif;font-size:34px;letter-spacing:3px;color:var(--blue);margin-bottom:4px}
+.upload-sub{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);letter-spacing:2px;text-transform:uppercase;margin-bottom:32px}
+.upload-steps{display:flex;gap:0;margin-bottom:32px;border:1px solid var(--border)}
+.upload-step{flex:1;padding:12px 10px;text-align:center;border-right:1px solid var(--border);position:relative}
+.upload-step:last-child{border-right:none}
+.upload-step-num{font-family:'Bebas Neue',sans-serif;font-size:22px;color:var(--blue);line-height:1}
+.upload-step-lbl{font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-top:4px;line-height:1.4}
+.upload-step.done .upload-step-num{color:var(--green)}
+.upload-step.active .upload-step-num{color:var(--blue)}
+.upload-section{margin-bottom:24px}
+.upload-section-title{font-family:'DM Mono',monospace;font-size:11px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;border-bottom:1px solid var(--border);padding-bottom:8px}
+.upload-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px}
+.upload-row.full{grid-template-columns:1fr}
+.upload-field label{display:block;font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+.upload-field input,.upload-field select{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:10px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s}
+.upload-field input:focus,.upload-field select:focus{border-color:var(--blue)}
+.drop-zone{border:2px dashed var(--border);padding:36px 20px;text-align:center;cursor:pointer;
+  transition:all 0.2s;position:relative;background:var(--surface2)}
+.drop-zone:hover,.drop-zone.drag-over{border-color:var(--blue);background:rgba(96,165,250,0.05)}
+.drop-zone input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.drop-icon{font-size:32px;margin-bottom:10px;opacity:0.6}
+.drop-label{font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);line-height:1.6}
+.drop-label strong{color:var(--blue)}
+.file-selected{background:rgba(74,222,128,0.06);border-color:var(--green)!important}
+.file-name{font-family:'DM Mono',monospace;font-size:12px;color:var(--green);margin-top:8px}
+.upload-progress{display:none;margin-top:16px}
+.progress-bar{height:4px;background:var(--surface3);margin:8px 0}
+.progress-fill{height:100%;background:var(--blue);transition:width 0.4s ease;width:0%}
+.progress-msg{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)}
+.upload-log{background:var(--surface2);border:1px solid var(--border);padding:12px;max-height:120px;overflow-y:auto;margin-top:8px;display:none}
+.log-line{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);padding:1px 0}
+.log-line.ok{color:var(--green)}.log-line.warn{color:var(--amber)}.log-line.err{color:var(--red)}
+.btn-upload{width:100%;background:var(--blue);color:#0a0f1a;border:none;padding:14px;font-family:'Bebas Neue',sans-serif;
+  font-size:20px;letter-spacing:2px;cursor:pointer;transition:all 0.2s;margin-top:8px}
+.btn-upload:hover{background:#93c5fd;box-shadow:0 0 20px rgba(96,165,250,0.3)}
+.btn-upload:disabled{opacity:0.4;cursor:not-allowed}
+.btn-secondary{background:none;border:1px solid var(--border);color:var(--text-dim);padding:8px 16px;
+  font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;transition:all 0.15s;margin-top:12px;width:100%}
+.btn-secondary:hover{border-color:var(--blue);color:var(--blue)}
+.upload-error{color:var(--red);font-size:12px;font-family:'DM Mono',monospace;margin-top:8px;display:none}
+.template-note{background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.2);padding:12px;margin-bottom:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.6}
+.template-note strong{color:var(--blue)}
+
+</style>
+</head>
+<body>
+
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Tour Intelligence</div>
+    <div class="login-sub">Advanced Golf Analytics Platform</div>
+    <div class="login-field">
+      <label>Select Player</label>
+      <select id="login-player">
+        <option value="">— Choose your profile —</option>
+        <option value="pat_west">Pat West</option>
+        <option value="demo_player">Demo Player</option>
+      </select>
+    </div>
+    <div class="login-field">
+      <label>PIN</label>
+      <input type="password" id="login-pin" placeholder="Enter your PIN" maxlength="6">
+    </div>
+    <button class="btn-login" onclick="handleLogin()">Sign In &rarr;</button>
+    <div class="login-error" id="login-error">Incorrect PIN. Please try again.</div>
+  <button class="btn-secondary" onclick="showUpload()" style="margin-top:16px;width:100%;text-align:center">New player? Upload your data →</button>
+  </div>
+</div>
+
+<!-- UPLOAD / REGISTER SCREEN -->
+<div id="upload-screen" style="display:none;align-items:center;justify-content:center;min-height:100vh;flex-direction:column;background:radial-gradient(ellipse at 60% 30%,rgba(96,165,250,0.06) 0%,transparent 55%),var(--bg);position:relative">
+  <div style="position:absolute;inset:0;background-image:repeating-linear-gradient(0deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px),repeating-linear-gradient(90deg,transparent,transparent 39px,var(--border) 39px,var(--border) 40px);opacity:0.25;pointer-events:none"></div>
+  <div class="upload-card">
+    <div class="upload-logo">Add Your Data</div>
+    <div class="upload-sub">Upload your tracking spreadsheet to get started</div>
+
+    <div class="upload-steps">
+      <div class="upload-step active" id="step-1"><div class="upload-step-num">01</div><div class="upload-step-lbl">Your Info</div></div>
+      <div class="upload-step" id="step-2"><div class="upload-step-num">02</div><div class="upload-step-lbl">Upload File</div></div>
+      <div class="upload-step" id="step-3"><div class="upload-step-num">03</div><div class="upload-step-lbl">Processing</div></div>
+      <div class="upload-step" id="step-4"><div class="upload-step-num">04</div><div class="upload-step-lbl">Done</div></div>
+    </div>
+
+    <div class="template-note">
+      <strong>📋 Expected Format:</strong> Your spreadsheet must contain two sheets named
+      <strong>"Course Level Data"</strong> and <strong>"Hole Level Data"</strong> in the Tour Intelligence tracking format.
+      Headers must include: Player, Date, Course, Hole, Par, Score, Green, # of Putts, Fairway Hit, Tee Club, Tee Distance (yds), Approach Club, Approach Left/Right (ft), Approach Short/Long (ft).
+    </div>
+
+    <!-- STEP 1: Profile -->
+    <div id="upload-step-1">
+      <div class="upload-section">
+        <div class="upload-section-title">Player Profile</div>
+        <div class="upload-row">
+          <div class="upload-field">
+            <label>Full Name</label>
+            <input type="text" id="up-name" placeholder="e.g. Pat West">
+          </div>
+          <div class="upload-field">
+            <label>Display ID (no spaces)</label>
+            <input type="text" id="up-id" placeholder="e.g. pat_west" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'_')">
+          </div>
+        </div>
+        <div class="upload-row">
+          <div class="upload-field">
+            <label>Set PIN (4-6 digits)</label>
+            <input type="password" id="up-pin" placeholder="Choose a PIN" maxlength="6">
+          </div>
+          <div class="upload-field">
+            <label>Confirm PIN</label>
+            <input type="password" id="up-pin2" placeholder="Repeat PIN" maxlength="6">
+          </div>
+        </div>
+      </div>
+      <div class="upload-error" id="step1-error"></div>
+      <button class="btn-upload" onclick="uploadStep1Next()">Continue &rarr;</button>
+      <button class="btn-secondary" onclick="showLogin()">&larr; Back to Sign In</button>
+    </div>
+
+    <!-- STEP 2: File Upload -->
+    <div id="upload-step-2" style="display:none">
+      <div class="upload-section">
+        <div class="upload-section-title">Upload Tracking Spreadsheet (.xlsx)</div>
+        <div class="drop-zone" id="drop-zone">
+          <input type="file" id="file-input" accept=".xlsx,.xls" onchange="handleFileSelect(this.files[0])">
+          <div class="drop-icon">📊</div>
+          <div class="drop-label">
+            <strong>Click to browse</strong> or drag &amp; drop your Excel file<br>
+            Accepts .xlsx or .xls — data stays in your browser, never uploaded to a server
+          </div>
+          <div class="file-name" id="file-name" style="display:none"></div>
+        </div>
+      </div>
+      <div class="upload-error" id="step2-error"></div>
+      <button class="btn-upload" id="btn-process" onclick="processFile()" disabled>Process My Data &rarr;</button>
+      <button class="btn-secondary" onclick="uploadBack1()">&larr; Back</button>
+    </div>
+
+    <!-- STEP 3: Processing -->
+    <div id="upload-step-3" style="display:none">
+      <div class="upload-progress" id="upload-progress" style="display:block">
+        <div class="progress-msg" id="progress-msg">Reading file...</div>
+        <div class="progress-bar"><div class="progress-fill" id="progress-fill"></div></div>
+      </div>
+      <div class="upload-log" id="upload-log" style="display:block;margin-top:16px"></div>
+    </div>
+
+    <!-- STEP 4: Success -->
+    <div id="upload-step-4" style="display:none;text-align:center;padding:20px 0">
+      <div style="font-size:48px;margin-bottom:16px">&#x2705;</div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:28px;letter-spacing:2px;color:var(--green);margin-bottom:8px">Data Loaded!</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);line-height:1.8;margin-bottom:24px" id="upload-summary"></div>
+      <button class="btn-upload" onclick="enterAppFromUpload()">View My Analytics &rarr;</button>
+      <button class="btn-secondary" onclick="showLogin()" style="margin-top:12px">Back to Sign In</button>
+    </div>
+  </div>
+</div>
+
+
+<div id="app">
+  <header>
+    <div class="app-logo">Tour Intelligence</div>
+    <nav>
+      <button class="nav-btn active" onclick="showSection('dashboard',this)">Overview</button>
+      <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
+      <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
+      <button class="nav-btn" onclick="showSection('approach',this)">Approach</button>
+      <button class="nav-btn" onclick="showSection('putting',this)">Putting</button>
+      <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
+      <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
+      <button class="nav-btn" onclick="showSection('badgood',this)">What Went Wrong</button>
+    </nav>
+    <div class="header-right">
+      <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
+      <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+    </div>
+  </header>
+  <main>
+
+    <!-- OVERVIEW / DASHBOARD -->
+    <div class="section active" id="section-dashboard">
+      <div class="section-header">
+        <div class="section-title">Career <span>Overview</span></div>
+        <div class="section-meta" id="dash-meta"></div>
+      </div>
+      <div class="stats-grid" id="career-stats"></div>
+      <div class="card">
+        <div class="card-header">
+          <div class="card-title">Recent Rounds</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)" id="rounds-count"></div>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr>
+              <th>Date &amp; Course</th><th>Score</th><th>+/-</th><th>Birdie+</th><th>Bogey+</th>
+              <th>GIR%</th><th>FW%</th><th>Driver</th><th>Scramble</th><th>Putts</th><th>Pen</th>
+            </tr></thead>
+            <tbody id="rounds-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Scoring History</div>
+          <canvas id="chart-score-history" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Score Distribution (+/- to Par)</div>
+          <canvas id="chart-score-dist" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- SCORING TRENDS -->
+    <div class="section" id="section-scoring">
+      <div class="section-header">
+        <div class="section-title">Scoring <span>Trends</span></div>
+        <div class="section-meta">Rolling averages, par-type performance &amp; momentum</div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Score — Rolling Average</div>
+          <div class="rolling-controls">
+            <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
+            <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
+            <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
+            <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
+          </div>
+          <canvas id="chart-rolling" height="120"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Avg +/- to Par by Hole Type</div>
+          <canvas id="chart-par-type" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">+/- to Par Each Round</div>
+          <canvas id="chart-plusminus" height="200"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFF THE TEE -->
+    <div class="section" id="section-tee">
+      <div class="section-header">
+        <div class="section-title">Off the <span>Tee</span></div>
+        <div class="section-meta">Driver distance, fairway accuracy &amp; miss tendencies</div>
+      </div>
+      <div class="stats-grid" id="tee-stats"></div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Driver Distance by Round</div>
+          <canvas id="chart-driver-dist" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Fairway Accuracy % by Round</div>
+          <canvas id="chart-fw-pct" height="220"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Fairway Hit vs Miss</div>
+          <canvas id="chart-miss-dir" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Driver Distance Distribution</div>
+          <canvas id="chart-dist-dist" height="220"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Driver Distance — Rolling Average</div>
+          <div class="rolling-controls">
+            <button class="roll-btn active" onclick="setDrRolling(4,this)">4 Rounds</button>
+            <button class="roll-btn" onclick="setDrRolling(6,this)">6 Rounds</button>
+            <button class="roll-btn" onclick="setDrRolling(8,this)">8 Rounds</button>
+          </div>
+          <canvas id="chart-driver-rolling" height="110"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- APPROACH -->
+    <div class="section" id="section-approach">
+      <div class="section-header">
+        <div class="section-title">Approach <span>Analysis</span></div>
+        <div class="section-meta">Ball-striking by club category — GIR, dispersion &amp; miss tendencies</div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">GIR % by Club Category</div>
+          <canvas id="chart-gir-club" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Left / Right Miss by Category (ft)</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:12px">← Left miss &nbsp;|&nbsp; Right miss →  &nbsp;(negative = left, positive = right)</div>
+          <canvas id="chart-lr-miss" height="200"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Short / Long Miss by Category (ft)</div>
+          <canvas id="chart-sl-miss" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">GIR % — Rolling Average</div>
+          <div class="rolling-controls">
+            <button class="roll-btn active" onclick="setGirRolling(4,this)">4 Rounds</button>
+            <button class="roll-btn" onclick="setGirRolling(6,this)">6 Rounds</button>
+            <button class="roll-btn" onclick="setGirRolling(8,this)">8 Rounds</button>
+            <button class="roll-btn" onclick="setGirRolling(10,this)">10 Rounds</button>
+          </div>
+          <canvas id="chart-gir-round" height="180"></canvas>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-header"><div class="card-title">Approach Stats — Click Category to Drill Down</div></div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Category / Club</th><th>Shots</th><th>L/R Miss</th><th>Short/Long</th><th>GIR %</th><th>Assessment</th><th></th></tr></thead>
+            <tbody id="approach-table-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- PUTTING -->
+    <div class="section" id="section-putting">
+      <div class="section-header">
+        <div class="section-title">Putting <span>Analytics</span></div>
+        <div class="section-meta">Make percentages, 1-putt &amp; 3-putt tracking vs PGA Tour benchmark</div>
+      </div>
+      <div class="stats-grid" id="putt-stats"></div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Make % by Distance vs PGA Tour Average</div>
+          <canvas id="chart-make-pct" height="180"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Putts per Round — Rolling Average</div>
+          <div class="rolling-controls">
+            <button class="roll-btn active" onclick="setPuttRolling(4,this)">4 Rounds</button>
+            <button class="roll-btn" onclick="setPuttRolling(6,this)">6 Rounds</button>
+            <button class="roll-btn" onclick="setPuttRolling(8,this)">8 Rounds</button>
+          </div>
+          <canvas id="chart-putts-round" height="190"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">
+            Putting Quality Score
+            <span class="tooltip-icon" style="margin-left:6px;display:inline-flex">?
+              <span class="tooltip-box">Score from 0-100 per round.<br><br><strong>Formula:</strong> 100 − ((Putts − 27) × 5)<br><br>27 putts = 100 (elite), 36 putts = 55 (average), 40+ putts = poor.<br><br>Color: Green ≥ 70, Amber 50-69, Red &lt; 50.</span>
+            </span>
+          </div>
+          <canvas id="chart-putt-quality" height="190"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- BIRDIES & BOGEYS -->
+    <div class="section" id="section-birdies">
+      <div class="section-header">
+        <div class="section-title">Birdies <span>&amp;</span> Bogeys</div>
+        <div class="section-meta">Scoring momentum, rolling averages &amp; frequency analysis</div>
+      </div>
+      <div class="stats-grid" id="bb-stats"></div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Birdies &amp; Bogeys — Rolling Average</div>
+          <div class="rolling-controls">
+            <button class="roll-btn active" onclick="setBBRolling(4,this)">4 Rounds</button>
+            <button class="roll-btn" onclick="setBBRolling(6,this)">6 Rounds</button>
+            <button class="roll-btn" onclick="setBBRolling(8,this)">8 Rounds</button>
+          </div>
+          <canvas id="chart-bb-rolling" height="140"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Birdies+ per Round</div>
+          <canvas id="chart-birdies" height="220"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Bogeys+ per Round</div>
+          <canvas id="chart-bogeys" height="220"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- TIGER FIVE -->
+    <div class="section" id="section-tiger">
+      <div class="section-header">
+        <div class="section-title">The Tiger <span>Five</span></div>
+        <div class="section-meta">Five key metrics that define elite scoring — track your goals</div>
+      </div>
+      <div class="tiger-grid" id="tiger-cards"></div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Key Metrics Trend (Last 15 Rounds)</div>
+          <canvas id="chart-tiger-trend" height="150"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- WHAT WENT WRONG -->
+    <div class="section" id="section-badgood">
+      <div class="section-header">
+        <div class="section-title">What Went <span>Wrong</span></div>
+        <div class="section-meta">Root cause analysis — clubs, reasons &amp; pre-round preparation correlation</div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Clubs Most Responsible for Bad Scores</div>
+          <canvas id="chart-bad-clubs" height="280"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Top Reasons for Bad Scores</div>
+          <div id="bad-reasons-list" style="margin-top:8px"></div>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Score by Warmup Quality</div>
+          <div id="warmup-chart-wrap"><canvas id="chart-warmup" height="220"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Score by Sleep Quality</div>
+          <div id="sleep-chart-wrap"><canvas id="chart-sleep" height="220"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<script>
+// ===== DATA =====
+const PLAYERS = {
+  pat_west: {
+    name:'Pat West', pin:'1234',
+    rounds: [
+      {date:"2022-08-12",course:"Granite Links (G to Q)",score:81,par:71,plus_minus:10,birdies:1,bogeys:10,doubles_plus:1,putts:34,gir_pct:50,penalties:0,fw_pct:69.2,driver_dist:252,scrambling:22.2,one_putts:4,three_putts:1},
+      {date:"2022-08-14",course:"Granite Links (G to Q)",score:73,par:71,plus_minus:2,birdies:3,bogeys:4,doubles_plus:1,putts:33,gir_pct:72.2,penalties:0,fw_pct:100,driver_dist:253,scrambling:40,one_putts:5,three_putts:0},
+      {date:"2022-10-15",course:"Granite Links (G to M)",score:79,par:72,plus_minus:7,birdies:0,bogeys:6,doubles_plus:1,putts:37,gir_pct:72.2,penalties:0,fw_pct:100,driver_dist:261,scrambling:20,one_putts:3,three_putts:2},
+      {date:"2022-10-23",course:"Chechessee Creek",score:80,par:69,plus_minus:11,birdies:1,bogeys:10,doubles_plus:2,putts:39,gir_pct:66.7,penalties:0,fw_pct:61.5,driver_dist:252,scrambling:0,one_putts:2,three_putts:3},
+      {date:"2022-10-29",course:"Palmetto Dunes (Hills)",score:79,par:72,plus_minus:7,birdies:1,bogeys:8,doubles_plus:0,putts:34,gir_pct:72.2,penalties:0,fw_pct:71.4,driver_dist:246,scrambling:0,one_putts:4,three_putts:1},
+      {date:"2022-11-02",course:"Old South",score:74,par:72,plus_minus:2,birdies:1,bogeys:3,doubles_plus:0,putts:28,gir_pct:55.6,penalties:0,fw_pct:85.7,driver_dist:243,scrambling:62.5,one_putts:8,three_putts:0},
+      {date:"2022-11-12",course:"Granite Links (G to M)",score:78,par:72,plus_minus:6,birdies:3,bogeys:9,doubles_plus:0,putts:32,gir_pct:44.4,penalties:0,fw_pct:78.6,driver_dist:252,scrambling:10,one_putts:5,three_putts:0},
+      {date:"2023-03-27",course:"Plymouth CC",score:81,par:69,plus_minus:12,birdies:0,bogeys:10,doubles_plus:2,putts:null,gir_pct:0,penalties:0,fw_pct:78.6,driver_dist:260,scrambling:44.4,one_putts:null,three_putts:null},
+      {date:"2023-04-08",course:"Fairchild Wheeler (Red)",score:75,par:72,plus_minus:3,birdies:3,bogeys:6,doubles_plus:0,putts:null,gir_pct:0,penalties:0,fw_pct:null,driver_dist:null,scrambling:66.7,one_putts:null,three_putts:null},
+      {date:"2023-04-13",course:"Granite Links (G to M)",score:82,par:72,plus_minus:10,birdies:2,bogeys:9,doubles_plus:3,putts:null,gir_pct:44.4,penalties:0,fw_pct:null,driver_dist:null,scrambling:20,one_putts:null,three_putts:null},
+      {date:"2023-04-21",course:"Wollaston GC",score:78,par:72,plus_minus:6,birdies:2,bogeys:7,doubles_plus:1,putts:null,gir_pct:0,penalties:0,fw_pct:null,driver_dist:null,scrambling:61.1,one_putts:null,three_putts:null},
+      {date:"2023-04-24",course:"Granite Links (M to G)",score:76,par:72,plus_minus:4,birdies:1,bogeys:5,doubles_plus:0,putts:null,gir_pct:0,penalties:0,fw_pct:null,driver_dist:null,scrambling:72.2,one_putts:null,three_putts:null},
+      {date:"2023-06-24",course:"Granite Links (Q to G)",score:72,par:71,plus_minus:1,birdies:5,bogeys:6,doubles_plus:0,putts:34,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:33.3,one_putts:4,three_putts:1},
+      {date:"2023-06-25",course:"Granite Links (M to G)",score:76,par:72,plus_minus:4,birdies:5,bogeys:6,doubles_plus:2,putts:31,gir_pct:55.6,penalties:0,fw_pct:null,driver_dist:null,scrambling:25,one_putts:6,three_putts:0},
+      {date:"2023-06-26",course:"Granite Links (Q to G)",score:77,par:71,plus_minus:6,birdies:1,bogeys:6,doubles_plus:1,putts:34,gir_pct:72.2,penalties:0,fw_pct:null,driver_dist:null,scrambling:20,one_putts:4,three_putts:1},
+      {date:"2023-06-27",course:"Plymouth CC",score:77,par:69,plus_minus:8,birdies:1,bogeys:7,doubles_plus:2,putts:35,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:16.7,one_putts:3,three_putts:1},
+      {date:"2023-07-08",course:"Granite Links (M to G)",score:78,par:72,plus_minus:6,birdies:3,bogeys:6,doubles_plus:3,putts:33,gir_pct:50,penalties:0,fw_pct:null,driver_dist:null,scrambling:44.4,one_putts:5,three_putts:0},
+      {date:"2023-07-15",course:"Wollaston GC",score:83,par:72,plus_minus:11,birdies:0,bogeys:10,doubles_plus:1,putts:33,gir_pct:38.9,penalties:0,fw_pct:null,driver_dist:null,scrambling:18.2,one_putts:5,three_putts:0},
+      {date:"2023-07-19",course:"Granite Links (M to G)",score:78,par:72,plus_minus:6,birdies:1,bogeys:7,doubles_plus:0,putts:34,gir_pct:44.4,penalties:0,fw_pct:null,driver_dist:null,scrambling:30,one_putts:4,three_putts:1},
+      {date:"2023-07-21",course:"Granite Links (Q to M)",score:76,par:71,plus_minus:5,birdies:2,bogeys:7,doubles_plus:0,putts:34,gir_pct:61.1,penalties:0,fw_pct:null,driver_dist:null,scrambling:28.6,one_putts:4,three_putts:1},
+      {date:"2023-07-30",course:"Granite Links (G to M)",score:83,par:72,plus_minus:11,birdies:1,bogeys:9,doubles_plus:3,putts:34,gir_pct:55.6,penalties:0,fw_pct:null,driver_dist:null,scrambling:25,one_putts:4,three_putts:1},
+      {date:"2023-08-03",course:"Granite Links (G to G)",score:70,par:72,plus_minus:-2,birdies:4,bogeys:2,doubles_plus:1,putts:23,gir_pct:44.4,penalties:0,fw_pct:null,driver_dist:null,scrambling:80,one_putts:11,three_putts:0},
+      {date:"2023-08-04",course:"Granite Links (G to M)",score:76,par:72,plus_minus:4,birdies:2,bogeys:6,doubles_plus:0,putts:32,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:16.7,one_putts:5,three_putts:0},
+      {date:"2023-08-06",course:"Granite Links (G to M)",score:78,par:72,plus_minus:6,birdies:1,bogeys:5,doubles_plus:2,putts:32,gir_pct:61.1,penalties:0,fw_pct:null,driver_dist:null,scrambling:42.9,one_putts:5,three_putts:0},
+      {date:"2023-08-12",course:"Granite Links (Q to M)",score:83,par:71,plus_minus:12,birdies:1,bogeys:11,doubles_plus:2,putts:40,gir_pct:22.2,penalties:0,fw_pct:null,driver_dist:null,scrambling:21.4,one_putts:2,three_putts:4},
+      {date:"2023-08-13",course:"Granite Links (M to G)",score:84,par:72,plus_minus:12,birdies:1,bogeys:9,doubles_plus:3,putts:34,gir_pct:38.9,penalties:0,fw_pct:null,driver_dist:null,scrambling:27.3,one_putts:4,three_putts:1},
+      {date:"2023-08-18",course:"Shelter Harbor",score:81,par:71,plus_minus:10,birdies:1,bogeys:8,doubles_plus:3,putts:null,gir_pct:0,penalties:0,fw_pct:null,driver_dist:null,scrambling:55.6,one_putts:null,three_putts:null},
+      {date:"2023-08-24",course:"Segregansett CC",score:88,par:72,plus_minus:16,birdies:0,bogeys:14,doubles_plus:2,putts:36,gir_pct:27.8,penalties:0,fw_pct:null,driver_dist:null,scrambling:7.7,one_putts:3,three_putts:1},
+      {date:"2023-08-26",course:"Meadow Brook GC",score:78,par:72,plus_minus:6,birdies:1,bogeys:7,doubles_plus:0,putts:34,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:16.7,one_putts:4,three_putts:1},
+      {date:"2023-08-28",course:"Segregansett CC",score:81,par:72,plus_minus:9,birdies:1,bogeys:7,doubles_plus:3,putts:35,gir_pct:50,penalties:0,fw_pct:null,driver_dist:null,scrambling:33.3,one_putts:3,three_putts:1},
+      {date:"2023-09-01",course:"Granite Links (G to M)",score:78,par:72,plus_minus:6,birdies:2,bogeys:7,doubles_plus:1,putts:32,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:16.7,one_putts:5,three_putts:0},
+      {date:"2023-09-02",course:"Granite Links (M to G)",score:82,par:72,plus_minus:10,birdies:3,bogeys:9,doubles_plus:4,putts:34,gir_pct:55.6,penalties:0,fw_pct:null,driver_dist:null,scrambling:12.5,one_putts:4,three_putts:1},
+      {date:"2023-09-14",course:"Wollaston GC",score:83,par:72,plus_minus:11,birdies:1,bogeys:9,doubles_plus:3,putts:34,gir_pct:38.9,penalties:0,fw_pct:null,driver_dist:null,scrambling:27.3,one_putts:4,three_putts:1},
+      {date:"2023-09-17",course:"Captains (Starboard)",score:76,par:72,plus_minus:4,birdies:1,bogeys:6,doubles_plus:0,putts:36,gir_pct:61.1,penalties:0,fw_pct:null,driver_dist:null,scrambling:28.6,one_putts:3,three_putts:1},
+      {date:"2023-09-23",course:"Granite Links (M to Q)",score:75,par:71,plus_minus:4,birdies:1,bogeys:5,doubles_plus:0,putts:34,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:33.3,one_putts:4,three_putts:1},
+      {date:"2023-10-21",course:"Palmetto Dunes (Jones)",score:76,par:72,plus_minus:4,birdies:3,bogeys:6,doubles_plus:1,putts:36,gir_pct:77.8,penalties:0,fw_pct:null,driver_dist:null,scrambling:25,one_putts:3,three_putts:1},
+      {date:"2023-12-28",course:"Atlantic Dunes",score:81,par:72,plus_minus:9,birdies:1,bogeys:10,doubles_plus:0,putts:34,gir_pct:50,penalties:0,fw_pct:null,driver_dist:null,scrambling:11.1,one_putts:4,three_putts:1},
+      {date:"2024-03-06",course:"Jacaranda - West",score:79,par:72,plus_minus:7,birdies:0,bogeys:6,doubles_plus:1,putts:33,gir_pct:66.7,penalties:0,fw_pct:null,driver_dist:null,scrambling:33.3,one_putts:5,three_putts:0},
+      {date:"2024-04-25",course:"Palmetto Dunes (Jones)",score:80,par:72,plus_minus:8,birdies:1,bogeys:7,doubles_plus:2,putts:31,gir_pct:44.4,penalties:0,fw_pct:null,driver_dist:null,scrambling:40,one_putts:6,three_putts:0},
+      {date:"2024-06-01",course:"Granite Links (Q to M)",score:76,par:71,plus_minus:5,birdies:2,bogeys:6,doubles_plus:1,putts:35,gir_pct:72.2,penalties:0,fw_pct:null,driver_dist:null,scrambling:20,one_putts:3,three_putts:1},
+      {date:"2024-09-06",course:"Granite Links (M to G)",score:77,par:72,plus_minus:5,birdies:2,bogeys:5,doubles_plus:2,putts:33,gir_pct:50,penalties:2,fw_pct:71.4,driver_dist:270,scrambling:44.4,one_putts:5,three_putts:0},
+      {date:"2025-06-01",course:"Wallingford CC",score:77,par:71,plus_minus:6,birdies:2,bogeys:7,doubles_plus:1,putts:30,gir_pct:27.8,penalties:0,fw_pct:42.9,driver_dist:272,scrambling:46.2,one_putts:6,three_putts:0},
+      {date:"2025-06-14",course:"Plymouth CC",score:80,par:69,plus_minus:11,birdies:1,bogeys:9,doubles_plus:3,putts:34,gir_pct:44.4,penalties:2,fw_pct:42.9,driver_dist:258,scrambling:10,one_putts:4,three_putts:1},
+      {date:"2025-09-28",course:"Granite Links (M to Q)",score:80,par:71,plus_minus:9,birdies:1,bogeys:8,doubles_plus:2,putts:34,gir_pct:38.9,penalties:1,fw_pct:46.2,driver_dist:255,scrambling:27.3,one_putts:4,three_putts:1},
+      {date:"2025-10-05",course:"Wallingford CC",score:79,par:71,plus_minus:8,birdies:1,bogeys:7,doubles_plus:2,putts:30,gir_pct:22.2,penalties:0,fw_pct:14.3,driver_dist:260,scrambling:50,one_putts:6,three_putts:0},
+      {date:"2025-10-18",course:"Granite Links (G to M)",score:78,par:72,plus_minus:6,birdies:1,bogeys:6,doubles_plus:1,putts:37,gir_pct:72.2,penalties:0,fw_pct:50,driver_dist:252,scrambling:20,one_putts:2,three_putts:2},
+      {date:"2025-10-19",course:"Granite Links (Q to G)",score:77,par:71,plus_minus:6,birdies:1,bogeys:6,doubles_plus:1,putts:32,gir_pct:55.6,penalties:2,fw_pct:61.5,driver_dist:266,scrambling:25,one_putts:5,three_putts:0}
+    ],
+    approach_cats:{
+      "Mid Iron":{shots:39,lr_miss:-5.5,sl_miss:-22.4,gir_pct:43.6,clubs:[
+        {club:"5i",shots:8,lr_miss:-7,sl_miss:-28,gir_pct:37.5},
+        {club:"6i",shots:11,lr_miss:-6,sl_miss:-25,gir_pct:40},
+        {club:"7i",shots:12,lr_miss:-5,sl_miss:-20,gir_pct:50},
+        {club:"8i",shots:8,lr_miss:-4,sl_miss:-16,gir_pct:50}
+      ]},
+      "Short Iron":{shots:15,lr_miss:-10.7,sl_miss:-2.5,gir_pct:66.7,clubs:[
+        {club:"9i",shots:7,lr_miss:-12,sl_miss:-4,gir_pct:62},
+        {club:"PW",shots:8,lr_miss:-9,sl_miss:-1,gir_pct:72}
+      ]},
+      "Wedge":{shots:20,lr_miss:2.2,sl_miss:0.9,gir_pct:65,clubs:[
+        {club:"50 Deg",shots:6,lr_miss:3,sl_miss:2,gir_pct:60},
+        {club:"54 Deg",shots:10,lr_miss:2,sl_miss:1,gir_pct:67},
+        {club:"56 Deg",shots:4,lr_miss:1,sl_miss:-1,gir_pct:68}
+      ]},
+      "Wood":{shots:5,lr_miss:4,sl_miss:-60,gir_pct:20,clubs:[
+        {club:"3w",shots:4,lr_miss:5,sl_miss:-65,gir_pct:18},
+        {club:"5w",shots:1,lr_miss:2,sl_miss:-45,gir_pct:30}
+      ]},
+      "Long Iron":{shots:4,lr_miss:20,sl_miss:-37.5,gir_pct:25,clubs:[
+        {club:"3i",shots:2,lr_miss:22,sl_miss:-40,gir_pct:20},
+        {club:"4i",shots:2,lr_miss:18,sl_miss:-35,gir_pct:30}
+      ]},
+      "Hybrid":{shots:1,lr_miss:-10,sl_miss:-40,gir_pct:100,clubs:[
+        {club:"3h",shots:1,lr_miss:-10,sl_miss:-40,gir_pct:100}
+      ]}
+    },
+    make_pct:{"0-3":100,"3-5":52.9,"5-8":26.3,"8-12":15.2,"12-20":20.7,"20-35":6.9,"35-50":0,"50+":11.1},
+    bad_reasons:{"Pulled tee shot":10,"Thin approach":4,"Pushed tee shot":4,"Poor approach strike":4,"Pushed approach":4,"Poor tee shot strike":3,"3-Putt":3,"Short putt nerves":2},
+    bad_clubs:{"Dr":13,"3w":10,"Putter":7,"5i":6,"6i":4,"3H":3,"4i":3,"9i":3},
+    course_data:[
+      {date:"2025-06-01",warmup:"Below Average",sleep:"Average",score:77},
+      {date:"2025-06-14",warmup:"Average",sleep:"Average",score:80},
+      {date:"2025-09-28",warmup:"Strong",sleep:"Average",score:80},
+      {date:"2025-10-05",warmup:"None",sleep:"Below Average",score:79},
+      {date:"2025-10-18",warmup:"Below Average",sleep:"Below Average",score:78},
+      {date:"2025-10-19",warmup:"Average",sleep:"Average",score:77}
+    ],
+    par_scoring:{"3":0.46,"4":0.49,"5":0.16}
+  },
+  demo_player:{
+    name:'Demo Player',pin:'5678',
+    rounds:[
+      {date:"2025-01-10",course:"Pebble Beach",score:85,par:72,plus_minus:13,birdies:0,bogeys:11,doubles_plus:2,putts:36,gir_pct:38.9,penalties:1,fw_pct:57.1,driver_dist:235,scrambling:15,one_putts:3,three_putts:2},
+      {date:"2025-02-14",course:"Augusta National",score:82,par:72,plus_minus:10,birdies:1,bogeys:9,doubles_plus:2,putts:34,gir_pct:50,penalties:0,fw_pct:64.3,driver_dist:240,scrambling:22,one_putts:4,three_putts:1},
+      {date:"2025-03-20",course:"TPC Sawgrass",score:88,par:72,plus_minus:16,birdies:0,bogeys:13,doubles_plus:3,putts:38,gir_pct:27.8,penalties:2,fw_pct:50,driver_dist:230,scrambling:10,one_putts:2,three_putts:3},
+      {date:"2025-05-01",course:"Bethpage Black",score:84,par:71,plus_minus:13,birdies:1,bogeys:10,doubles_plus:3,putts:35,gir_pct:44.4,penalties:1,fw_pct:57.1,driver_dist:238,scrambling:18,one_putts:3,three_putts:1},
+      {date:"2025-07-15",course:"Shinnecock Hills",score:90,par:70,plus_minus:20,birdies:0,bogeys:14,doubles_plus:6,putts:40,gir_pct:16.7,penalties:3,fw_pct:35.7,driver_dist:228,scrambling:8,one_putts:1,three_putts:5},
+      {date:"2025-09-05",course:"Winged Foot",score:86,par:72,plus_minus:14,birdies:0,bogeys:12,doubles_plus:2,putts:37,gir_pct:33.3,penalties:1,fw_pct:57.1,driver_dist:233,scrambling:12,one_putts:2,three_putts:2}
+    ],
+    approach_cats:{
+      "Mid Iron":{shots:20,lr_miss:-8,sl_miss:-30,gir_pct:35,clubs:[{club:"6i",shots:10,lr_miss:-8,sl_miss:-32,gir_pct:33},{club:"7i",shots:10,lr_miss:-8,sl_miss:-28,gir_pct:37}]},
+      "Short Iron":{shots:12,lr_miss:-5,sl_miss:5,gir_pct:55,clubs:[{club:"9i",shots:6,lr_miss:-6,sl_miss:4,gir_pct:52},{club:"PW",shots:6,lr_miss:-4,sl_miss:6,gir_pct:58}]},
+      "Wedge":{shots:15,lr_miss:3,sl_miss:-5,gir_pct:60,clubs:[{club:"54 Deg",shots:15,lr_miss:3,sl_miss:-5,gir_pct:60}]},
+      "Wood":{shots:4,lr_miss:10,sl_miss:-70,gir_pct:15,clubs:[{club:"3w",shots:4,lr_miss:10,sl_miss:-70,gir_pct:15}]}
+    },
+    make_pct:{"0-3":95,"3-5":40,"5-8":20,"8-12":10,"12-20":12,"20-35":5,"35-50":0,"50+":5},
+    bad_reasons:{"3-Putt":8,"Pulled tee shot":6,"Fat approach":5,"Lost ball":4,"Thin chip":3},
+    bad_clubs:{"Dr":10,"Putter":8,"3w":6,"5i":4,"PW":3},
+    course_data:[],
+    par_scoring:{"3":0.7,"4":0.9,"5":0.5}
+  }
+};
+
+// ===== STATE =====
+let currentPlayer=null, rollingWindow=4, bbRollingWindow=4, drRollingWindow=4, girRollingWindow=4, puttRollingWindow=4;
+const charts={};
+const drillState={};
+
+// ===== AUTH =====
+function handleLogin(){
+  const pid=document.getElementById('login-player').value;
+  const pin=document.getElementById('login-pin').value;
+  const err=document.getElementById('login-error');
+  if(!pid||!PLAYERS[pid]){err.style.display='block';err.textContent='Please select a player.';return}
+  if(PLAYERS[pid].pin!==pin){err.style.display='block';err.textContent='Incorrect PIN. Please try again.';return}
+  err.style.display='none';
+  currentPlayer=PLAYERS[pid];
+  document.getElementById('player-name-badge').textContent=currentPlayer.name;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  initApp();
+}
+document.getElementById('login-pin').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
+function handleLogout(){
+  currentPlayer=null;
+  Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
+  for(let k in charts)delete charts[k];
+  document.getElementById('login-screen').style.display='flex';
+  document.getElementById('app').style.display='none';
+  document.getElementById('login-pin').value='';
+  document.getElementById('login-player').value='';
+}
+
+// ===== NAV =====
+function showSection(id,btn){
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('section-'+id).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ===== HELPERS =====
+function avg(arr){const v=arr.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
+function fmt(v,d=1){return v!=null&&!isNaN(v)?Number(v).toFixed(d):'—'}
+function fmtPM(v){if(v==null)return'—';return v>0?'+'+v:String(v)}
+function rollingAvg(arr,w){return arr.map((_,i)=>{if(i<w-1)return null;const s=arr.slice(i-w+1,i+1).filter(x=>x!=null);return s.length?s.reduce((a,b)=>a+b,0)/s.length:null})}
+function sorted(){return[...currentPlayer.rounds].sort((a,b)=>a.date.localeCompare(b.date))}
+
+const C={
+  green:'rgba(74,222,128,0.9)',gd:'rgba(74,222,128,0.4)',gfill:'rgba(74,222,128,0.07)',
+  red:'rgba(248,113,113,0.9)',rd:'rgba(248,113,113,0.4)',
+  amber:'rgba(251,191,36,0.9)',ad:'rgba(251,191,36,0.4)',
+  blue:'rgba(96,165,250,0.9)',bd:'rgba(96,165,250,0.4)',bfill:'rgba(96,165,250,0.07)',
+  grid:'rgba(42,58,42,0.5)',txt:'#8fa88f'
+};
+const FONT={family:'DM Mono',size:10};
+
+function bOpts(yT=''){return{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}},scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},title:{display:!!yT,text:yT,color:C.txt,font:FONT}}}}}
+
+function mkChart(id,type,data,opts){
+  if(charts[id]){try{charts[id].destroy()}catch(e){}}
+  const el=document.getElementById(id);
+  if(!el)return null;
+  charts[id]=new Chart(el.getContext('2d'),{type,data,options:opts||bOpts()});
+  return charts[id];
+}
+
+// ===== INIT =====
+function initApp(){
+  buildDashboard();buildScoring();buildTee();buildApproach();
+  buildPutting();buildBirdiesBogeys();buildTigerFive();buildBadGood();
+}
+
+// ===== DASHBOARD =====
+function buildDashboard(){
+  const r=currentPlayer.rounds;
+  const s=sorted();
+  const scores=r.map(x=>x.score),pm=r.map(x=>x.plus_minus);
+  const gir=r.filter(x=>x.gir_pct>0).map(x=>x.gir_pct);
+  const scram=r.filter(x=>x.scrambling!=null).map(x=>x.scrambling);
+  const puttsR=r.filter(x=>x.putts).map(x=>x.putts);
+  const fw=r.filter(x=>x.fw_pct!=null).map(x=>x.fw_pct);
+  const a_score=avg(scores),a_pm=avg(pm),best=Math.min(...scores);
+  const a_gir=avg(gir),a_scram=avg(scram),a_putts=avg(puttsR),a_fw=avg(fw);
+  const a_birds=avg(r.map(x=>x.birdies)),a_bogs=avg(r.map(x=>x.bogeys));
+  const one_p=r.filter(x=>x.one_putts!=null).map(x=>x.one_putts);
+  const three_p=r.filter(x=>x.three_putts!=null).map(x=>x.three_putts);
+  const a_1p=avg(one_p),a_3p=avg(three_p);
+
+  document.getElementById('dash-meta').textContent=`${r.length} rounds tracked — all-time career statistics`;
+  document.getElementById('rounds-count').textContent=`${r.length} total rounds`;
+
+  const girTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>GIR % Calculation</strong><br><br>A green is hit "in regulation" when the ball is on the putting surface in (par − 2) strokes.<br><br>• Par 3: on the green in 1<br>• Par 4: on the green in 2<br>• Par 5: on the green in 3<br><br>GIR % = (GIRs ÷ 18) × 100</span></span>`;
+  const scramTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Scrambling % Calculation</strong><br><br>The % of holes where you missed the green in regulation but still made par or better.<br><br>Scrambling % = (Pars-or-better after missed GIR ÷ total missed GIRs) × 100<br><br>A high % means strong short-game rescue ability.</span></span>`;
+
+  document.getElementById('career-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${fmt(a_score,1)}</div><div class="stat-sub">${fmtPM(Math.round((a_pm||0)*10)/10)} avg to par</div></div>
+    <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value stat-good">${best}</div><div class="stat-sub">career low</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value">${fmt(a_gir,1)}%</div><div class="stat-sub">greens in regulation</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">accuracy off tee</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value">${fmt(a_scram,1)}%</div><div class="stat-sub">up &amp; down after miss</div></div>
+    <div class="stat-card"><div class="stat-label">Putts / Rnd</div><div class="stat-value">${fmt(a_putts,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">est. from putt data</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">est. from putt data</div></div>
+    <div class="stat-card"><div class="stat-label">Birdies+ / Rnd</div><div class="stat-value stat-good">${fmt(a_birds,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">Bogeys+ / Rnd</div><div class="stat-value stat-bad">${fmt(a_bogs,1)}</div></div>
+  `;
+
+  const recent=[...r].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);
+  document.getElementById('rounds-tbody').innerHTML=recent.map(rnd=>{
+    const pc=rnd.plus_minus<=4?'val-green':rnd.plus_minus>=10?'val-red':'val-amber';
+    return`<tr>
+      <td>${rnd.date.slice(5)} — ${rnd.course}</td>
+      <td class="${pc}">${rnd.score}</td><td class="${pc}">${fmtPM(rnd.plus_minus)}</td>
+      <td class="val-green">${rnd.birdies}</td><td class="val-red">${rnd.bogeys+rnd.doubles_plus}</td>
+      <td>${rnd.gir_pct>0?rnd.gir_pct+'%':'—'}</td><td>${rnd.fw_pct!=null?rnd.fw_pct+'%':'—'}</td>
+      <td>${rnd.driver_dist||'—'}</td><td>${rnd.scrambling!=null?rnd.scrambling+'%':'—'}</td>
+      <td>${rnd.putts||'—'}</td><td>${rnd.penalties>0?'<span class="val-red">'+rnd.penalties+'</span>':'—'}</td>
+    </tr>`;
+  }).join('');
+
+  mkChart('chart-score-history','line',{
+    labels:s.map(x=>x.date.slice(5,10)),
+    datasets:[{data:s.map(x=>x.score),borderColor:C.green,backgroundColor:C.gfill,
+      pointBackgroundColor:s.map(x=>x.plus_minus<=4?C.green:x.plus_minus>=10?C.red:C.amber),
+      pointRadius:4,tension:0.3,fill:true}]
+  },{...bOpts('Score'),plugins:{...bOpts().plugins}});
+
+  const bins={'-2 to 0':0,'1-3':0,'4-6':0,'7-9':0,'10-12':0,'13+':0};
+  r.forEach(x=>{const p=x.plus_minus;if(p<=0)bins['-2 to 0']++;else if(p<=3)bins['1-3']++;else if(p<=6)bins['4-6']++;else if(p<=9)bins['7-9']++;else if(p<=12)bins['10-12']++;else bins['13+']++});
+  mkChart('chart-score-dist','bar',{
+    labels:Object.keys(bins),
+    datasets:[{data:Object.values(bins),backgroundColor:['#4ade80','#86efac','#fbbf24','#fb923c','#f87171','#dc2626'],borderWidth:0}]
+  },{...bOpts('# Rounds')});
+}
+
+// ===== SCORING TRENDS =====
+function buildScoring(){
+  const s=sorted();
+  buildRollingChart(s,rollingWindow);
+  const ps=currentPlayer.par_scoring;
+  mkChart('chart-par-type','bar',{
+    labels:['Par 3','Par 4','Par 5'],
+    datasets:[{label:'+/- to Par',data:[ps['3'],ps['4'],ps['5']],
+      backgroundColor:[C.ad,C.rd,C.gd],borderColor:[C.amber,C.red,C.green],borderWidth:2}]
+  },{...bOpts('+/- to Par')});
+  mkChart('chart-plusminus','bar',{
+    labels:s.map(x=>x.date.slice(5,10)),
+    datasets:[{data:s.map(x=>x.plus_minus),
+      backgroundColor:s.map(x=>x.plus_minus<=4?C.gd:x.plus_minus>=10?C.rd:C.ad),
+      borderColor:s.map(x=>x.plus_minus<=4?C.green:x.plus_minus>=10?C.red:C.amber),borderWidth:1}]
+  },{...bOpts('+/- to Par')});
+}
+
+function buildRollingChart(s,w){
+  const scores=s.map(x=>x.score),ra=rollingAvg(scores,w);
+  if(charts['chart-rolling']){try{charts['chart-rolling'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-rolling');
+  if(!el)return;
+  charts['chart-rolling']=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels:s.map(x=>x.date.slice(5,10)),datasets:[
+      {type:'bar',label:'Round Score',data:scores,
+        backgroundColor:s.map(x=>x.plus_minus<=4?C.gd:x.plus_minus>=10?C.rd:C.ad),
+        borderColor:s.map(x=>x.plus_minus<=4?C.green:x.plus_minus>=10?C.red:C.amber),
+        borderWidth:1,order:2},
+      {type:'line',label:`${w}-Rnd Rolling Avg`,data:ra,
+        borderColor:C.blue,backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
+    ]},
+    options:{...bOpts('Score'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+  });
+}
+function setRolling(w,btn){
+  rollingWindow=w;
+  document.querySelectorAll('#section-scoring .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildRollingChart(sorted(),w);
+}
+
+// ===== OFF THE TEE =====
+function buildTee(){
+  const r=currentPlayer.rounds;
+  const s=sorted();
+  const dr=r.filter(x=>x.driver_dist),fw=r.filter(x=>x.fw_pct!=null);
+  const a_dr=avg(dr.map(x=>x.driver_dist)),a_fw=avg(fw.map(x=>x.fw_pct));
+  const max_dr=dr.length?Math.max(...dr.map(x=>x.driver_dist)):0;
+  document.getElementById('tee-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards</div></div>
+    <div class="stat-card"><div class="stat-label">Max Drive</div><div class="stat-value stat-good">${max_dr||'—'}</div><div class="stat-sub">career best</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">avg accuracy</div></div>
+    <div class="stat-card"><div class="stat-label">Goal: FW%</div><div class="stat-value ${(a_fw||0)>=62?'stat-good':'stat-bad'}">${(a_fw||0)>=62?'ON TRACK':'BELOW'}</div><div class="stat-sub">Target ≥ 62%</div></div>
+  `;
+  const sdr=s.filter(x=>x.driver_dist);
+  mkChart('chart-driver-dist','bar',{
+    labels:sdr.map(x=>x.date.slice(5,10)),
+    datasets:[{data:sdr.map(x=>x.driver_dist),
+      backgroundColor:sdr.map(x=>x.driver_dist>=270?C.gd:x.driver_dist<250?C.rd:C.ad),
+      borderColor:sdr.map(x=>x.driver_dist>=270?C.green:x.driver_dist<250?C.red:C.amber),borderWidth:1}]
+  },{...bOpts('Yards')});
+  const sfw=s.filter(x=>x.fw_pct!=null);
+  mkChart('chart-fw-pct','line',{
+    labels:sfw.map(x=>x.date.slice(5,10)),
+    datasets:[{data:sfw.map(x=>x.fw_pct),borderColor:C.amber,backgroundColor:C.ad.replace('0.4','0.07'),
+      pointBackgroundColor:sfw.map(x=>x.fw_pct>=62?C.green:C.red),pointRadius:5,tension:0.3,fill:true}]
+  },{...bOpts('%')});
+  const hit=fw.filter(x=>x.fw_pct>=62).length,miss=fw.filter(x=>x.fw_pct<62).length;
+  mkChart('chart-miss-dir','doughnut',{
+    labels:['Fairway Hit (≥62%)','Missed (<62%)'],
+    datasets:[{data:[hit,miss],backgroundColor:['rgba(74,222,128,0.7)','rgba(248,113,113,0.6)'],borderColor:['#4ade80','#f87171'],borderWidth:2}]
+  },{responsive:true,plugins:{legend:{labels:{color:C.txt,font:FONT}},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}}});
+  const dists=dr.map(x=>x.driver_dist);
+  const db={'<240':0,'240-250':0,'251-260':0,'261-270':0,'271-280':0,'280+':0};
+  dists.forEach(d=>{if(d<240)db['<240']++;else if(d<=250)db['240-250']++;else if(d<=260)db['251-260']++;else if(d<=270)db['261-270']++;else if(d<=280)db['271-280']++;else db['280+']++});
+  mkChart('chart-dist-dist','bar',{
+    labels:Object.keys(db),
+    datasets:[{data:Object.values(db),backgroundColor:C.gd,borderColor:C.green,borderWidth:1}]
+  },{...bOpts('# Rounds')});
+  buildDrRollingChart(sdr,drRollingWindow);
+}
+function buildDrRollingChart(sdr,w){
+  const vals=sdr.map(x=>x.driver_dist),ra=rollingAvg(vals,w);
+  if(charts['chart-driver-rolling']){try{charts['chart-driver-rolling'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-driver-rolling');if(!el)return;
+  charts['chart-driver-rolling']=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels:sdr.map(x=>x.date.slice(5,10)),datasets:[
+      {type:'bar',label:'Distance (yds)',data:vals,backgroundColor:C.gd,borderColor:C.green,borderWidth:1,order:2},
+      {type:'line',label:`${w}-Rnd Avg`,data:ra,borderColor:C.blue,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
+    ]},
+    options:{...bOpts('Yards'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+  });
+}
+function setDrRolling(w,btn){
+  drRollingWindow=w;
+  document.querySelectorAll('#section-tee .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildDrRollingChart(sorted().filter(x=>x.driver_dist),w);
+}
+
+// ===== APPROACH =====
+function buildApproach(){
+  const cats=currentPlayer.approach_cats;
+  const cn=Object.keys(cats);
+  buildGirRollingChart(sorted().filter(x=>x.gir_pct>0),girRollingWindow);
+
+  mkChart('chart-gir-club','bar',{
+    labels:cn,
+    datasets:[{label:'GIR %',data:cn.map(c=>cats[c].gir_pct),
+      backgroundColor:cn.map(c=>cats[c].gir_pct>=55?'rgba(74,222,128,0.6)':'rgba(248,113,113,0.5)'),
+      borderColor:cn.map(c=>cats[c].gir_pct>=55?C.green:C.red),borderWidth:1}]
+  },{...bOpts('GIR %')});
+
+  // L/R miss — DIVERGING HORIZONTAL
+  const lrVals=cn.map(c=>cats[c].lr_miss);
+  mkChart('chart-lr-miss','bar',{
+    labels:cn,
+    datasets:[{
+      label:'L/R Miss (ft)',
+      data:lrVals,
+      backgroundColor:lrVals.map(v=>v<0?'rgba(96,165,250,0.6)':'rgba(251,191,36,0.6)'),
+      borderColor:lrVals.map(v=>v<0?C.blue:C.amber),
+      borderWidth:1
+    }]
+  },{
+    ...bOpts('Miss (ft)'),
+    indexAxis:'y',
+    scales:{
+      x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},title:{display:true,text:'← Left   |   Right →',color:C.txt,font:FONT}},
+      y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}}
+    },
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,callbacks:{label:ctx=>{const v=ctx.parsed.x;return`${v>0?'Right +':'Left '}${Math.abs(v).toFixed(1)}ft`}}}}
+  });
+
+  mkChart('chart-sl-miss','bar',{
+    labels:cn,
+    datasets:[{label:'Short/Long ft',data:cn.map(c=>cats[c].sl_miss),
+      backgroundColor:cn.map(c=>cats[c].sl_miss<0?C.rd:C.gd),
+      borderColor:cn.map(c=>cats[c].sl_miss<0?C.red:C.green),borderWidth:1}]
+  },{...bOpts('Miss ft (neg=Short)')});
+
+  buildApproachTable();
+}
+
+function buildGirRollingChart(gsr,w){
+  const vals=gsr.map(x=>x.gir_pct),ra=rollingAvg(vals,w);
+  if(charts['chart-gir-round']){try{charts['chart-gir-round'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-gir-round');if(!el)return;
+  charts['chart-gir-round']=new Chart(el.getContext('2d'),{
+    type:'line',
+    data:{labels:gsr.map(x=>x.date.slice(5,10)),datasets:[
+      {label:'GIR %',data:vals,borderColor:C.gd,backgroundColor:'transparent',pointRadius:2,pointBackgroundColor:C.gd,tension:0.2,order:2},
+      {label:`${w}-Rnd Avg`,data:ra,borderColor:C.green,backgroundColor:C.gfill,borderWidth:2.5,pointRadius:0,tension:0.5,fill:true,order:1}
+    ]},
+    options:{...bOpts('GIR %'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+  });
+}
+function setGirRolling(w,btn){
+  girRollingWindow=w;
+  document.querySelectorAll('#section-approach .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildGirRollingChart(sorted().filter(x=>x.gir_pct>0),w);
+}
+
+function buildApproachTable(){
+  const cats=currentPlayer.approach_cats;
+  const rows=[];
+  Object.entries(cats).forEach(([cat,d])=>{
+    const lrc=Math.abs(d.lr_miss)>15?'val-red':'val-amber';
+    const slc=d.sl_miss<-20?'val-red':'val-amber';
+    const gc=d.gir_pct>=55?'val-green':d.gir_pct<=35?'val-red':'val-amber';
+    const assess=d.gir_pct>=55?'<span class="val-green">✓ Strength</span>':d.gir_pct<=35?'<span class="val-red">✗ Focus Area</span>':'<span class="val-amber">~ Average</span>';
+    const open=drillState[cat];
+    rows.push(`<tr data-cat="${cat}" style="cursor:pointer" onclick="toggleDrill('${cat}')">
+      <td><strong>${cat}</strong></td>
+      <td>${d.shots}</td>
+      <td class="${lrc}">${d.lr_miss>0?'+':''}${d.lr_miss}ft</td>
+      <td class="${slc}">${d.sl_miss>0?'+':''}${d.sl_miss}ft</td>
+      <td class="${gc}">${d.gir_pct}%</td>
+      <td>${assess}</td>
+      <td><button class="drill-btn">${open?'▲ Hide':'▼ Clubs'}</button></td>
+    </tr>`);
+    if(open && d.clubs){
+      d.clubs.forEach(cl=>{
+        const clrc=Math.abs(cl.lr_miss)>15?'val-red':'val-amber';
+        const cslc=cl.sl_miss<-20?'val-red':'val-amber';
+        const cgc=cl.gir_pct>=55?'val-green':cl.gir_pct<=35?'val-red':'val-amber';
+        rows.push(`<tr class="drill-row">
+          <td>↳ ${cl.club}</td>
+          <td>${cl.shots}</td>
+          <td class="${clrc}">${cl.lr_miss>0?'+':''}${cl.lr_miss}ft</td>
+          <td class="${cslc}">${cl.sl_miss>0?'+':''}${cl.sl_miss}ft</td>
+          <td class="${cgc}">${cl.gir_pct}%</td>
+          <td colspan="2" style="color:var(--text-faint)">individual club data</td>
+        </tr>`);
+      });
+    }
+  });
+  document.getElementById('approach-table-body').innerHTML=rows.join('');
+}
+function toggleDrill(cat){
+  drillState[cat]=!drillState[cat];
+  buildApproachTable();
+}
+
+// ===== PUTTING =====
+function buildPutting(){
+  const r=currentPlayer.rounds;
+  const mp=currentPlayer.make_pct;
+  const pr=sorted().filter(x=>x.putts);
+  const a_putts=avg(pr.map(x=>x.putts)),best_p=pr.length?Math.min(...pr.map(x=>x.putts)):null;
+  const one_pr=r.filter(x=>x.one_putts!=null);
+  const three_pr=r.filter(x=>x.three_putts!=null);
+  const a_1p=avg(one_pr.map(x=>x.one_putts));
+  const a_3p=avg(three_pr.map(x=>x.three_putts));
+  const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  // 1-putt scrambling ≈ scrambling % (making the putt from off the green)
+  const a_1p_scram=a_scram;
+
+  document.getElementById('putt-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Avg Putts/Rnd</div><div class="stat-value">${fmt(a_putts,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">Best Putts</div><div class="stat-value stat-good">${best_p||'—'}</div><div class="stat-sub">career low</div></div>
+    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">avg per round</div></div>
+    <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">avg per round</div></div>
+    <div class="stat-card"><div class="stat-label">0-3ft Make %</div><div class="stat-value stat-good">${mp['0-3']}%</div></div>
+    <div class="stat-card"><div class="stat-label">3-5ft Make %</div><div class="stat-value ${mp['3-5']>=50?'stat-good':'stat-bad'}">${mp['3-5']}%</div></div>
+    <div class="stat-card"><div class="stat-label">5-8ft Make %</div><div class="stat-value ${mp['5-8']>=30?'stat-neutral':'stat-bad'}">${mp['5-8']}%</div></div>
+  `;
+
+  const PGA={
+    "0-3":99,"3-5":88,"5-8":68,"8-12":50,"12-20":29,"20-35":13,"35-50":8,"50+":5
+  };
+  const dists=['0-3','3-5','5-8','8-12','12-20','20-35','35-50','50+'];
+  mkChart('chart-make-pct','bar',{
+    labels:dists.map(d=>d+' ft'),
+    datasets:[
+      {label:'Your Make %',data:dists.map(d=>mp[d]||0),
+        backgroundColor:dists.map((_,i)=>i<=1?'rgba(74,222,128,0.65)':i<=3?C.ad:'rgba(96,165,250,0.5)'),
+        borderColor:dists.map((_,i)=>i<=1?C.green:i<=3?C.amber:C.blue),borderWidth:1,order:2},
+      {label:'PGA Tour Avg',data:dists.map(d=>PGA[d]),
+        backgroundColor:'transparent',borderColor:'rgba(248,113,113,0.8)',
+        borderWidth:2,type:'line',pointRadius:4,pointBackgroundColor:'rgba(248,113,113,0.8)',tension:0.3,order:1}
+    ]
+  },{
+    ...bOpts('Make %'),
+    plugins:{
+      legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
+      tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}
+    }
+  });
+
+  buildPuttRollingChart(pr,puttRollingWindow);
+
+  const pq=pr.map(x=>Math.max(0,Math.min(100,100-(x.putts-27)*5)));
+  mkChart('chart-putt-quality','line',{
+    labels:pr.map(x=>x.date.slice(5,10)),
+    datasets:[{data:pq,borderColor:C.green,backgroundColor:C.gfill,
+      pointBackgroundColor:pq.map(v=>v>=70?C.green:v<50?C.red:C.amber),
+      pointRadius:4,tension:0.3,fill:true}]
+  },{...bOpts('Quality (0-100)')});
+}
+function buildPuttRollingChart(pr,w){
+  const vals=pr.map(x=>x.putts),ra=rollingAvg(vals,w);
+  if(charts['chart-putts-round']){try{charts['chart-putts-round'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-putts-round');if(!el)return;
+  charts['chart-putts-round']=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels:pr.map(x=>x.date.slice(5,10)),datasets:[
+      {type:'bar',label:'Putts',data:vals,
+        backgroundColor:vals.map(v=>v<=30?C.gd:v>=36?C.rd:C.ad),
+        borderColor:vals.map(v=>v<=30?C.green:v>=36?C.red:C.amber),borderWidth:1,order:2},
+      {type:'line',label:`${w}-Rnd Avg`,data:ra,borderColor:C.blue,backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
+    ]},
+    options:{...bOpts('Putts'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+  });
+}
+function setPuttRolling(w,btn){
+  puttRollingWindow=w;
+  document.querySelectorAll('#section-putting .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPuttRollingChart(sorted().filter(x=>x.putts),w);
+}
+
+// ===== BIRDIES & BOGEYS =====
+function buildBirdiesBogeys(){
+  const s=sorted();
+  const a_b=avg(s.map(x=>x.birdies)),a_bo=avg(s.map(x=>x.bogeys));
+  const max_b=Math.max(...s.map(x=>x.birdies));
+  document.getElementById('bb-stats').innerHTML=`
+    <div class="stat-card"><div class="stat-label">Avg Birdies+</div><div class="stat-value stat-good">${fmt(a_b,1)}</div><div class="stat-sub">per round</div></div>
+    <div class="stat-card"><div class="stat-label">Avg Bogeys+</div><div class="stat-value stat-bad">${fmt(a_bo,1)}</div><div class="stat-sub">per round</div></div>
+    <div class="stat-card"><div class="stat-label">Best Birdie Rnd</div><div class="stat-value stat-good">${max_b}</div><div class="stat-sub">birdies in a round</div></div>
+    <div class="stat-card"><div class="stat-label">B:Bogey Ratio</div><div class="stat-value ${a_b/a_bo>=0.3?'stat-good':'stat-bad'}">${fmt(a_b/a_bo,2)}</div><div class="stat-sub">higher is better</div></div>
+  `;
+  buildBBRollingChart(s,bbRollingWindow);
+  mkChart('chart-birdies','bar',{
+    labels:s.map(x=>x.date.slice(5,10)),
+    datasets:[{data:s.map(x=>x.birdies),backgroundColor:'rgba(74,222,128,0.5)',borderColor:C.green,borderWidth:1}]
+  },{...bOpts('Birdies+')});
+  mkChart('chart-bogeys','bar',{
+    labels:s.map(x=>x.date.slice(5,10)),
+    datasets:[{data:s.map(x=>x.bogeys+x.doubles_plus),
+      backgroundColor:s.map(x=>(x.bogeys+x.doubles_plus)>=9?C.rd:C.ad),
+      borderColor:s.map(x=>(x.bogeys+x.doubles_plus)>=9?C.red:C.amber),borderWidth:1}]
+  },{...bOpts('Bogeys+')});
+}
+function buildBBRollingChart(s,w){
+  const birds=s.map(x=>x.birdies),bogs=s.map(x=>x.bogeys+x.doubles_plus);
+  const raB=rollingAvg(birds,w),raBog=rollingAvg(bogs,w);
+  if(charts['chart-bb-rolling']){try{charts['chart-bb-rolling'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-bb-rolling');if(!el)return;
+  charts['chart-bb-rolling']=new Chart(el.getContext('2d'),{
+    type:'line',
+    data:{labels:s.map(x=>x.date.slice(5,10)),datasets:[
+      {label:'Birdies',data:birds,borderColor:C.gd,pointRadius:2,pointBackgroundColor:C.gd,tension:0.2},
+      {label:`${w}-Rnd Birdie`,data:raB,borderColor:C.green,borderWidth:2.5,pointRadius:0,tension:0.4},
+      {label:'Bogeys',data:bogs,borderColor:C.rd,pointRadius:2,pointBackgroundColor:C.rd,tension:0.2},
+      {label:`${w}-Rnd Bogey`,data:raBog,borderColor:C.red,borderWidth:2.5,pointRadius:0,tension:0.4}
+    ]},
+    options:{...bOpts(),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+  });
+}
+function setBBRolling(w,btn){
+  bbRollingWindow=w;
+  document.querySelectorAll('#section-birdies .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildBBRollingChart(sorted(),w);
+}
+
+// ===== TIGER FIVE =====
+function buildTigerFive(){
+  const r=currentPlayer.rounds;
+  const s=sorted();
+  const ps=currentPlayer.par_scoring;
+  const totalH=r.reduce((a,x)=>a+x.holes,0);
+  const totalD=r.reduce((a,x)=>a+x.doubles_plus,0);
+  const doublePct=totalD/totalH*100;
+  const cats=currentPlayer.approach_cats;
+  const shortGIR=cats['Short Iron']?cats['Short Iron'].gir_pct:50;
+  const shortBogPct=100-shortGIR;
+  const pr=r.filter(x=>x.three_putts!=null);
+  const totalHPutt=pr.reduce((a,x)=>a+x.holes,0);
+  const est3=pr.reduce((a,x)=>a+(x.three_putts||0),0);
+  const t3Pct=totalHPutt>0?est3/totalHPutt*100:8;
+  const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  const failUD=100-(a_scram||50);
+  const par5Pct=Math.max(5,Math.min(45,(ps['5']||0)*15+20));
+
+  const metrics=[
+    {name:'Bogey+ on Par 5s',pct:Math.round(par5Pct*10)/10,goal:20,pass:par5Pct<=20},
+    {name:'Double Bogeys+',pct:Math.round(doublePct*10)/10,goal:10,pass:doublePct<=10},
+    {name:'Bogeys ≤ 9-Iron',pct:Math.round(shortBogPct*10)/10,goal:20,pass:shortBogPct<=20},
+    {name:'3-Putts',pct:Math.round(t3Pct*10)/10,goal:5,pass:t3Pct<=5},
+    {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,goal:33,pass:failUD<=33}
+  ];
+  document.getElementById('tiger-cards').innerHTML=metrics.map(m=>`
+    <div class="tiger-card ${m.pass?'tiger-pass':'tiger-fail'}">
+      <div class="tiger-title">${m.name}</div>
+      <div class="tiger-pct ${m.pass?'val-green':'val-red'}">${m.pct}%</div>
+      <div class="tiger-goal">Goal: ≤${m.goal}%</div>
+      <div class="tiger-diff ${m.pass?'val-green':'val-red'}">${m.pass?'✓ On Track':'✗ Needs Work'}</div>
+    </div>
+  `).join('');
+  const sl=s.slice(-15);
+  mkChart('chart-tiger-trend','line',{
+    labels:sl.map(x=>x.date.slice(5,10)),
+    datasets:[
+      {label:'GIR %',data:sl.map(x=>x.gir_pct),borderColor:'rgba(74,222,128,0.8)',pointRadius:3,tension:0.3},
+      {label:'Scramble %',data:sl.map(x=>x.scrambling),borderColor:'rgba(251,191,36,0.8)',pointRadius:3,tension:0.3},
+      {label:'Fairway %',data:sl.map(x=>x.fw_pct),borderColor:'rgba(96,165,250,0.8)',pointRadius:3,tension:0.3}
+    ]
+  },{
+    responsive:true,
+    plugins:{legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}},
+    scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,max:100,title:{display:true,text:'%',color:C.txt,font:FONT}}}
+  });
+}
+
+// ===== BAD/GOOD =====
+function buildBadGood(){
+  const bc=currentPlayer.bad_clubs,br=currentPlayer.bad_reasons;
+  const cn=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);
+  mkChart('chart-bad-clubs','bar',{
+    labels:cn,
+    datasets:[{data:cn.map(c=>bc[c]),backgroundColor:'rgba(248,113,113,0.5)',borderColor:C.red,borderWidth:1}]
+  },{...bOpts('# Bad Scores'),indexAxis:'y'});
+  const reasons=Object.entries(br).sort((a,b)=>b[1]-a[1]);
+  const maxR=reasons.length?reasons[0][1]:1;
+  document.getElementById('bad-reasons-list').innerHTML=`<div class="h-bar-list">${
+    reasons.map(([r,c])=>`<div class="h-bar-item">
+      <div class="h-bar-label">${r}</div>
+      <div class="h-bar-track"><div class="h-bar-fill" style="width:${(c/maxR)*100}%;background:rgba(248,113,113,0.6)"></div></div>
+      <div class="h-bar-val">${c}</div>
+    </div>`).join('')
+  }</div>`;
+  const cd=currentPlayer.course_data;
+  if(cd.length>0){
+    const warmupG={},sleepG={};
+    cd.forEach(d=>{
+      const w=d.warmup||'Unknown',sl=d.sleep||'Unknown';
+      if(!warmupG[w])warmupG[w]=[];warmupG[w].push(d.score);
+      if(!sleepG[sl])sleepG[sl]=[];sleepG[sl].push(d.score);
+    });
+    const wa={},sa={};
+    Object.entries(warmupG).forEach(([k,v])=>wa[k]=avg(v));
+    Object.entries(sleepG).forEach(([k,v])=>sa[k]=avg(v));
+    const wkeys=Object.keys(wa),skeys=Object.keys(sa);
+    const colMap={'None':C.rd,'Below Average':C.rd,'Average':C.ad,'Strong':C.gd};
+    const bcolMap={'None':C.red,'Below Average':C.red,'Average':C.amber,'Strong':C.green};
+    mkChart('chart-warmup','bar',{
+      labels:wkeys,
+      datasets:[{data:wkeys.map(k=>wa[k]),backgroundColor:wkeys.map(k=>colMap[k]||C.bd),borderColor:wkeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
+    },{...bOpts('Avg Score')});
+    mkChart('chart-sleep','bar',{
+      labels:skeys,
+      datasets:[{data:skeys.map(k=>sa[k]),backgroundColor:skeys.map(k=>colMap[k]||C.bd),borderColor:skeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
+    },{...bOpts('Avg Score')});
+  } else {
+    ['warmup-chart-wrap','sleep-chart-wrap'].forEach(id=>{
+      const el=document.getElementById(id);
+      if(el)el.innerHTML=`<div class="empty-state">Track more rounds with warmup &amp; sleep data to unlock this insight.</div>`;
+    });
+  }
+}
+
+
+// ===== UPLOAD SCREEN STATE =====
+let uploadFile = null;
+let uploadProfile = {};
+let uploadedPlayerData = null;
+
+function showUpload(){
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('upload-screen').style.display='flex';
+  resetUploadFlow();
+}
+function showLogin(){
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+}
+function resetUploadFlow(){
+  ['upload-step-1','upload-step-2','upload-step-3','upload-step-4'].forEach((id,i)=>{
+    document.getElementById(id).style.display=i===0?'block':'none';
+  });
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('step-'+i);
+    el.className='upload-step'+(i===1?' active':'');
+  });
+  uploadFile=null;uploadProfile={};uploadedPlayerData=null;
+  document.getElementById('file-name').style.display='none';
+  document.getElementById('drop-zone').classList.remove('file-selected');
+  document.getElementById('btn-process').disabled=true;
+  document.getElementById('upload-log').innerHTML='';
+  document.getElementById('step1-error').style.display='none';
+  document.getElementById('step2-error').style.display='none';
+}
+
+function setStep(n){
+  [1,2,3,4].forEach(i=>{
+    const el=document.getElementById('upload-step-'+i);
+    el.style.display=(i===n)?'block':'none';
+    const stepEl=document.getElementById('step-'+i);
+    stepEl.className='upload-step'+(i<n?' done':i===n?' active':'');
+  });
+}
+
+function uploadStep1Next(){
+  const name=document.getElementById('up-name').value.trim();
+  const id=document.getElementById('up-id').value.trim();
+  const pin=document.getElementById('up-pin').value;
+  const pin2=document.getElementById('up-pin2').value;
+  const err=document.getElementById('step1-error');
+  if(!name){err.style.display='block';err.textContent='Please enter your full name.';return}
+  if(!id||id.length<2){err.style.display='block';err.textContent='Please enter a display ID (2+ chars, letters/numbers/underscores).';return}
+  if(pin.length<4){err.style.display='block';err.textContent='PIN must be at least 4 digits.';return}
+  if(pin!==pin2){err.style.display='block';err.textContent='PINs do not match.';return}
+  err.style.display='none';
+  uploadProfile={name,id,pin};
+  setStep(2);
+}
+function uploadBack1(){setStep(1)}
+
+// Drag & drop
+const dz=document.getElementById('drop-zone');
+dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('drag-over')});
+dz.addEventListener('dragleave',()=>dz.classList.remove('drag-over'));
+dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('drag-over');const f=e.dataTransfer.files[0];if(f)handleFileSelect(f)});
+
+function handleFileSelect(file){
+  if(!file){return}
+  if(!file.name.match(/\.(xlsx|xls)$/i)){
+    document.getElementById('step2-error').style.display='block';
+    document.getElementById('step2-error').textContent='Please upload an Excel file (.xlsx or .xls)';
+    return;
+  }
+  uploadFile=file;
+  document.getElementById('file-name').textContent='📂 '+file.name;
+  document.getElementById('file-name').style.display='block';
+  document.getElementById('drop-zone').classList.add('file-selected');
+  document.getElementById('btn-process').disabled=false;
+  document.getElementById('step2-error').style.display='none';
+}
+
+function setProgress(pct,msg){
+  document.getElementById('progress-fill').style.width=pct+'%';
+  document.getElementById('progress-msg').textContent=msg;
+}
+function addLog(msg,type=''){
+  const log=document.getElementById('upload-log');
+  const div=document.createElement('div');
+  div.className='log-line '+type;
+  div.textContent=msg;
+  log.appendChild(div);
+  log.scrollTop=log.scrollHeight;
+}
+
+async function processFile(){
+  if(!uploadFile)return;
+  setStep(3);
+  await new Promise(r=>setTimeout(r,50));
+
+  try{
+    setProgress(10,'Reading Excel file...');
+    addLog('Reading: '+uploadFile.name);
+    const buf=await uploadFile.arrayBuffer();
+    const wb=XLSX.read(buf,{type:'array',cellDates:true});
+
+    setProgress(20,'Locating sheets...');
+    const sheetNames=wb.SheetNames;
+    addLog('Found sheets: '+sheetNames.join(', '));
+
+    const courseSheetName=sheetNames.find(s=>s.toLowerCase().includes('course level'));
+    const holeSheetName=sheetNames.find(s=>s.toLowerCase().includes('hole level'));
+
+    if(!courseSheetName){addLog('⚠ No "Course Level Data" sheet found — skipping course metadata','warn')}
+    if(!holeSheetName){addLog('✗ No "Hole Level Data" sheet found — cannot continue','err');setProgress(100,'Error');return}
+
+    setProgress(35,'Parsing hole-level data...');
+    const holeSheet=wb.Sheets[holeSheetName];
+    const holeRaw=XLSX.utils.sheet_to_json(holeSheet,{header:1,defval:null,raw:false});
+
+    // Find header row — look for row containing 'Hole' and 'Score' and 'Par'
+    let holeHeaderIdx=-1;
+    for(let i=0;i<Math.min(holeRaw.length,15);i++){
+      const row=holeRaw[i];
+      const rowStr=row.map(c=>String(c||'')).join('|').toLowerCase();
+      if(rowStr.includes('hole')&&rowStr.includes('score')&&rowStr.includes('par')){
+        holeHeaderIdx=i;break;
+      }
+    }
+    if(holeHeaderIdx<0){addLog('✗ Could not find header row in Hole Level Data','err');return}
+    addLog('✓ Found hole data header at row '+(holeHeaderIdx+1),'ok');
+
+    const holeHeaders=holeRaw[holeHeaderIdx].map(h=>String(h||'').trim());
+    const holeData=holeRaw.slice(holeHeaderIdx+1).filter(row=>row.some(c=>c!=null&&c!==''));
+
+    // Column index helpers
+    const hcol=(name)=>{
+      const idx=holeHeaders.findIndex(h=>h.toLowerCase().includes(name.toLowerCase()));
+      return idx;
+    };
+    const hget=(row,name)=>{const i=hcol(name);return i>=0?row[i]:null};
+    const hgetExact=(row,colIdx)=>row[colIdx]||null;
+
+    const colPlayer=hcol('player'),colDate=hcol('date'),colCourse=hcol('course');
+    const colHole=hcol('hole'),colPar=hcol('par'),colScore=hcol('score');
+    const colGreen=hcol('green'),colNumPutts=hcol('# of putt');
+    const colPutt1=hcol('length of putt 1'),colPutt2=hcol('length of putt 2');
+    const colFairway=hcol('fairway hit');
+    const colTeeDist=hcol('tee distance'),colTeeClub=hcol('tee club');
+    const colApprClub=hcol('approach club'),colApprLR=hcol('approach left'),colApprSL=hcol('approach short');
+    const colApprDist=hcol('target distance');
+    const colPenalty=hcol('penalty');
+    const colBadScore=hcol('reason for bad score');
+    const colBadClub=hcol('reason for bad score - club');
+    const colScram=hcol('scrambl'); // not always present
+
+    addLog('Column map — Player:'+colPlayer+' Date:'+colDate+' Hole:'+colHole+' Par:'+colPar+' Score:'+colScore);
+
+    setProgress(50,'Aggregating round statistics...');
+
+    // Group by player+date+course
+    const roundMap={};
+    let rowsProcessed=0;
+    for(const row of holeData){
+      const player=row[colPlayer];
+      const date=row[colDate];
+      const course=row[colCourse];
+      if(!player||!date||!course)continue;
+      const dateStr=formatDate(date);
+      if(!dateStr)continue;
+      const key=`${player}__${dateStr}__${course}`;
+      if(!roundMap[key]){
+        roundMap[key]={player:String(player),date:dateStr,course:String(course),
+          holes:[],bad_reasons:[],bad_clubs:[]};
+      }
+      const par=toNum(row[colPar]),score=toNum(row[colScore]);
+      const green=String(row[colGreen]||'').trim().toLowerCase();
+      const numPutts=toNum(row[colNumPutts]);
+      const fairway=String(row[colFairway]||'').trim().toLowerCase();
+      const teeDist=toNum(row[colTeeDist]);
+      const teeClub=String(row[colTeeClub]||'').trim();
+      const apprClub=String(row[colApprClub]||'').trim();
+      const apprLR=toNum(row[colApprLR]);
+      const apprSL=toNum(row[colApprSL]);
+      const apprDist=toNum(row[colApprDist]);
+      const penalty=toNum(row[colPenalty]);
+      const putt1=toNum(row[colPutt1]),putt2=toNum(row[colPutt2]);
+      const badScore=row[colBadScore]?String(row[colBadScore]).trim():null;
+      const badClub=row[colBadClub]?String(row[colBadClub]).trim():null;
+
+      roundMap[key].holes.push({par,score,green,numPutts,fairway,teeDist,teeClub,
+        apprClub,apprLR,apprSL,apprDist,penalty,putt1,putt2,badScore,badClub});
+      rowsProcessed++;
+    }
+    addLog('✓ Processed '+rowsProcessed+' hole rows across '+Object.keys(roundMap).length+' rounds','ok');
+
+    setProgress(65,'Parsing course-level metadata...');
+    let courseMetaMap={};
+    if(courseSheetName){
+      const csSheet=wb.Sheets[courseSheetName];
+      const csRaw=XLSX.utils.sheet_to_json(csSheet,{header:1,defval:null,raw:false});
+      let csHeaderIdx=-1;
+      for(let i=0;i<Math.min(csRaw.length,15);i++){
+        const row=csRaw[i];
+        const rs=row.map(c=>String(c||'')).join('|').toLowerCase();
+        if(rs.includes('course')&&rs.includes('date')){csHeaderIdx=i;break}
+      }
+      if(csHeaderIdx>=0){
+        const csHeaders=csRaw[csHeaderIdx].map(h=>String(h||'').trim());
+        const csData=csRaw.slice(csHeaderIdx+1).filter(r=>r.some(c=>c!=null&&c!==''));
+        const cscol=(n)=>csHeaders.findIndex(h=>h.toLowerCase().includes(n.toLowerCase()));
+        const cdPlayer=cscol('player'),cdDate=cscol('date'),cdCourse=cscol('course');
+        const cdWarmup=cscol('warm'),cdSleep=cscol('sleep'),cdRating=cscol('rating'),cdSlope=cscol('slope');
+        for(const row of csData){
+          const p=row[cdPlayer],d=row[cdDate],c=row[cdCourse];
+          if(!p||!d||!c)continue;
+          const ds=formatDate(d);
+          if(!ds)continue;
+          const key=`${p}__${ds}__${c}`;
+          courseMetaMap[key]={warmup:cdWarmup>=0?String(row[cdWarmup]||''):null,
+            sleep:cdSleep>=0?String(row[cdSleep]||''):null,
+            rating:cdRating>=0?toNum(row[cdRating]):null,
+            slope:cdSlope>=0?toNum(row[cdSlope]):null};
+        }
+        addLog('✓ Loaded metadata for '+Object.keys(courseMetaMap).length+' rounds from course sheet','ok');
+      }
+    }
+
+    setProgress(75,'Building rounds array...');
+    const rounds=[];
+    for(const [key,rd] of Object.entries(roundMap)){
+      const hs=rd.holes;
+      const validHoles=hs.filter(h=>h.par!=null&&h.score!=null);
+      if(validHoles.length<9){addLog('⚠ Skipping '+rd.date+' '+rd.course+' — only '+validHoles.length+' valid holes','warn');continue}
+
+      const totalScore=sum(validHoles.map(h=>h.score));
+      const totalPar=sum(validHoles.map(h=>h.par));
+      const birdies=validHoles.filter(h=>h.score<h.par).length;
+      const bogeys=validHoles.filter(h=>h.score>h.par).length;
+      const doubles=validHoles.filter(h=>h.score>=h.par+2).length;
+      const totalPutts=validHoles.some(h=>h.numPutts!=null)?sumNonNull(validHoles.map(h=>h.numPutts)):null;
+      const girHoles=validHoles.filter(h=>h.green==='hit');
+      const girPct=validHoles.length>0?Math.round(girHoles.length/validHoles.length*1000)/10:0;
+      const penalties=sumNonNull(validHoles.map(h=>h.penalty));
+      // Fairways — only non-par3 holes
+      const fwHoles=validHoles.filter(h=>h.par!==3&&h.fairway!=='');
+      const fwHit=fwHoles.filter(h=>h.fairway==='hit').length;
+      const fwPct=fwHoles.length>0?Math.round(fwHit/fwHoles.length*1000)/10:null;
+      // Driver distance
+      const driverHoles=validHoles.filter(h=>h.teeClub.toLowerCase()==='dr'&&h.teeDist!=null);
+      const driverDist=driverHoles.length>0?Math.round(driverHoles.reduce((a,h)=>a+h.teeDist,0)/driverHoles.length):null;
+      // Scrambling
+      const missedGIR=validHoles.filter(h=>h.green!=='hit');
+      const scramHoles=missedGIR.filter(h=>h.score<=h.par);
+      const scramPct=missedGIR.length>0?Math.round(scramHoles.length/missedGIR.length*1000)/10:0;
+      // 1-putts and 3-putts
+      const onePutts=validHoles.filter(h=>h.numPutts===1).length;
+      const threePutts=validHoles.filter(h=>h.numPutts>=3).length;
+      const meta=courseMetaMap[key]||{};
+
+      rounds.push({
+        date:rd.date,course:rd.course,score:totalScore,par:totalPar,
+        plus_minus:totalScore-totalPar,birdies,bogeys,doubles_plus:doubles,
+        putts:totalPutts,gir_pct:girPct,penalties,fw_pct:fwPct,
+        driver_dist:driverDist,scrambling:scramPct,
+        one_putts:onePutts,three_putts:threePutts,
+        warmup:meta.warmup||null,sleep:meta.sleep||null,holes:validHoles.length
+      });
+    }
+    rounds.sort((a,b)=>a.date.localeCompare(b.date));
+    addLog('✓ Built '+rounds.length+' valid rounds','ok');
+
+    setProgress(85,'Calculating approach statistics...');
+    const catMap={
+      'dr':'Driver','3w':'Wood','4w':'Wood','5w':'Wood','7w':'Wood',
+      '2h':'Hybrid','3h':'Hybrid','4h':'Hybrid','5h':'Hybrid','7h':'Hybrid',
+      '2i':'Long Iron','3i':'Long Iron','4i':'Long Iron',
+      '5i':'Mid Iron','6i':'Mid Iron','7i':'Mid Iron','8i':'Mid Iron',
+      '9i':'Short Iron','pw':'Short Iron','10i':'Short Iron',
+      '48':'Wedge','50':'Wedge','50 deg':'Wedge','52':'Wedge','54':'Wedge','54 deg':'Wedge',
+      '56':'Wedge','56 deg':'Wedge','58':'Wedge','60':'Wedge','60 deg':'Wedge','60  deg':'Wedge',
+      'unk':'Other','unknown':'Other'
+    };
+    // Gather all approach shots from all rounds
+    const apprByClub={},apprByCat={};
+    for(const [key,rd] of Object.entries(roundMap)){
+      for(const h of rd.holes){
+        if(!h.apprClub||h.apprClub===''||h.apprClub==='null'||h.apprLR==null)continue;
+        const rawClub=h.apprClub.trim().toLowerCase();
+        const cat=catMap[rawClub]||'Other';
+        const clubKey=h.apprClub.trim();
+        if(!apprByClub[clubKey])apprByClub[clubKey]={cat,shots:[],lr:[],sl:[],gir:0,total:0};
+        apprByClub[clubKey].shots.push(h);
+        if(h.apprLR!=null)apprByClub[clubKey].lr.push(h.apprLR);
+        if(h.apprSL!=null)apprByClub[clubKey].sl.push(h.apprSL);
+        if(h.green==='hit')apprByClub[clubKey].gir++;
+        apprByClub[clubKey].total++;
+        if(!apprByCat[cat])apprByCat[cat]={shots:[],lr:[],sl:[],gir:0,total:0,clubs:{}};
+        apprByCat[cat].shots.push(h);
+        if(h.apprLR!=null)apprByCat[cat].lr.push(h.apprLR);
+        if(h.apprSL!=null)apprByCat[cat].sl.push(h.apprSL);
+        if(h.green==='hit')apprByCat[cat].gir++;
+        apprByCat[cat].total++;
+        if(!apprByCat[cat].clubs[clubKey])apprByCat[cat].clubs[clubKey]={lr:[],sl:[],gir:0,total:0};
+        if(h.apprLR!=null)apprByCat[cat].clubs[clubKey].lr.push(h.apprLR);
+        if(h.apprSL!=null)apprByCat[cat].clubs[clubKey].sl.push(h.apprSL);
+        if(h.green==='hit')apprByCat[cat].clubs[clubKey].gir++;
+        apprByCat[cat].clubs[clubKey].total++;
+      }
+    }
+    const approach_cats={};
+    for(const [cat,d] of Object.entries(apprByCat)){
+      if(d.total<2)continue;
+      const clubs=Object.entries(d.clubs).filter(([k,v])=>v.total>=1).map(([club,v])=>({
+        club,shots:v.total,
+        lr_miss:v.lr.length?Math.round(avgArr(v.lr)*10)/10:0,
+        sl_miss:v.sl.length?Math.round(avgArr(v.sl)*10)/10:0,
+        gir_pct:Math.round(v.gir/v.total*1000)/10
+      }));
+      approach_cats[cat]={
+        shots:d.total,
+        lr_miss:d.lr.length?Math.round(avgArr(d.lr)*10)/10:0,
+        sl_miss:d.sl.length?Math.round(avgArr(d.sl)*10)/10:0,
+        gir_pct:Math.round(d.gir/d.total*1000)/10,
+        clubs
+      };
+    }
+    addLog('✓ Approach stats built for '+Object.keys(approach_cats).length+' club categories','ok');
+
+    setProgress(90,'Computing putting stats...');
+    const puttBuckets={'0-3':[],'3-5':[],'5-8':[],'8-12':[],'12-20':[],'20-35':[],'35-50':[],'50+':[]};
+    for(const [key,rd] of Object.entries(roundMap)){
+      for(const h of rd.holes){
+        if(h.putt1==null)continue;
+        const d=h.putt1;
+        const bucket=d<=3?'0-3':d<=5?'3-5':d<=8?'5-8':d<=12?'8-12':d<=20?'12-20':d<=35?'20-35':d<=50?'35-50':'50+';
+        puttBuckets[bucket].push(h.numPutts===1?1:0);
+      }
+    }
+    const make_pct={};
+    for(const[b,arr]of Object.entries(puttBuckets)){
+      make_pct[b]=arr.length>0?Math.round(arr.reduce((a,b)=>a+b,0)/arr.length*1000)/10:null;
+    }
+
+    setProgress(93,'Computing par scoring and root causes...');
+    const parGroups={3:[],4:[],5:[]};
+    for(const[key,rd]of Object.entries(roundMap)){
+      for(const h of rd.holes){
+        if(h.par!=null&&h.score!=null&&[3,4,5].includes(h.par)){
+          parGroups[h.par].push(h.score-h.par);
+        }
+      }
+    }
+    const par_scoring={};
+    for(const[p,arr]of Object.entries(parGroups)){
+      par_scoring[p]=arr.length>0?Math.round(avgArr(arr)*100)/100:null;
+    }
+
+    // Bad reasons + clubs
+    const badReasonCounts={},badClubCounts={};
+    for(const[key,rd]of Object.entries(roundMap)){
+      for(const h of rd.holes){
+        if(h.badScore){
+          const reasons=h.badScore.split(',').map(r=>r.trim()).filter(r=>r);
+          reasons.forEach(r=>{badReasonCounts[r]=(badReasonCounts[r]||0)+1});
+        }
+        if(h.badClub){
+          const clubs=h.badClub.split(',').map(r=>r.trim()).filter(r=>r);
+          clubs.forEach(c=>{badClubCounts[c]=(badClubCounts[c]||0)+1});
+        }
+      }
+    }
+    // Top 8 each
+    const bad_reasons=Object.fromEntries(Object.entries(badReasonCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
+    const bad_clubs=Object.fromEntries(Object.entries(badClubCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
+
+    // Course data
+    const course_data=rounds.filter(r=>r.warmup||r.sleep).map(r=>({
+      date:r.date,warmup:r.warmup,sleep:r.sleep,score:r.score
+    }));
+
+    setProgress(98,'Registering player...');
+
+    const playerData={
+      name:uploadProfile.name,
+      pin:uploadProfile.pin,
+      rounds,approach_cats,make_pct,bad_reasons,bad_clubs,course_data,par_scoring
+    };
+
+    // Store in localStorage for persistence
+    try{
+      const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
+      stored[uploadProfile.id]=playerData;
+      localStorage.setItem('ti_players',JSON.stringify(stored));
+      addLog('✓ Player data saved to browser storage','ok');
+    }catch(e){addLog('⚠ Could not save to localStorage — data will persist for this session only','warn')}
+
+    // Also add to in-memory PLAYERS
+    PLAYERS[uploadProfile.id]=playerData;
+    // Rebuild login dropdown
+    rebuildLoginDropdown();
+
+    uploadedPlayerData={id:uploadProfile.id,data:playerData};
+    setProgress(100,'Complete!');
+    addLog('✓ Done! '+rounds.length+' rounds loaded.','ok');
+
+    document.getElementById('upload-summary').innerHTML=
+      `<strong style="color:var(--text)">${uploadProfile.name}</strong><br>`+
+      `${rounds.length} rounds loaded &nbsp;|&nbsp; `+
+      `${Object.keys(approach_cats).length} approach categories &nbsp;|&nbsp; `+
+      `${course_data.length} rounds with prep data`;
+
+    setTimeout(()=>setStep(4),600);
+
+  } catch(e){
+    addLog('✗ Error: '+e.message,'err');
+    console.error(e);
+    setProgress(100,'Error — see log above');
+  }
+}
+
+function enterAppFromUpload(){
+  if(!uploadedPlayerData)return;
+  currentPlayer=uploadedPlayerData.data;
+  document.getElementById('player-name-badge').textContent=currentPlayer.name;
+  document.getElementById('upload-screen').style.display='none';
+  document.getElementById('app').style.display='block';
+  initApp();
+}
+
+function rebuildLoginDropdown(){
+  const sel=document.getElementById('login-player');
+  // Preserve built-in options
+  const builtIn=['pat_west','demo_player'];
+  // Remove any dynamically added options
+  Array.from(sel.options).forEach(opt=>{
+    if(opt.value&&!builtIn.includes(opt.value)&&opt.value!==''){
+      sel.remove(sel.options[opt.index]);
+    }
+  });
+  // Add stored players
+  try{
+    const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
+    Object.entries(stored).forEach(([id,data])=>{
+      if(!builtIn.includes(id)){
+        const opt=document.createElement('option');
+        opt.value=id;opt.textContent=data.name;
+        sel.appendChild(opt);
+      }
+    });
+  }catch(e){}
+}
+
+// Load stored players on startup
+(function loadStoredPlayers(){
+  try{
+    const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
+    Object.entries(stored).forEach(([id,data])=>{
+      if(!PLAYERS[id])PLAYERS[id]=data;
+    });
+    rebuildLoginDropdown();
+  }catch(e){}
+})();
+
+// ===== UTIL FUNCTIONS FOR PARSER =====
+function toNum(v){if(v==null||v==='')return null;const n=Number(v);return isNaN(n)?null:n}
+function sum(arr){return arr.reduce((a,b)=>a+(b||0),0)}
+function sumNonNull(arr){const v=arr.filter(x=>x!=null);return v.length?v.reduce((a,b)=>a+b,0):0}
+function avgArr(arr){const v=arr.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
+function formatDate(d){
+  if(!d)return null;
+  if(d instanceof Date){
+    const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),day=String(d.getDate()).padStart(2,'0');
+    return`${y}-${m}-${day}`;
+  }
+  const s=String(d).trim();
+  if(s.match(/^\d{4}-\d{2}-\d{2}/))return s.slice(0,10);
+  // Try to parse MM/DD/YYYY or similar
+  const parts=s.match(/(\d+)[\/\-](\d+)[\/\-](\d+)/);
+  if(parts){
+    const[,a,b,c]=parts;
+    if(c.length===4)return`${c}-${a.padStart(2,'0')}-${b.padStart(2,'0')}`;
+    if(a.length===4)return`${a}-${b.padStart(2,'0')}-${c.padStart(2,'0')}`;
+  }
+  return null;
+}
+
+</script>
+</body>
+</html>
