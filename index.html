@@ -185,6 +185,12 @@ tr:hover td{background:var(--surface2)}
 .template-note{background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.2);padding:12px;margin-bottom:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.6}
 .template-note strong{color:var(--blue)}
 
+
+.rounds-scroll{max-height:460px;overflow-y:auto}
+.rounds-scroll::-webkit-scrollbar{width:5px}
+.rounds-scroll::-webkit-scrollbar-track{background:var(--surface2)}
+.rounds-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+.rounds-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
 </style>
 </head>
 <body>
@@ -305,10 +311,11 @@ tr:hover td{background:var(--surface2)}
   <header>
     <div class="app-logo">Tour Intelligence</div>
     <nav>
-      <button class="nav-btn active" onclick="showSection('dashboard',this)">Overview</button>
+      <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
       <button class="nav-btn" onclick="showSection('approach',this)">Approach</button>
+      <button class="nav-btn" onclick="showSection('dispersion',this)">Shot Dispersion</button>
       <button class="nav-btn" onclick="showSection('putting',this)">Putting</button>
       <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
       <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
@@ -333,7 +340,7 @@ tr:hover td{background:var(--surface2)}
           <div class="card-title">Recent Rounds</div>
           <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)" id="rounds-count"></div>
         </div>
-        <div style="overflow-x:auto">
+        <div class="rounds-scroll" style="overflow-x:auto">
           <table>
             <thead><tr>
               <th>Date &amp; Course</th><th>Score</th><th>+/-</th><th>Birdie+</th><th>Bogey+</th>
@@ -415,12 +422,26 @@ tr:hover td{background:var(--surface2)}
       <div class="chart-grid">
         <div class="chart-card chart-full">
           <div class="chart-title">Driver Distance — Rolling Average</div>
-          <div class="rolling-controls">
-            <button class="roll-btn active" onclick="setDrRolling(4,this)">4 Rounds</button>
-            <button class="roll-btn" onclick="setDrRolling(6,this)">6 Rounds</button>
-            <button class="roll-btn" onclick="setDrRolling(8,this)">8 Rounds</button>
+          <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:flex-end">
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Rolling Window</div>
+              <div class="rolling-controls" style="margin-bottom:0">
+                <button class="roll-btn active" onclick="setDrRolling(4,this)">4 Rounds</button>
+                <button class="roll-btn" onclick="setDrRolling(6,this)">6 Rounds</button>
+                <button class="roll-btn" onclick="setDrRolling(8,this)">8 Rounds</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Tee Club</div>
+              <div class="rolling-controls" id="tee-club-btns" style="margin-bottom:0">
+                <button class="roll-btn active" onclick="setDrClub('Dr',this)">Driver</button>
+                <button class="roll-btn" onclick="setDrClub('3w',this)">3-Wood</button>
+                <button class="roll-btn" onclick="setDrClub('5w',this)">5-Wood</button>
+                <button class="roll-btn" onclick="setDrClub('3h',this)">3-Hybrid</button>
+              </div>
+            </div>
           </div>
-          <canvas id="chart-driver-rolling" height="110"></canvas>
+          <div id="dr-rolling-wrap"><canvas id="chart-driver-rolling" height="110"></canvas></div>
         </div>
       </div>
     </div>
@@ -577,6 +598,50 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+
+    <!-- SHOT DISPERSION -->
+    <div class="section" id="section-dispersion">
+      <div class="section-header">
+        <div class="section-title">Shot <span>Dispersion</span></div>
+        <div class="section-meta">Approach shot scatter — bivariate confidence ellipses by club category</div>
+      </div>
+      <div class="chart-card chart-full" style="margin-bottom:24px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+          <div>
+            <div class="chart-title" style="margin-bottom:6px">Approach Shot Dispersion</div>
+            <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);line-height:1.8">
+              ← Left &nbsp;|&nbsp; Right → &nbsp;&nbsp;&nbsp; ↑ Long &nbsp;|&nbsp; Short ↓<br>
+              ✕ = Pin Location (target) &nbsp;&nbsp; Ellipses = shot dispersion
+            </div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:10px;align-items:flex-end">
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;text-align:right">Club Category</div>
+              <div class="rolling-controls" id="disp-cat-btns" style="margin-bottom:0;flex-wrap:wrap;justify-content:flex-end">
+                <button class="roll-btn active" onclick="setDispCat('All',this)">All Clubs</button>
+                <button class="roll-btn" onclick="setDispCat('Mid Iron',this)">Mid Iron</button>
+                <button class="roll-btn" onclick="setDispCat('Short Iron',this)">Short Iron</button>
+                <button class="roll-btn" onclick="setDispCat('Wedge',this)">Wedge</button>
+                <button class="roll-btn" onclick="setDispCat('Wood',this)">Wood</button>
+                <button class="roll-btn" onclick="setDispCat('Long Iron',this)">Long Iron</button>
+              </div>
+            </div>
+            <div>
+              <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;text-align:right">Confidence Interval</div>
+              <div class="rolling-controls" id="disp-ci-btns" style="margin-bottom:0">
+                <button class="roll-btn active" onclick="setDispCI(0.50,this)">50% CI</button>
+                <button class="roll-btn" onclick="setDispCI(0.75,this)">75% CI</button>
+                <button class="roll-btn" onclick="setDispCI(0.95,this)">95% CI</button>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div style="position:relative">
+          <canvas id="chart-dispersion" height="440"></canvas>
+        </div>
+      </div>
+      <div class="stats-grid" id="disp-stats"></div>
+    </div>
   </main>
 </div>
 
@@ -673,7 +738,9 @@ const PLAYERS = {
       {date:"2025-10-18",warmup:"Below Average",sleep:"Below Average",score:78},
       {date:"2025-10-19",warmup:"Average",sleep:"Average",score:77}
     ],
-    par_scoring:{"3":0.46,"4":0.49,"5":0.16}
+    par_scoring:{"3":0.46,"4":0.49,"5":0.16},
+    proximity:27.3,
+    approach_shots:[{"x": -12.5, "y": -21.5, "cat": "Mid Iron", "club": "5i"}, {"x": -14.4, "y": -15.9, "cat": "Mid Iron", "club": "6i"}, {"x": 21.5, "y": -35.6, "cat": "Mid Iron", "club": "7i"}, {"x": -4.4, "y": -45.5, "cat": "Mid Iron", "club": "8i"}, {"x": 33.1, "y": -9.8, "cat": "Mid Iron", "club": "5i"}, {"x": -27.5, "y": -21.1, "cat": "Mid Iron", "club": "6i"}, {"x": 10.3, "y": -26.1, "cat": "Mid Iron", "club": "7i"}, {"x": -28.2, "y": -22.0, "cat": "Mid Iron", "club": "8i"}, {"x": -8.4, "y": 18.9, "cat": "Mid Iron", "club": "5i"}, {"x": 11.5, "y": 1.8, "cat": "Mid Iron", "club": "6i"}, {"x": -5.3, "y": -1.7, "cat": "Mid Iron", "club": "7i"}, {"x": -8.9, "y": -72.7, "cat": "Mid Iron", "club": "8i"}, {"x": -9.9, "y": 13.1, "cat": "Mid Iron", "club": "5i"}, {"x": -6.8, "y": -11.9, "cat": "Mid Iron", "club": "6i"}, {"x": -39.9, "y": -16.1, "cat": "Mid Iron", "club": "7i"}, {"x": -23.8, "y": -9.3, "cat": "Mid Iron", "club": "8i"}, {"x": 5.9, "y": -6.3, "cat": "Mid Iron", "club": "5i"}, {"x": 5.6, "y": -0.4, "cat": "Mid Iron", "club": "6i"}, {"x": -20.6, "y": -51.2, "cat": "Mid Iron", "club": "7i"}, {"x": -5.2, "y": -26.0, "cat": "Mid Iron", "club": "8i"}, {"x": -40.1, "y": -39.3, "cat": "Mid Iron", "club": "5i"}, {"x": -6.8, "y": -55.4, "cat": "Mid Iron", "club": "6i"}, {"x": -18.0, "y": -10.5, "cat": "Mid Iron", "club": "7i"}, {"x": -0.8, "y": -39.9, "cat": "Mid Iron", "club": "8i"}, {"x": -11.3, "y": 16.8, "cat": "Mid Iron", "club": "5i"}, {"x": -23.6, "y": -14.1, "cat": "Mid Iron", "club": "6i"}, {"x": -10.4, "y": 0.2, "cat": "Mid Iron", "club": "7i"}, {"x": 17.5, "y": -44.4, "cat": "Mid Iron", "club": "8i"}, {"x": 10.1, "y": -75.4, "cat": "Mid Iron", "club": "5i"}, {"x": 0.5, "y": -7.0, "cat": "Mid Iron", "club": "6i"}, {"x": -24.2, "y": 9.3, "cat": "Mid Iron", "club": "7i"}, {"x": 0.1, "y": -51.1, "cat": "Mid Iron", "club": "8i"}, {"x": 17.2, "y": 42.1, "cat": "Mid Iron", "club": "5i"}, {"x": -21.1, "y": -17.2, "cat": "Mid Iron", "club": "6i"}, {"x": -1.1, "y": 7.8, "cat": "Mid Iron", "club": "7i"}, {"x": -9.0, "y": -55.5, "cat": "Mid Iron", "club": "8i"}, {"x": 5.9, "y": -16.6, "cat": "Mid Iron", "club": "5i"}, {"x": -8.5, "y": -62.9, "cat": "Mid Iron", "club": "6i"}, {"x": 2.9, "y": 1.7, "cat": "Mid Iron", "club": "7i"}, {"x": -8.9, "y": -5.4, "cat": "Short Iron", "club": "9i"}, {"x": -18.7, "y": -2.0, "cat": "Short Iron", "club": "PW"}, {"x": -15.8, "y": 13.2, "cat": "Short Iron", "club": "9i"}, {"x": -10.4, "y": 15.3, "cat": "Short Iron", "club": "PW"}, {"x": -15.1, "y": 9.8, "cat": "Short Iron", "club": "9i"}, {"x": -6.8, "y": -11.9, "cat": "Short Iron", "club": "PW"}, {"x": 10.3, "y": 12.0, "cat": "Short Iron", "club": "9i"}, {"x": 6.8, "y": 9.0, "cat": "Short Iron", "club": "PW"}, {"x": -12.6, "y": -15.9, "cat": "Short Iron", "club": "9i"}, {"x": -15.6, "y": 1.4, "cat": "Short Iron", "club": "PW"}, {"x": -23.5, "y": -21.0, "cat": "Short Iron", "club": "9i"}, {"x": -0.9, "y": -23.5, "cat": "Short Iron", "club": "PW"}, {"x": -3.4, "y": 6.7, "cat": "Short Iron", "club": "9i"}, {"x": 0.7, "y": 5.9, "cat": "Short Iron", "club": "PW"}, {"x": -13.9, "y": -17.7, "cat": "Short Iron", "club": "9i"}, {"x": -7.3, "y": -0.4, "cat": "Wedge", "club": "50 Deg"}, {"x": -13.6, "y": 2.1, "cat": "Wedge", "club": "54 Deg"}, {"x": 8.5, "y": 20.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 15.5, "y": -7.0, "cat": "Wedge", "club": "54 Deg"}, {"x": 6.1, "y": -11.6, "cat": "Wedge", "club": "50 Deg"}, {"x": -0.5, "y": 11.4, "cat": "Wedge", "club": "54 Deg"}, {"x": 10.9, "y": 10.2, "cat": "Wedge", "club": "50 Deg"}, {"x": 18.5, "y": -3.1, "cat": "Wedge", "club": "54 Deg"}, {"x": -1.9, "y": 9.0, "cat": "Wedge", "club": "50 Deg"}, {"x": 4.3, "y": 3.0, "cat": "Wedge", "club": "54 Deg"}, {"x": 1.1, "y": -24.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 21.0, "y": -2.8, "cat": "Wedge", "club": "54 Deg"}, {"x": -5.2, "y": 4.7, "cat": "Wedge", "club": "50 Deg"}, {"x": -3.5, "y": 7.4, "cat": "Wedge", "club": "54 Deg"}, {"x": 9.2, "y": -11.2, "cat": "Wedge", "club": "50 Deg"}, {"x": -12.0, "y": -6.9, "cat": "Wedge", "club": "54 Deg"}, {"x": -3.6, "y": 2.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 6.5, "y": -0.1, "cat": "Wedge", "club": "54 Deg"}, {"x": -3.8, "y": 30.3, "cat": "Wedge", "club": "50 Deg"}, {"x": -3.2, "y": -9.9, "cat": "Wedge", "club": "54 Deg"}, {"x": -32.5, "y": -126.0, "cat": "Wood", "club": "3w"}, {"x": -17.3, "y": -119.3, "cat": "Wood", "club": "3w"}, {"x": -9.3, "y": -25.8, "cat": "Wood", "club": "3w"}, {"x": -12.3, "y": -71.4, "cat": "Wood", "club": "3w"}, {"x": -26.2, "y": -4.9, "cat": "Wood", "club": "3w"}, {"x": 35.3, "y": -46.0, "cat": "Long Iron", "club": "3i"}, {"x": 64.2, "y": -25.2, "cat": "Long Iron", "club": "4i"}, {"x": 35.3, "y": -78.9, "cat": "Long Iron", "club": "3i"}, {"x": 20.1, "y": -53.9, "cat": "Long Iron", "club": "4i"}]
   },
   demo_player:{
     name:'Demo Player',pin:'5678',
@@ -755,18 +822,18 @@ const FONT={family:'DM Mono',size:10};
 
 function bOpts(yT=''){return{responsive:true,plugins:{legend:{display:false},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}},scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},title:{display:!!yT,text:yT,color:C.txt,font:FONT}}}}}
 
-function mkChart(id,type,data,opts){
+function mkChart(id,type,data,opts,plugins){
   if(charts[id]){try{charts[id].destroy()}catch(e){}}
   const el=document.getElementById(id);
   if(!el)return null;
-  charts[id]=new Chart(el.getContext('2d'),{type,data,options:opts||bOpts()});
+  charts[id]=new Chart(el.getContext('2d'),{type,data,options:opts||bOpts(),plugins:plugins||[]});
   return charts[id];
 }
 
 // ===== INIT =====
 function initApp(){
   buildDashboard();buildScoring();buildTee();buildApproach();
-  buildPutting();buildBirdiesBogeys();buildTigerFive();buildBadGood();
+  buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();buildBadGood();
 }
 
 // ===== DASHBOARD =====
@@ -776,36 +843,52 @@ function buildDashboard(){
   const scores=r.map(x=>x.score),pm=r.map(x=>x.plus_minus);
   const gir=r.filter(x=>x.gir_pct>0).map(x=>x.gir_pct);
   const scram=r.filter(x=>x.scrambling!=null).map(x=>x.scrambling);
-  const puttsR=r.filter(x=>x.putts).map(x=>x.putts);
   const fw=r.filter(x=>x.fw_pct!=null).map(x=>x.fw_pct);
   const a_score=avg(scores),a_pm=avg(pm),best=Math.min(...scores);
-  const a_gir=avg(gir),a_scram=avg(scram),a_putts=avg(puttsR),a_fw=avg(fw);
+  const a_gir=avg(gir),a_scram=avg(scram),a_fw=avg(fw);
   const a_birds=avg(r.map(x=>x.birdies)),a_bogs=avg(r.map(x=>x.bogeys));
   const one_p=r.filter(x=>x.one_putts!=null).map(x=>x.one_putts);
   const three_p=r.filter(x=>x.three_putts!=null).map(x=>x.three_putts);
   const a_1p=avg(one_p),a_3p=avg(three_p);
+  const a_dr=avg(r.filter(x=>x.driver_dist).map(x=>x.driver_dist));
+  const prox=currentPlayer.proximity||null;
+  const cats=currentPlayer.approach_cats||{};
+  let totSh=0,totLR=0,totSL=0;
+  for(const d of Object.values(cats)){if(d.shots&&d.lr_miss!=null){totSh+=d.shots;totLR+=d.lr_miss*d.shots;totSL+=d.sl_miss*d.shots;}}
+  const avgLR=totSh>0?totLR/totSh:null;
+  const avgSL=totSh>0?totSL/totSh:null;
 
-  document.getElementById('dash-meta').textContent=`${r.length} rounds tracked — all-time career statistics`;
+  document.getElementById('dash-meta').textContent=`${r.length} rounds tracked`;
   document.getElementById('rounds-count').textContent=`${r.length} total rounds`;
 
   const girTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>GIR % Calculation</strong><br><br>A green is hit "in regulation" when the ball is on the putting surface in (par − 2) strokes.<br><br>• Par 3: on the green in 1<br>• Par 4: on the green in 2<br>• Par 5: on the green in 3<br><br>GIR % = (GIRs ÷ 18) × 100</span></span>`;
   const scramTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Scrambling % Calculation</strong><br><br>The % of holes where you missed the green in regulation but still made par or better.<br><br>Scrambling % = (Pars-or-better after missed GIR ÷ total missed GIRs) × 100<br><br>A high % means strong short-game rescue ability.</span></span>`;
+  const proxTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Proximity to Hole</strong><br><br>Average distance of your 1st putt on holes where you hit the green in regulation (GIR).<br><br>Lower is better — it means your approach shots are finishing closer to the pin.<br><br>PGA Tour average: ~22 ft</span></span>`;
+  const lrTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Left/Right Miss</strong><br><br>Weighted average of approach shot Left/Right miss across all club categories.<br><br>Negative = left of target, Positive = right of target.</span></span>`;
+  const slTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Short/Long Miss</strong><br><br>Weighted average of approach shot Short/Long miss across all club categories.<br><br>Negative = short of target, Positive = long of target.</span></span>`;
+
+  const lrDir=avgLR==null?'—':avgLR<0?`${Math.abs(avgLR).toFixed(1)}ft Left`:`${avgLR.toFixed(1)}ft Right`;
+  const slDir=avgSL==null?'—':avgSL<0?`${Math.abs(avgSL).toFixed(1)}ft Short`:`${avgSL.toFixed(1)}ft Long`;
+  const lrCls=avgLR!=null&&Math.abs(avgLR)<=8?'stat-good':'stat-neutral';
+  const slCls=avgSL!=null&&Math.abs(avgSL)<=10?'stat-good':'stat-neutral';
 
   document.getElementById('career-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${fmt(a_score,1)}</div><div class="stat-sub">${fmtPM(Math.round((a_pm||0)*10)/10)} avg to par</div></div>
-    <div class="stat-card"><div class="stat-label">Best Round</div><div class="stat-value stat-good">${best}</div><div class="stat-sub">career low</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value">${fmt(a_gir,1)}%</div><div class="stat-sub">greens in regulation</div></div>
-    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">accuracy off tee</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value">${fmt(a_scram,1)}%</div><div class="stat-sub">up &amp; down after miss</div></div>
-    <div class="stat-card"><div class="stat-label">Putts / Rnd</div><div class="stat-value">${fmt(a_putts,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">est. from putt data</div></div>
-    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">est. from putt data</div></div>
+    <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${fmt(a_score,1)}</div><div class="stat-sub">${fmtPM(+(a_pm||0).toFixed(1))} avg to par</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value">${fmt(a_gir,1)}%</div><div class="stat-sub">Goal: 67%</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value">${fmt(a_scram,1)}%</div><div class="stat-sub">Goal: 50%</div></div>
     <div class="stat-card"><div class="stat-label">Birdies+ / Rnd</div><div class="stat-value stat-good">${fmt(a_birds,1)}</div></div>
     <div class="stat-card"><div class="stat-label">Bogeys+ / Rnd</div><div class="stat-value stat-bad">${fmt(a_bogs,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div></div>
+    <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr only)</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Proximity ${proxTT}</div><div class="stat-value ${prox&&prox<=25?'stat-good':'stat-neutral'}">${prox?prox.toFixed(1)+'ft':'—'}</div><div class="stat-sub">avg on GIR holes</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Avg L/R Miss ${lrTT}</div><div class="stat-value ${lrCls}" style="font-size:22px;padding-top:8px">${lrDir}</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Avg S/L Miss ${slTT}</div><div class="stat-value ${slCls}" style="font-size:22px;padding-top:8px">${slDir}</div></div>
   `;
 
-  const recent=[...r].sort((a,b)=>b.date.localeCompare(a.date)).slice(0,12);
-  document.getElementById('rounds-tbody').innerHTML=recent.map(rnd=>{
+  const allRnds=[...r].sort((a,b)=>b.date.localeCompare(a.date));
+  document.getElementById('rounds-tbody').innerHTML=allRnds.map(rnd=>{
     const pc=rnd.plus_minus<=4?'val-green':rnd.plus_minus>=10?'val-red':'val-amber';
     return`<tr>
       <td>${rnd.date.slice(5)} — ${rnd.course}</td>
@@ -817,19 +900,56 @@ function buildDashboard(){
     </tr>`;
   }).join('');
 
+  // Scoring history with trend line
+  const scores_s=s.map(x=>x.score);
+  const n_s=scores_s.length;
+  const xs=scores_s.map((_,i)=>i);
+  const sumX=xs.reduce((a,b)=>a+b,0),sumY=scores_s.reduce((a,b)=>a+b,0);
+  const sumXY=xs.reduce((s,x,i)=>s+x*scores_s[i],0),sumX2=xs.reduce((s,x)=>s+x*x,0);
+  const m=(n_s*sumXY-sumX*sumY)/(n_s*sumX2-sumX*sumX||1);
+  const b_reg=(sumY-m*sumX)/n_s;
+  const trend=xs.map(x=>Math.round((m*x+b_reg)*10)/10);
+
   mkChart('chart-score-history','line',{
     labels:s.map(x=>x.date.slice(5,10)),
-    datasets:[{data:s.map(x=>x.score),borderColor:C.green,backgroundColor:C.gfill,
-      pointBackgroundColor:s.map(x=>x.plus_minus<=4?C.green:x.plus_minus>=10?C.red:C.amber),
-      pointRadius:4,tension:0.3,fill:true}]
-  },{...bOpts('Score'),plugins:{...bOpts().plugins}});
+    datasets:[
+      {label:'Score',data:scores_s,borderColor:C.green,backgroundColor:C.gfill,
+        pointBackgroundColor:s.map(x=>x.plus_minus<=4?C.green:x.plus_minus>=10?C.red:C.amber),
+        pointRadius:4,tension:0.3,fill:true,order:2},
+      {label:'Trend',data:trend,borderColor:'rgba(96,165,250,0.7)',backgroundColor:'transparent',
+        pointRadius:0,borderWidth:2,borderDash:[6,4],tension:0,order:1}
+    ]
+  },{
+    ...bOpts('Score'),
+    scales:{
+      x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+      y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+         min:Math.min(...scores_s)-4,max:Math.max(...scores_s)+4}
+    },
+    plugins:{
+      legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20,filter:i=>i.text!=='Score'||true}},
+      tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}
+    }
+  });
 
+  // Score distribution with % labels inside bars
   const bins={'-2 to 0':0,'1-3':0,'4-6':0,'7-9':0,'10-12':0,'13+':0};
   r.forEach(x=>{const p=x.plus_minus;if(p<=0)bins['-2 to 0']++;else if(p<=3)bins['1-3']++;else if(p<=6)bins['4-6']++;else if(p<=9)bins['7-9']++;else if(p<=12)bins['10-12']++;else bins['13+']++});
+  const binVals=Object.values(bins),binTotal=binVals.reduce((a,b)=>a+b,0);
+  const pctLabelPlugin={id:'pctLabels',afterDatasetsDraw(chart){
+    const ctx=chart.ctx,ds=chart.data.datasets[0];
+    chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+      const v=ds.data[i];if(!v)return;
+      const pct=Math.round(v/binTotal*100);
+      ctx.save();ctx.fillStyle='#0a0f0a';ctx.font='bold 11px DM Mono';
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(pct+'%',bar.x,bar.y+5);ctx.restore();
+    });
+  }};
   mkChart('chart-score-dist','bar',{
     labels:Object.keys(bins),
-    datasets:[{data:Object.values(bins),backgroundColor:['#4ade80','#86efac','#fbbf24','#fb923c','#f87171','#dc2626'],borderWidth:0}]
-  },{...bOpts('# Rounds')});
+    datasets:[{data:binVals,backgroundColor:['#4ade80','#86efac','#fbbf24','#fb923c','#f87171','#dc2626'],borderWidth:0}]
+  },{...bOpts('# Rounds'),plugins:{...bOpts().plugins,pctLabels:pctLabelPlugin}},[pctLabelPlugin]);
 }
 
 // ===== SCORING TRENDS =====
@@ -855,6 +975,7 @@ function buildRollingChart(s,w){
   if(charts['chart-rolling']){try{charts['chart-rolling'].destroy()}catch(e){}}
   const el=document.getElementById('chart-rolling');
   if(!el)return;
+  const sMin=Math.min(...scores)-3,sMax=Math.max(...scores)+3;
   charts['chart-rolling']=new Chart(el.getContext('2d'),{
     type:'bar',
     data:{labels:s.map(x=>x.date.slice(5,10)),datasets:[
@@ -866,7 +987,14 @@ function buildRollingChart(s,w){
         borderColor:C.blue,backgroundColor:'transparent',
         borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
     ]},
-    options:{...bOpts('Score'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+    options:{
+      ...bOpts('Score'),
+      scales:{
+        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:sMin,max:sMax}
+      },
+      plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}
+    }
   });
 }
 function setRolling(w,btn){
@@ -877,6 +1005,7 @@ function setRolling(w,btn){
 }
 
 // ===== OFF THE TEE =====
+let teeDrClub='Dr';
 function buildTee(){
   const r=currentPlayer.rounds;
   const s=sorted();
@@ -884,27 +1013,28 @@ function buildTee(){
   const a_dr=avg(dr.map(x=>x.driver_dist)),a_fw=avg(fw.map(x=>x.fw_pct));
   const max_dr=dr.length?Math.max(...dr.map(x=>x.driver_dist)):0;
   document.getElementById('tee-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards</div></div>
+    <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr)</div></div>
     <div class="stat-card"><div class="stat-label">Max Drive</div><div class="stat-value stat-good">${max_dr||'—'}</div><div class="stat-sub">career best</div></div>
-    <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">avg accuracy</div></div>
-    <div class="stat-card"><div class="stat-label">Goal: FW%</div><div class="stat-value ${(a_fw||0)>=62?'stat-good':'stat-bad'}">${(a_fw||0)>=62?'ON TRACK':'BELOW'}</div><div class="stat-sub">Target ≥ 62%</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
   `;
   const sdr=s.filter(x=>x.driver_dist);
+  const drMin=sdr.length?Math.min(...sdr.map(x=>x.driver_dist))-8:220;
+  const drMax=sdr.length?Math.max(...sdr.map(x=>x.driver_dist))+8:280;
   mkChart('chart-driver-dist','bar',{
     labels:sdr.map(x=>x.date.slice(5,10)),
     datasets:[{data:sdr.map(x=>x.driver_dist),
       backgroundColor:sdr.map(x=>x.driver_dist>=270?C.gd:x.driver_dist<250?C.rd:C.ad),
       borderColor:sdr.map(x=>x.driver_dist>=270?C.green:x.driver_dist<250?C.red:C.amber),borderWidth:1}]
-  },{...bOpts('Yards')});
+  },{...bOpts('Yards'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:drMin,max:drMax}}});
   const sfw=s.filter(x=>x.fw_pct!=null);
   mkChart('chart-fw-pct','line',{
     labels:sfw.map(x=>x.date.slice(5,10)),
     datasets:[{data:sfw.map(x=>x.fw_pct),borderColor:C.amber,backgroundColor:C.ad.replace('0.4','0.07'),
-      pointBackgroundColor:sfw.map(x=>x.fw_pct>=62?C.green:C.red),pointRadius:5,tension:0.3,fill:true}]
+      pointBackgroundColor:sfw.map(x=>x.fw_pct>=70?C.green:C.red),pointRadius:5,tension:0.3,fill:true}]
   },{...bOpts('%')});
-  const hit=fw.filter(x=>x.fw_pct>=62).length,miss=fw.filter(x=>x.fw_pct<62).length;
+  const hit=fw.filter(x=>x.fw_pct>=70).length,miss=fw.filter(x=>x.fw_pct<70).length;
   mkChart('chart-miss-dir','doughnut',{
-    labels:['Fairway Hit (≥62%)','Missed (<62%)'],
+    labels:['Fairway Hit (≥70%)','Missed (<70%)'],
     datasets:[{data:[hit,miss],backgroundColor:['rgba(74,222,128,0.7)','rgba(248,113,113,0.6)'],borderColor:['#4ade80','#f87171'],borderWidth:2}]
   },{responsive:true,plugins:{legend:{labels:{color:C.txt,font:FONT}},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}}});
   const dists=dr.map(x=>x.driver_dist);
@@ -914,26 +1044,75 @@ function buildTee(){
     labels:Object.keys(db),
     datasets:[{data:Object.values(db),backgroundColor:C.gd,borderColor:C.green,borderWidth:1}]
   },{...bOpts('# Rounds')});
-  buildDrRollingChart(sdr,drRollingWindow);
+  buildDrRollingChart(sdr,drRollingWindow,teeDrClub);
 }
-function buildDrRollingChart(sdr,w){
-  const vals=sdr.map(x=>x.driver_dist),ra=rollingAvg(vals,w);
-  if(charts['chart-driver-rolling']){try{charts['chart-driver-rolling'].destroy()}catch(e){}}
-  const el=document.getElementById('chart-driver-rolling');if(!el)return;
+function buildDrRollingChart(sdr,w,club){
+  club=club||'Dr';
+  const wrap=document.getElementById('dr-rolling-wrap');
+  if(!wrap)return;
+
+  // Destroy existing chart before touching DOM
+  if(charts['chart-driver-rolling']){
+    try{charts['chart-driver-rolling'].destroy();}catch(e){}
+    delete charts['chart-driver-rolling'];
+  }
+
+  // Always rebuild canvas fresh so element is never stale
+  wrap.innerHTML='<canvas id="chart-driver-rolling" height="110"></canvas>';
+  const el=document.getElementById('chart-driver-rolling');
+
+  // For non-Dr clubs we don't have per-round distance data in built-in dataset
+  const vals=club==='Dr'
+    ? sdr.map(x=>x.driver_dist)
+    : sdr.map(x=>x['dist_'+club.replace('-','').replace(' ','_')]||null);
+  const validIdx=vals.reduce((a,v,i)=>v!=null?[...a,i]:a,[]);
+  const validSdr=validIdx.map(i=>sdr[i]);
+  const validVals=validIdx.map(i=>vals[i]);
+
+  if(validVals.length<2){
+    wrap.innerHTML=`<div class="empty-state" style="padding:32px;text-align:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)">${club} distance not tracked in current data — distance data is available for Driver only. Upload data with per-club tee distances to unlock other clubs.</div>`;
+    return;
+  }
+
+  const ra=rollingAvg(validVals,w);
+  const vMin=Math.min(...validVals)-10,vMax=Math.max(...validVals)+10;
   charts['chart-driver-rolling']=new Chart(el.getContext('2d'),{
     type:'bar',
-    data:{labels:sdr.map(x=>x.date.slice(5,10)),datasets:[
-      {type:'bar',label:'Distance (yds)',data:vals,backgroundColor:C.gd,borderColor:C.green,borderWidth:1,order:2},
-      {type:'line',label:`${w}-Rnd Avg`,data:ra,borderColor:C.blue,backgroundColor:'transparent',borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
-    ]},
-    options:{...bOpts('Yards'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+    data:{
+      labels:validSdr.map(x=>x.date.slice(5,10)),
+      datasets:[
+        {type:'bar',label:club+' Distance (yds)',data:validVals,
+          backgroundColor:C.gd,borderColor:C.green,borderWidth:1,order:2},
+        {type:'line',label:`${w}-Rnd Rolling Avg`,data:ra,
+          borderColor:C.blue,backgroundColor:'transparent',
+          borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}
+      },
+      scales:{
+        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:vMin,max:vMax}
+      }
+    }
   });
 }
 function setDrRolling(w,btn){
   drRollingWindow=w;
-  document.querySelectorAll('#section-tee .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  // deactivate only the sibling buttons in the same controls div
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
-  buildDrRollingChart(sorted().filter(x=>x.driver_dist),w);
+  buildDrRollingChart(sorted().filter(x=>x.driver_dist),drRollingWindow,teeDrClub);
+}
+function setDrClub(club,btn){
+  teeDrClub=club;
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildDrRollingChart(sorted().filter(x=>x.driver_dist),drRollingWindow,club);
 }
 
 // ===== APPROACH =====
@@ -1640,6 +1819,18 @@ async function processFile(){
       date:r.date,warmup:r.warmup,sleep:r.sleep,score:r.score
     }));
 
+    // Collect individual approach shots for dispersion chart
+    const approach_shots=[];
+    for(const[key,rd]of Object.entries(roundMap)){
+      for(const h of rd.holes){
+        if(!h.apprClub||h.apprClub===''||h.apprClub==='null')continue;
+        if(h.apprLR==null&&h.apprSL==null)continue;
+        const rawC=h.apprClub.trim().toLowerCase();
+        const cat2=catMap[rawC]||'Other';
+        approach_shots.push({x:h.apprLR||0,y:h.apprSL||0,cat:cat2,club:h.apprClub.trim()});
+      }
+    }
+    addLog('✓ Collected '+approach_shots.length+' individual approach shots','ok');
     setProgress(98,'Registering player...');
 
     const playerData={
@@ -1657,6 +1848,7 @@ async function processFile(){
     }catch(e){addLog('⚠ Could not save to localStorage — data will persist for this session only','warn')}
 
     // Also add to in-memory PLAYERS
+    playerData.approach_shots=approach_shots;
     PLAYERS[uploadProfile.id]=playerData;
     // Rebuild login dropdown
     rebuildLoginDropdown();
@@ -1744,6 +1936,163 @@ function formatDate(d){
     if(a.length===4)return`${a}-${b.padStart(2,'0')}-${c.padStart(2,'0')}`;
   }
   return null;
+}
+
+
+// ===== SHOT DISPERSION =====
+let dispCat='All', dispCI=0.50;
+const CAT_COL={
+  'Mid Iron':{pt:'rgba(96,165,250,0.75)',el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'},
+  'Short Iron':{pt:'rgba(74,222,128,0.75)',el:'rgba(74,222,128,0.8)',fill:'rgba(74,222,128,0.12)'},
+  'Wedge':{pt:'rgba(251,191,36,0.75)',el:'rgba(251,191,36,0.8)',fill:'rgba(251,191,36,0.12)'},
+  'Wood':{pt:'rgba(248,113,113,0.75)',el:'rgba(248,113,113,0.8)',fill:'rgba(248,113,113,0.12)'},
+  'Long Iron':{pt:'rgba(167,139,250,0.75)',el:'rgba(167,139,250,0.8)',fill:'rgba(167,139,250,0.12)'},
+  'Hybrid':{pt:'rgba(251,146,60,0.75)',el:'rgba(251,146,60,0.8)',fill:'rgba(251,146,60,0.12)'},
+};
+const CHI2={0.50:1.3863,0.75:2.7726,0.95:5.9915};
+
+function setDispCat(cat,btn){
+  dispCat=cat;
+  document.querySelectorAll('#disp-cat-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildShotDispersion();
+}
+function setDispCI(ci,btn){
+  dispCI=ci;
+  document.querySelectorAll('#disp-ci-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildShotDispersion();
+}
+
+function computeEllipsePixels(pixPts,chiSqVal){
+  const n=pixPts.length;if(n<3)return null;
+  const mx=pixPts.reduce((s,p)=>s+p.x,0)/n,my=pixPts.reduce((s,p)=>s+p.y,0)/n;
+  let sxx=0,sxy=0,syy=0;
+  for(const p of pixPts){const dx=p.x-mx,dy=p.y-my;sxx+=dx*dx;sxy+=dx*dy;syy+=dy*dy}
+  sxx/=(n-1);sxy/=(n-1);syy/=(n-1);
+  const tr=sxx+syy,det=sxx*syy-sxy*sxy;
+  const disc=Math.sqrt(Math.max(0,tr*tr/4-det));
+  const lam1=tr/2+disc,lam2=tr/2-disc;
+  const angle=Math.abs(sxy)<1e-6?(sxx>=syy?0:Math.PI/2):Math.atan2(lam1-sxx,sxy);
+  const sc=Math.sqrt(chiSqVal);
+  return{cx:mx,cy:my,a:Math.sqrt(Math.max(0,lam1))*sc,b:Math.sqrt(Math.max(0,lam2))*sc,angle};
+}
+
+function buildShotDispersion(){
+  const shots=currentPlayer.approach_shots||[];
+  const el=document.getElementById('chart-dispersion');
+  if(!el)return;
+  if(shots.length===0){
+    el.parentElement.innerHTML=`<div class="empty-state">No individual approach shot data available.<br>Upload data from the Hole Level Data sheet to see shot dispersion.</div>`;
+    document.getElementById('disp-stats').innerHTML='';
+    return;
+  }
+
+  const filtered=dispCat==='All'?shots:shots.filter(s=>s.cat===dispCat);
+  const catNames=[...new Set(filtered.map(s=>s.cat))];
+
+  const datasets=catNames.map(cat=>{
+    const col=CAT_COL[cat]||{pt:'rgba(96,165,250,0.75)'};
+    return{
+      label:cat,
+      data:filtered.filter(s=>s.cat===cat).map(p=>({x:p.x,y:p.y,club:p.club})),
+      backgroundColor:col.pt,
+      pointRadius:4,pointHoverRadius:7,
+    };
+  });
+  // target marker
+  datasets.push({label:'_target',data:[{x:0,y:0}],backgroundColor:'rgba(255,255,255,0.95)',
+    pointRadius:10,pointStyle:'crossRot',pointBorderWidth:2.5,pointBorderColor:'rgba(255,255,255,0.95)'});
+
+  // ellipse plugin
+  const ellipsePlugin={
+    id:'ellipsePlugin',
+    afterDatasetsDraw(chart){
+      const ctx=chart.ctx,xs=chart.scales.x,ys=chart.scales.y;
+      const chiVal=CHI2[dispCI];
+      // zero axes
+      ctx.save();
+      ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1;ctx.setLineDash([5,5]);
+      const x0=xs.getPixelForValue(0),y0=ys.getPixelForValue(0);
+      ctx.beginPath();ctx.moveTo(xs.left,y0);ctx.lineTo(xs.right,y0);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(x0,ys.top);ctx.lineTo(x0,ys.bottom);ctx.stroke();
+      ctx.setLineDash([]);ctx.restore();
+      // draw ellipses per category
+      for(const ds of chart.data.datasets){
+        if(ds.label==='_target'||!ds.data.length)continue;
+        const cat=ds.label;
+        const col=CAT_COL[cat]||{el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'};
+        const pixPts=ds.data.map(p=>({x:xs.getPixelForValue(p.x),y:ys.getPixelForValue(p.y)}));
+        const ell=computeEllipsePixels(pixPts,chiVal);
+        if(!ell||ell.a<1||ell.b<1)continue;
+        ctx.save();
+        ctx.translate(ell.cx,ell.cy);ctx.rotate(ell.angle);
+        ctx.beginPath();ctx.ellipse(0,0,ell.a,ell.b,0,0,2*Math.PI);
+        ctx.fillStyle=col.fill;ctx.fill();
+        ctx.strokeStyle=col.el;ctx.lineWidth=2;ctx.setLineDash([5,4]);
+        ctx.stroke();
+        ctx.restore();
+        // draw mean crosshair
+        const meanX=pixPts.reduce((s,p)=>s+p.x,0)/pixPts.length;
+        const meanY=pixPts.reduce((s,p)=>s+p.y,0)/pixPts.length;
+        ctx.save();
+        ctx.strokeStyle=col.el;ctx.lineWidth=1.5;ctx.setLineDash([]);
+        const sz=6;
+        ctx.beginPath();ctx.moveTo(meanX-sz,meanY);ctx.lineTo(meanX+sz,meanY);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(meanX,meanY-sz);ctx.lineTo(meanX,meanY+sz);ctx.stroke();
+        ctx.restore();
+      }
+    }
+  };
+
+  const allX=filtered.map(p=>p.x),allY=filtered.map(p=>p.y);
+  const pad=1.4;
+  const xRange=Math.max(Math.abs(Math.min(...allX)),Math.abs(Math.max(...allX)),20)*pad;
+  const yRange=Math.max(Math.abs(Math.min(...allY)),Math.abs(Math.max(...allY)),20)*pad;
+  const axRange=Math.max(xRange,yRange);
+
+  if(charts['chart-dispersion']){try{charts['chart-dispersion'].destroy()}catch(e){}}
+  charts['chart-dispersion']=new Chart(el.getContext('2d'),{
+    type:'scatter',data:{datasets},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:10,filter:i=>i.text!=='_target'}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{title:ctx=>ctx[0].dataset.label,
+            label(ctx){const p=ctx.raw;
+              const lr=p.x===0&&p.y===0?'Pin (Target)':p.x>0?`${p.x.toFixed(1)}ft Right`:`${Math.abs(p.x).toFixed(1)}ft Left`;
+              const sl=p.x===0&&p.y===0?'':p.y>0?`${p.y.toFixed(1)}ft Long`:`${Math.abs(p.y).toFixed(1)}ft Short`;
+              return p.club?[p.club,lr,sl]:[lr,sl].filter(Boolean);
+            }}}
+      },
+      scales:{
+        x:{min:-axRange,max:axRange,grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           title:{display:true,text:'← Left   |   Right →   (feet)',color:C.txt,font:FONT}},
+        y:{min:-axRange,max:axRange,grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           title:{display:true,text:'Short ↓   |   ↑ Long   (feet)',color:C.txt,font:FONT}}
+      }
+    },
+    plugins:[ellipsePlugin]
+  });
+
+  // stats cards below
+  document.getElementById('disp-stats').innerHTML=catNames.map(cat=>{
+    const pts=filtered.filter(s=>s.cat===cat);
+    const lrA=pts.reduce((s,p)=>s+p.x,0)/pts.length;
+    const slA=pts.reduce((s,p)=>s+p.y,0)/pts.length;
+    const col=CAT_COL[cat];
+    const lrStr=lrA>0?`${lrA.toFixed(1)}ft Right`:`${Math.abs(lrA).toFixed(1)}ft Left`;
+    const slStr=slA>0?`${slA.toFixed(1)}ft Long`:`${Math.abs(slA).toFixed(1)}ft Short`;
+    return`<div class="stat-card" style="border-top-color:${col?col.el:'var(--blue)'}">
+      <div class="stat-label">${cat}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.8">
+        ${pts.length} shots<br>
+        L/R: <span style="color:var(--text)">${lrStr}</span><br>
+        S/L: <span style="color:var(--text)">${slStr}</span>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 </script>
