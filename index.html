@@ -43,8 +43,11 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 #app{display:none}
 header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;display:block}
 .app-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--blue);white-space:nowrap}
+/* Desktop nav */
 nav{display:flex;gap:2px;overflow-x:auto;background:var(--surface);border-top:1px solid var(--border)}
 nav::-webkit-scrollbar{display:none}
+/* Hamburger hidden on desktop */
+#hamburger-btn{display:none}
 .nav-btn{background:none;border:none;color:var(--text-dim);padding:8px 14px;font-family:'DM Mono',monospace;
   font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;
   transition:all 0.15s;border-bottom:2px solid transparent;position:relative}
@@ -163,9 +166,10 @@ tr:hover td{background:var(--surface2)}
   .hamburger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
 
   /* Mobile nav drawer */
-  nav{display:none;flex-direction:column;width:100%;background:var(--surface);
+  nav{display:none!important;flex-direction:column;width:100%;background:var(--surface);
     border-bottom:2px solid var(--blue);overflow-y:auto;max-height:60vh}
   nav.open{display:flex!important}
+  #hamburger-btn{display:flex!important}
   .nav-btn{text-align:left;padding:14px 20px;border-bottom:1px solid var(--border);
     font-size:13px;letter-spacing:0.5px;border-left:3px solid transparent;
     border-right:none;border-top:none;position:static;
@@ -320,6 +324,56 @@ tr:hover td{background:var(--surface2)}
 .def-term-body{font-size:13px;color:var(--text-dim);line-height:1.5}
 .def-term-formula{font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);background:var(--surface2);padding:4px 8px;margin-top:4px;border-left:2px solid var(--amber);display:inline-block}
 
+
+/* ── DATA ENTRY ── */
+.de-label{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;letter-spacing:1.5px;
+  text-transform:uppercase;color:var(--text-dim);margin-bottom:6px;display:block}
+.de-input{width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  padding:10px 14px;font-family:'DM Mono',monospace;font-size:13px;outline:none;transition:border-color 0.2s;
+  margin-bottom:4px}
+.de-input:focus{border-color:var(--blue)}
+.de-field{margin-bottom:14px}
+.de-section{background:var(--surface2);border:1px solid var(--border);padding:16px;margin-bottom:14px;
+  border-left:3px solid var(--blue)}
+.de-section-title{font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;
+  color:var(--blue);margin-bottom:12px}
+.de-btn-group{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:4px}
+.de-opt-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);
+  padding:7px 12px;font-family:'DM Mono',monospace;font-size:11px;cursor:pointer;
+  transition:all 0.15s;border-radius:2px}
+.de-opt-btn:hover{border-color:var(--blue);color:var(--text)}
+.de-opt-btn.active{background:var(--blue);color:#0a0f1a;border-color:var(--blue);font-weight:600}
+.de-num-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  width:40px;height:40px;font-size:20px;cursor:pointer;transition:all 0.15s;
+  display:flex;align-items:center;justify-content:center}
+.de-num-btn:hover{border-color:var(--blue);color:var(--blue)}
+.de-pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;max-width:180px}
+.de-pin-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);
+  padding:8px 4px;font-family:'DM Mono',monospace;font-size:10px;cursor:pointer;
+  text-align:center;transition:all 0.15s}
+.de-pin-btn:hover{border-color:var(--blue)}
+.de-pin-btn.active{background:var(--blue);color:#0a0f1a;border-color:var(--blue)}
+.de-toggle-btn{background:none;border:none;color:var(--text-dim);font-family:'DM Mono',monospace;
+  font-size:11px;cursor:pointer;padding:4px 0;transition:color 0.15s}
+.de-toggle-btn:hover{color:var(--blue)}
+.de-field-group{margin-bottom:14px}
+.de-field-group-title{font-family:'DM Mono',monospace;font-size:10px;font-weight:600;
+  letter-spacing:1px;text-transform:uppercase;color:var(--blue);margin-bottom:8px;
+  padding-bottom:4px;border-bottom:1px solid var(--border)}
+.de-field-check{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer}
+.de-field-check input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--blue)}
+.de-field-check-label{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)}
+.de-field-check.required .de-field-check-label{color:var(--text-dim)}
+.de-score-eagle{color:#f59e0b}.de-score-birdie{color:var(--green)}.de-score-par{color:var(--text)}
+.de-score-bogey{color:var(--amber)}.de-score-double{color:#fb923c}.de-score-bad{color:var(--red)}
+.de-sc-row{cursor:pointer}.de-sc-row:hover td{background:rgba(96,165,250,0.08)!important}
+.de-sc-edit{color:var(--blue);font-size:10px;font-family:'DM Mono',monospace}
+.de-hole-nav{display:flex;gap:8px;margin-top:16px}
+@media(max-width:600px){
+  .de-pin-grid{max-width:150px}
+  #de-entry>div[style*="grid-template-columns:1fr 320px"]{grid-template-columns:1fr!important}
+}
+
 </style>
 </head>
 <body>
@@ -440,21 +494,22 @@ tr:hover td{background:var(--surface2)}
   <header>
     <!-- Desktop top bar / Mobile top bar -->
     <div class="header-top" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 32px;height:60px">
-      <div class="app-logo">Tour Intelligence</div>
+      <div><div class="app-logo">Tour Intelligence</div><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:1px">Outsmart your competition</div></div>
       <div style="display:flex;align-items:center;gap:16px">
         <div class="header-right">
           <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
           <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
         </div>
         <!-- Hamburger — hidden on desktop via inline style, shown by mobile CSS -->
-        <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu" style="display:none">
+        <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu">
           <span></span><span></span><span></span>
         </button>
       </div>
     </div>
     <!-- Desktop nav (horizontal) — hidden on mobile, shown inline -->
-    <nav id="main-nav" style="display:flex;gap:2px;flex:1;overflow-x:auto;padding:0 16px">
+    <nav id="main-nav">
       <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
+      <button class="nav-btn" onclick="showSection('dataentry',this)">Data Entry</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
@@ -546,6 +601,177 @@ tr:hover td{background:var(--surface2)}
         <div class="section-meta">All metrics, calculations, and terminology used in Tour Intelligence</div>
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="def-grid"></div>
+    </div>
+
+
+    <!-- DATA ENTRY -->
+    <div class="section" id="section-dataentry">
+      <div class="section-header">
+        <div class="section-title">Data <span>Entry</span></div>
+        <div class="section-meta">Log your round hole by hole — saves directly into your analytics</div>
+      </div>
+
+      <!-- ── SETUP ── -->
+      <div id="de-setup">
+        <!-- Restore in-progress round banner -->
+        <div id="de-restore-banner" style="display:none;align-items:center;justify-content:space-between;background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.3);border-left:3px solid var(--blue);padding:14px 18px;margin-bottom:20px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;font-weight:600;color:var(--blue);letter-spacing:1px;text-transform:uppercase;margin-bottom:4px">In-Progress Round Found</div>
+            <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)" id="de-restore-info"></div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn-upload" onclick="deRestoreProgress()" style="font-size:13px;padding:8px 18px">Continue Round →</button>
+            <button class="roll-btn" onclick="deClearProgress()" style="color:var(--red);border-color:var(--red)">Discard</button>
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:900px">
+
+          <!-- Round Details -->
+          <div class="card">
+            <div class="card-header"><div class="card-title">Round Details</div></div>
+            <div style="padding:20px">
+              <div class="de-field">
+                <label class="de-label">Date</label>
+                <input type="date" id="de-date" class="de-input">
+              </div>
+              <div class="de-field">
+                <label class="de-label">Course</label>
+                <select id="de-course-select" class="de-input" onchange="deCourseSelectChange(this)" style="margin-bottom:6px">
+                  <option value="">— Select a course —</option>
+                </select>
+                <input type="text" id="de-course" class="de-input" placeholder="Or type a new course name…" autocomplete="off" style="display:none">
+                <div id="de-course-new-btn" style="display:none">
+                  <button class="roll-btn" onclick="deCourseBack()" style="font-size:10px;margin-top:4px">← Back to saved courses</button>
+                </div>
+              </div>
+              <div class="de-field">
+                <label class="de-label">Number of Holes</label>
+                <div class="de-btn-group" id="de-holes-grp">
+                  <button class="de-opt-btn active" onclick="deSetOpt(this,'de-holes-grp',18)">18 Holes</button>
+                  <button class="de-opt-btn" onclick="deSetOpt(this,'de-holes-grp',9)">9 Holes</button>
+                </div>
+              </div>
+              <div class="de-field">
+                <label class="de-label">Tees</label>
+                <div class="de-btn-group" id="de-tees-grp">
+                  <button class="de-opt-btn active" onclick="deSetOpt(this,'de-tees-grp','Blue')">Blue</button>
+                  <button class="de-opt-btn" onclick="deSetOpt(this,'de-tees-grp','White')">White</button>
+                  <button class="de-opt-btn" onclick="deSetOpt(this,'de-tees-grp','Black')">Black</button>
+                  <button class="de-opt-btn" onclick="deSetOpt(this,'de-tees-grp','Red')">Red</button>
+                  <button class="de-opt-btn" onclick="deSetOpt(this,'de-tees-grp','Gold')">Gold</button>
+                </div>
+              </div>
+              <button class="de-toggle-btn" onclick="deToggle('de-conditions','de-cond-btn')" id="de-cond-btn">▶ Round Conditions (optional)</button>
+              <div id="de-conditions" style="display:none;margin-top:12px">
+                <div class="de-field">
+                  <label class="de-label">Temperature (°F)</label>
+                  <input type="number" id="de-temp" class="de-input" placeholder="e.g. 72" min="30" max="110">
+                </div>
+                <div class="de-field">
+                  <label class="de-label">Wind</label>
+                  <div class="de-btn-group" id="de-wind-grp">
+                    <button class="de-opt-btn active" onclick="deSetOpt(this,'de-wind-grp','Calm')">Calm</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-wind-grp','Mild (1 club)')">Mild</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-wind-grp','Medium (1-2 club)')">Medium</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-wind-grp','Strong (2+ club)')">Strong</button>
+                  </div>
+                </div>
+                <div class="de-field">
+                  <label class="de-label">Weather</label>
+                  <div class="de-btn-group" id="de-weather-grp">
+                    <button class="de-opt-btn active" onclick="deSetOpt(this,'de-weather-grp','Sunny')">Sunny</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-weather-grp','Overcast')">Overcast</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-weather-grp','Rainy')">Rainy</button>
+                  </div>
+                </div>
+                <div class="de-field">
+                  <label class="de-label">Warm Up</label>
+                  <div class="de-btn-group" id="de-warmup-grp">
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-warmup-grp','None')">None</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-warmup-grp','Below Average')">Below Avg</button>
+                    <button class="de-opt-btn active" onclick="deSetOpt(this,'de-warmup-grp','Average')">Average</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-warmup-grp','Strong')">Strong</button>
+                  </div>
+                </div>
+                <div class="de-field">
+                  <label class="de-label">Sleep Quality</label>
+                  <div class="de-btn-group" id="de-sleep-grp">
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-sleep-grp','Below Average')">Below Avg</button>
+                    <button class="de-opt-btn active" onclick="deSetOpt(this,'de-sleep-grp','Average')">Average</button>
+                    <button class="de-opt-btn" onclick="deSetOpt(this,'de-sleep-grp','Above Average')">Above Avg</button>
+                  </div>
+                </div>
+                <div class="de-field">
+                  <label class="de-label">Round Notes</label>
+                  <textarea id="de-notes" class="de-input" rows="2" placeholder="Anything notable about this round…" style="resize:vertical"></textarea>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Field Config -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Fields to Track</div>
+              <div style="display:flex;gap:6px">
+                <button class="roll-btn" onclick="deCheckAll(true)">All</button>
+                <button class="roll-btn" onclick="deCheckAll(false)">None</button>
+              </div>
+            </div>
+            <div style="padding:16px;max-height:420px;overflow-y:auto" id="de-field-cfg"></div>
+          </div>
+        </div>
+        <div style="margin-top:24px;max-width:320px">
+          <button class="btn-upload" onclick="deStartRound()" style="font-size:18px">Start Entering Holes →</button>
+          <div id="de-setup-err" style="color:var(--red);font-family:'DM Mono',monospace;font-size:12px;margin-top:10px;display:none"></div>
+        </div>
+      </div>
+
+      <!-- ── HOLE ENTRY ── -->
+      <div id="de-entry" style="display:none">
+        <!-- Abort confirmation banner -->
+        <div id="de-abort-banner" style="display:none;align-items:center;justify-content:space-between;background:rgba(248,113,113,0.1);border:1px solid var(--red);padding:12px 16px;margin-bottom:12px;flex-wrap:wrap;gap:10px">
+          <span style="font-family:'DM Mono',monospace;font-size:12px;color:var(--red)">Cancel this round? All entered data will be cleared.</span>
+          <div style="display:flex;gap:8px">
+            <button class="btn-upload" onclick="deAbortConfirm()" style="background:var(--red);color:#fff;font-size:13px;padding:8px 16px">Yes, Cancel</button>
+            <button class="roll-btn" onclick="deAbortCancel()">Keep Entering</button>
+          </div>
+        </div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+          <div>
+            <div id="de-hole-title" style="font-family:'Bebas Neue',sans-serif;font-size:30px;letter-spacing:2px;color:var(--blue)">Hole 1</div>
+            <div id="de-round-info" style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+            <div id="de-running-total" style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:1px"></div>
+            <button class="btn-logout" onclick="deAbortRound()">✕ Cancel Round</button>
+          </div>
+        </div>
+        <div style="height:4px;background:var(--surface3);margin-bottom:20px">
+          <div id="de-progress" style="height:100%;background:var(--blue);transition:width 0.4s;width:0%"></div>
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 340px;gap:24px;align-items:start" id="de-entry-grid">
+          <!-- Form -->
+          <div class="card">
+            <div style="padding:20px" id="de-form-body"></div>
+          </div>
+          <!-- Scorecard -->
+          <div>
+            <div class="card">
+              <div class="card-header"><div class="card-title">Scorecard</div></div>
+              <div style="overflow-x:auto">
+                <table style="min-width:260px">
+                  <thead><tr><th>Hole</th><th>Par</th><th>Score</th><th>+/-</th><th></th></tr></thead>
+                  <tbody id="de-sc-body"></tbody>
+                  <tfoot id="de-sc-foot"></tfoot>
+                </table>
+              </div>
+            </div>
+            <button id="de-save-btn" class="btn-upload" style="display:none;margin-top:16px;width:100%;font-size:16px" onclick="deSaveRound()">Save Round &amp; Update Analytics →</button>
+          </div>
+        </div>
+      </div>
     </div>
 
     <!-- SCORING TRENDS -->
@@ -783,7 +1009,7 @@ tr:hover td{background:var(--surface2)}
     <div class="section" id="section-badgood">
       <div class="section-header">
         <div class="section-title">What Went <span>Wrong</span></div>
-        <div class="section-meta">Root cause analysis — clubs, reasons &amp; pre-round preparation correlation</div>
+        <div class="section-meta">Root cause analysis — clubs responsible for bad scores &amp; common patterns</div>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
@@ -795,16 +1021,7 @@ tr:hover td{background:var(--surface2)}
           <div id="bad-reasons-list" style="margin-top:8px"></div>
         </div>
       </div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Score by Warmup Quality</div>
-          <div id="warmup-chart-wrap"><canvas id="chart-warmup" height="220"></canvas></div>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">Score by Sleep Quality</div>
-          <div id="sleep-chart-wrap"><canvas id="chart-sleep" height="220"></canvas></div>
-        </div>
-      </div>
+
     </div>
 
 
@@ -955,24 +1172,63 @@ const PLAYERS = {
   demo_player:{
     name:'Demo Player',pin:'5678',
     rounds:[
-      {date:"2025-01-10",course:"Pebble Beach",score:85,par:72,plus_minus:13,birdies:0,bogeys:11,doubles_plus:2,putts:36,gir_pct:38.9,penalties:1,fw_pct:57.1,driver_dist:235,scrambling:15,one_putts:3,three_putts:2},
-      {date:"2025-02-14",course:"Augusta National",score:82,par:72,plus_minus:10,birdies:1,bogeys:9,doubles_plus:2,putts:34,gir_pct:50,penalties:0,fw_pct:64.3,driver_dist:240,scrambling:22,one_putts:4,three_putts:1},
-      {date:"2025-03-20",course:"TPC Sawgrass",score:88,par:72,plus_minus:16,birdies:0,bogeys:13,doubles_plus:3,putts:38,gir_pct:27.8,penalties:2,fw_pct:50,driver_dist:230,scrambling:10,one_putts:2,three_putts:3},
-      {date:"2025-05-01",course:"Bethpage Black",score:84,par:71,plus_minus:13,birdies:1,bogeys:10,doubles_plus:3,putts:35,gir_pct:44.4,penalties:1,fw_pct:57.1,driver_dist:238,scrambling:18,one_putts:3,three_putts:1},
-      {date:"2025-07-15",course:"Shinnecock Hills",score:90,par:70,plus_minus:20,birdies:0,bogeys:14,doubles_plus:6,putts:40,gir_pct:16.7,penalties:3,fw_pct:35.7,driver_dist:228,scrambling:8,one_putts:1,three_putts:5},
-      {date:"2025-09-05",course:"Winged Foot",score:86,par:72,plus_minus:14,birdies:0,bogeys:12,doubles_plus:2,putts:37,gir_pct:33.3,penalties:1,fw_pct:57.1,driver_dist:233,scrambling:12,one_putts:2,three_putts:2}
+      {date:"2023-09-01",course:"Augusta National",score:74,par:72,plus_minus:2,birdies:3,bogeys:5,doubles_plus:0,putts:29,gir_pct:81.3,penalties:0,fw_pct:null,driver_dist:null,scrambling:41.3,one_putts:6,three_putts:0},
+      {date:"2023-09-02",course:"Pebble Beach",score:75,par:72,plus_minus:3,birdies:4,bogeys:7,doubles_plus:0,putts:30,gir_pct:72.9,penalties:0,fw_pct:78.4,driver_dist:null,scrambling:40.1,one_putts:5,three_putts:0},
+      {date:"2023-09-14",course:"Winged Foot (West)",score:75,par:72,plus_minus:3,birdies:2,bogeys:5,doubles_plus:0,putts:28,gir_pct:57.3,penalties:0,fw_pct:null,driver_dist:null,scrambling:52.1,one_putts:5,three_putts:0},
+      {date:"2023-09-17",course:"Harbour Town Golf Links",score:73,par:72,plus_minus:1,birdies:2,bogeys:3,doubles_plus:0,putts:33,gir_pct:79.4,penalties:0,fw_pct:null,driver_dist:null,scrambling:40.7,one_putts:4,three_putts:0},
+      {date:"2023-09-23",course:"Pinehurst No. 2",score:72,par:71,plus_minus:1,birdies:1,bogeys:2,doubles_plus:0,putts:29,gir_pct:83.3,penalties:0,fw_pct:71.7,driver_dist:294,scrambling:54.7,one_putts:5,three_putts:0},
+      {date:"2023-10-21",course:"Kiawah Island (Ocean)",score:73,par:72,plus_minus:1,birdies:5,bogeys:6,doubles_plus:0,putts:32,gir_pct:83.3,penalties:0,fw_pct:null,driver_dist:null,scrambling:51.6,one_putts:4,three_putts:0},
+      {date:"2023-12-28",course:"Sea Island (Seaside)",score:75,par:72,plus_minus:3,birdies:2,bogeys:5,doubles_plus:0,putts:29,gir_pct:68.9,penalties:0,fw_pct:null,driver_dist:293,scrambling:46.9,one_putts:5,three_putts:0},
+      {date:"2024-03-06",course:"TPC Sawgrass (Stadium)",score:74,par:72,plus_minus:2,birdies:0,bogeys:2,doubles_plus:0,putts:28,gir_pct:83.3,penalties:0,fw_pct:null,driver_dist:null,scrambling:46.3,one_putts:6,three_putts:0},
+      {date:"2024-04-25",course:"Kiawah Island (Ocean)",score:75,par:72,plus_minus:3,birdies:2,bogeys:5,doubles_plus:0,putts:29,gir_pct:61.1,penalties:0,fw_pct:null,driver_dist:null,scrambling:67.9,one_putts:7,three_putts:0},
+      {date:"2024-06-01",course:"TPC Sawgrass",score:73,par:71,plus_minus:2,birdies:3,bogeys:5,doubles_plus:0,putts:30,gir_pct:83.3,penalties:0,fw_pct:84.9,driver_dist:null,scrambling:44.0,one_putts:4,three_putts:0},
+      {date:"2024-09-06",course:"Pebble Beach",score:74,par:72,plus_minus:2,birdies:3,bogeys:5,doubles_plus:0,putts:28,gir_pct:65.4,penalties:0,fw_pct:92.9,driver_dist:290,scrambling:73.3,one_putts:6,three_putts:0},
+      {date:"2025-06-01",course:"Riviera Country Club",score:73,par:71,plus_minus:2,birdies:4,bogeys:6,doubles_plus:0,putts:27,gir_pct:66.9,penalties:0,fw_pct:52.2,driver_dist:297,scrambling:75.0,one_putts:7,three_putts:0},
+      {date:"2025-06-14",course:"Congressional Country Club",score:73,par:69,plus_minus:4,birdies:2,bogeys:6,doubles_plus:0,putts:30,gir_pct:62.3,penalties:1,fw_pct:54.9,driver_dist:282,scrambling:46.3,one_putts:5,three_putts:0},
+      {date:"2025-09-28",course:"Pinehurst No. 2",score:74,par:71,plus_minus:3,birdies:2,bogeys:3,doubles_plus:1,putts:29,gir_pct:64.5,penalties:0,fw_pct:62.6,driver_dist:267,scrambling:43.4,one_putts:5,three_putts:0},
+      {date:"2025-10-05",course:"Riviera Country Club",score:73,par:71,plus_minus:2,birdies:1,bogeys:3,doubles_plus:0,putts:27,gir_pct:59.1,penalties:0,fw_pct:20.8,driver_dist:272,scrambling:73.6,one_putts:8,three_putts:0},
+      {date:"2025-10-18",course:"Augusta National",score:74,par:72,plus_minus:2,birdies:2,bogeys:4,doubles_plus:0,putts:33,gir_pct:83.3,penalties:0,fw_pct:62.9,driver_dist:264,scrambling:46.5,one_putts:2,three_putts:0},
+      {date:"2025-10-19",course:"Torrey Pines (South)",score:73,par:71,plus_minus:2,birdies:2,bogeys:4,doubles_plus:0,putts:27,gir_pct:69.7,penalties:0,fw_pct:89.7,driver_dist:281,scrambling:42.9,one_putts:6,three_putts:0},
+      {date:"2025-11-02",course:"Bethpage Black",score:72,par:71,plus_minus:1,birdies:6,bogeys:7,doubles_plus:0,putts:29,gir_pct:83.3,penalties:0,fw_pct:92.9,driver_dist:278,scrambling:67.5,one_putts:7,three_putts:0},
+      {date:"2025-11-10",course:"Augusta National",score:73,par:72,plus_minus:1,birdies:4,bogeys:5,doubles_plus:0,putts:27,gir_pct:83.3,penalties:0,fw_pct:92.9,driver_dist:277,scrambling:59.0,one_putts:7,three_putts:0},
+      {date:"2025-11-15",course:"Pebble Beach",score:73,par:72,plus_minus:1,birdies:2,bogeys:3,doubles_plus:0,putts:27,gir_pct:73.8,penalties:0,fw_pct:92.9,driver_dist:267,scrambling:75.0,one_putts:10,three_putts:0}
     ],
     approach_cats:{
-      "Mid Iron":{shots:20,lr_miss:-8,sl_miss:-30,gir_pct:35,clubs:[{club:"6i",shots:10,lr_miss:-8,sl_miss:-32,gir_pct:33},{club:"7i",shots:10,lr_miss:-8,sl_miss:-28,gir_pct:37}]},
-      "Short Iron":{shots:12,lr_miss:-5,sl_miss:5,gir_pct:55,clubs:[{club:"9i",shots:6,lr_miss:-6,sl_miss:4,gir_pct:52},{club:"PW",shots:6,lr_miss:-4,sl_miss:6,gir_pct:58}]},
-      "Wedge":{shots:15,lr_miss:3,sl_miss:-5,gir_pct:60,clubs:[{club:"54 Deg",shots:15,lr_miss:3,sl_miss:-5,gir_pct:60}]},
-      "Wood":{shots:4,lr_miss:10,sl_miss:-70,gir_pct:15,clubs:[{club:"3w",shots:4,lr_miss:10,sl_miss:-70,gir_pct:15}]}
+      "Mid Iron":{shots:55,lr_miss:-3.2,sl_miss:-11.5,gir_pct:61.8,clubs:[
+        {club:"5i",shots:10,lr_miss:-4,sl_miss:-15,gir_pct:55},
+        {club:"6i",shots:15,lr_miss:-3,sl_miss:-12,gir_pct:60},
+        {club:"7i",shots:16,lr_miss:-3,sl_miss:-10,gir_pct:68},
+        {club:"8i",shots:14,lr_miss:-2.5,sl_miss:-8,gir_pct:64}
+      ]},
+      "Short Iron":{shots:28,lr_miss:-5.1,sl_miss:-1.2,gir_pct:78.6,clubs:[
+        {club:"9i",shots:13,lr_miss:-6,sl_miss:-2,gir_pct:75},
+        {club:"PW",shots:15,lr_miss:-4.5,sl_miss:-0.5,gir_pct:82}
+      ]},
+      "Wedge":{shots:35,lr_miss:1.0,sl_miss:0.5,gir_pct:77.1,clubs:[
+        {club:"50 Deg",shots:10,lr_miss:1.5,sl_miss:1.0,gir_pct:75},
+        {club:"54 Deg",shots:18,lr_miss:0.8,sl_miss:0.3,gir_pct:79},
+        {club:"56 Deg",shots:7,lr_miss:0.5,sl_miss:0.0,gir_pct:77}
+      ]},
+      "Wood":{shots:8,lr_miss:2.5,sl_miss:-28.0,gir_pct:37.5,clubs:[
+        {club:"3w",shots:6,lr_miss:3.0,sl_miss:-30,gir_pct:35},
+        {club:"5w",shots:2,lr_miss:1.5,sl_miss:-22,gir_pct:45}
+      ]},
+      "Long Iron":{shots:6,lr_miss:8.5,sl_miss:-20.0,gir_pct:50.0,clubs:[
+        {club:"3i",shots:3,lr_miss:9,sl_miss:-22,gir_pct:48},
+        {club:"4i",shots:3,lr_miss:8,sl_miss:-18,gir_pct:52}
+      ]},
+      "Hybrid":{shots:4,lr_miss:-2.0,sl_miss:-15.0,gir_pct:75.0,clubs:[
+        {club:"3h",shots:4,lr_miss:-2,sl_miss:-15,gir_pct:75}
+      ]}
     },
-    make_pct:{"0-3":95,"3-5":40,"5-8":20,"8-12":10,"12-20":12,"20-35":5,"35-50":0,"50+":5},
-    bad_reasons:{"3-Putt":8,"Pulled tee shot":6,"Fat approach":5,"Lost ball":4,"Thin chip":3},
-    bad_clubs:{"Dr":10,"Putter":8,"3w":6,"5i":4,"PW":3},
+    make_pct:{"0-3":100,"3-5":72.4,"5-8":48.1,"8-12":31.5,"12-20":18.9,"20-35":10.2,"35-50":4.5,"50+":2.8},
+    bad_reasons:{"Missed inside 6ft":4,"3-Putt":3,"Pushed approach":3,"Pulled tee shot":2,"Poor driver strike":2},
+    bad_clubs:{"Dr":5,"Putter":4,"5i":3,"3w":3,"6i":2},
     course_data:[],
-    par_scoring:{"3":0.7,"4":0.9,"5":0.5}
+    par_scoring:{"3":0.18,"4":0.22,"5":-0.05},
+    proximity:18.4,
+    tee_shots:[{"x":4.0,"y":285.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-9.6,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-13.4,"y":278.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-6.7,"y":267.0,"club":"Dr","fairway":false,"date":"2024"},{"x":19.1,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":7.8,"y":270.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-18.5,"y":272.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-6.0,"y":296.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.5,"y":267.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-1.7,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-12.3,"y":266.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-38.4,"y":255,"club":"Dr","fairway":false,"date":"2024"},{"x":20.0,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-15.0,"y":287.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-17.1,"y":293.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-0.3,"y":295.0,"club":"Dr","fairway":true,"date":"2024"},{"x":1.2,"y":288.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-1.0,"y":283.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-3.0,"y":276.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-3.8,"y":285.0,"club":"Dr","fairway":false,"date":"2024"},{"x":7.6,"y":268.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-23.3,"y":275.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-12.2,"y":293.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-19.6,"y":269.0,"club":"Dr","fairway":false,"date":"2024"},{"x":2.9,"y":287.0,"club":"Dr","fairway":true,"date":"2024"},{"x":3.4,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-19.7,"y":286.0,"club":"Dr","fairway":true,"date":"2024"},{"x":14.5,"y":293.0,"club":"Dr","fairway":false,"date":"2024"},{"x":1.6,"y":291.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.1,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-11.1,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":1.2,"y":280.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-21.4,"y":294.0,"club":"Dr","fairway":false,"date":"2024"},{"x":1.0,"y":274.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-9.1,"y":278.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-20.4,"y":277.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-20.1,"y":274.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.1,"y":283.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-3.7,"y":291.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-13.2,"y":302.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-16.6,"y":255,"club":"Dr","fairway":false,"date":"2024"},{"x":-8.9,"y":291.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-7.2,"y":276.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-20.0,"y":257.0,"club":"Dr","fairway":true,"date":"2024"},{"x":1.6,"y":273.0,"club":"Dr","fairway":true,"date":"2024"},{"x":14.0,"y":269.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-3.4,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":10.6,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-22.0,"y":282.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-9.1,"y":289.0,"club":"Dr","fairway":true,"date":"2024"},{"x":6.0,"y":293.0,"club":"Dr","fairway":true,"date":"2024"},{"x":11.9,"y":277.0,"club":"Dr","fairway":true,"date":"2024"},{"x":19.4,"y":288.0,"club":"Dr","fairway":false,"date":"2024"},{"x":14.0,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.5,"y":270.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-14.5,"y":270.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.5,"y":279.0,"club":"Dr","fairway":false,"date":"2024"},{"x":10.3,"y":278.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.6,"y":269.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.2,"y":297.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-33.0,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-1.4,"y":273.0,"club":"Dr","fairway":false,"date":"2024"},{"x":1.8,"y":287.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-14.6,"y":293.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-3.8,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":10.9,"y":281.0,"club":"Dr","fairway":true,"date":"2024"},{"x":14.7,"y":263.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-3.0,"y":255,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.4,"y":271.0,"club":"Dr","fairway":false,"date":"2024"},{"x":9.1,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":8.2,"y":277.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-14.9,"y":282.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-11.8,"y":273.0,"club":"Dr","fairway":true,"date":"2024"},{"x":9.5,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.1,"y":293.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-7.9,"y":283.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-11.8,"y":279.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-0.6,"y":283.0,"club":"Dr","fairway":false,"date":"2024"},{"x":7.6,"y":274.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-7.6,"y":267.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-5.8,"y":285.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-20.4,"y":280.0,"club":"Dr","fairway":true,"date":"2024"},{"x":6.7,"y":299.0,"club":"Dr","fairway":true,"date":"2024"},{"x":15.5,"y":294.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-13.2,"y":269.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.8,"y":281.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-6.6,"y":278.0,"club":"Dr","fairway":true,"date":"2024"},{"x":5.5,"y":293.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-10.8,"y":278.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.1,"y":281.0,"club":"Dr","fairway":true,"date":"2024"},{"x":11.4,"y":279.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-13.2,"y":281.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-32.2,"y":293.0,"club":"Dr","fairway":false,"date":"2024"},{"x":3.2,"y":271.0,"club":"Dr","fairway":false,"date":"2024"},{"x":3.1,"y":276.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-9.2,"y":304.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.9,"y":276.0,"club":"Dr","fairway":false,"date":"2024"},{"x":2.1,"y":292.0,"club":"Dr","fairway":true,"date":"2024"},{"x":6.2,"y":279.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.3,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-22.5,"y":267.0,"club":"Dr","fairway":false,"date":"2024"},{"x":0.3,"y":305.0,"club":"Dr","fairway":true,"date":"2024"},{"x":5.1,"y":272.0,"club":"Dr","fairway":true,"date":"2024"},{"x":13.7,"y":280.0,"club":"Dr","fairway":false,"date":"2024"},{"x":17.3,"y":282.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.4,"y":272.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-0.8,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":5.8,"y":282.0,"club":"Dr","fairway":false,"date":"2024"},{"x":15.7,"y":278.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-1.7,"y":299.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-12.6,"y":311.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-6.8,"y":274.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.2,"y":287.0,"club":"Dr","fairway":true,"date":"2024"},{"x":11.0,"y":285.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-10.5,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-7.1,"y":285.0,"club":"Dr","fairway":true,"date":"2024"},{"x":17.2,"y":283.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-14.2,"y":273.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-11.1,"y":292.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.3,"y":266.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-2.6,"y":279.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-11.0,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-4.4,"y":284.0,"club":"Dr","fairway":true,"date":"2024"},{"x":0.5,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":5.6,"y":281.0,"club":"Dr","fairway":true,"date":"2024"},{"x":15.6,"y":278.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-6.9,"y":282.0,"club":"Dr","fairway":true,"date":"2024"},{"x":4.7,"y":289.0,"club":"Dr","fairway":true,"date":"2024"},{"x":5.1,"y":258.0,"club":"Dr","fairway":true,"date":"2024"},{"x":11.6,"y":285.0,"club":"Dr","fairway":true,"date":"2024"},{"x":3.6,"y":270.0,"club":"Dr","fairway":false,"date":"2024"},{"x":6.8,"y":273.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-6.5,"y":285.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-13.6,"y":270.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-2.0,"y":288.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-27.1,"y":272.0,"club":"Dr","fairway":true,"date":"2024"},{"x":7.4,"y":263.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-16.0,"y":285.0,"club":"Dr","fairway":false,"date":"2024"},{"x":-9.5,"y":286.0,"club":"Dr","fairway":true,"date":"2024"},{"x":-5.0,"y":290.0,"club":"Dr","fairway":true,"date":"2024"},{"x":20.9,"y":257.0,"club":"3w","fairway":true,"date":"2024"},{"x":-1.3,"y":256.0,"club":"3w","fairway":true,"date":"2024"},{"x":21.0,"y":247.0,"club":"3w","fairway":true,"date":"2024"},{"x":-19.0,"y":256.0,"club":"3w","fairway":true,"date":"2024"},{"x":0.8,"y":224.0,"club":"3w","fairway":true,"date":"2024"},{"x":-30.8,"y":255.0,"club":"3w","fairway":true,"date":"2024"},{"x":17.1,"y":245.0,"club":"3w","fairway":true,"date":"2024"},{"x":2.6,"y":242.0,"club":"3w","fairway":true,"date":"2024"},{"x":-1.2,"y":241.0,"club":"3w","fairway":true,"date":"2024"},{"x":-17.6,"y":248.0,"club":"3w","fairway":false,"date":"2024"},{"x":0.4,"y":246.0,"club":"3w","fairway":false,"date":"2024"},{"x":-20.5,"y":230.0,"club":"3w","fairway":true,"date":"2024"},{"x":13.2,"y":235.0,"club":"3w","fairway":true,"date":"2024"},{"x":22.9,"y":247.0,"club":"3w","fairway":true,"date":"2024"},{"x":-23.9,"y":217.0,"club":"3w","fairway":true,"date":"2024"},{"x":-31.9,"y":255.0,"club":"3w","fairway":true,"date":"2024"},{"x":11.6,"y":229.0,"club":"3w","fairway":true,"date":"2024"},{"x":19.9,"y":245.0,"club":"3w","fairway":true,"date":"2024"},{"x":10.8,"y":231.0,"club":"3w","fairway":true,"date":"2024"},{"x":7.1,"y":250.0,"club":"3w","fairway":true,"date":"2024"}],
+    approach_shots:[{"x":0.0,"y":-26.7,"cat":"Mid Iron","club":"5i","gir":true},{"x":-0.6,"y":-19.5,"cat":"Mid Iron","club":"6i","gir":true},{"x":-18.6,"y":-20.3,"cat":"Mid Iron","club":"7i","gir":true},{"x":-12.8,"y":-27.0,"cat":"Mid Iron","club":"8i","gir":false},{"x":26.4,"y":-3.5,"cat":"Mid Iron","club":"5i","gir":true},{"x":2.3,"y":-31.2,"cat":"Mid Iron","club":"6i","gir":false},{"x":1.1,"y":3.0,"cat":"Mid Iron","club":"7i","gir":true},{"x":-0.5,"y":-33.4,"cat":"Mid Iron","club":"8i","gir":true},{"x":-1.4,"y":-4.6,"cat":"Mid Iron","club":"5i","gir":true},{"x":-15.2,"y":-18.6,"cat":"Mid Iron","club":"6i","gir":false},{"x":17.2,"y":4.4,"cat":"Mid Iron","club":"7i","gir":false},{"x":-4.5,"y":-41.1,"cat":"Mid Iron","club":"8i","gir":false},{"x":7.8,"y":-0.3,"cat":"Mid Iron","club":"5i","gir":true},{"x":-0.3,"y":-33.4,"cat":"Mid Iron","club":"6i","gir":true},{"x":-22.7,"y":-0.9,"cat":"Mid Iron","club":"7i","gir":true},{"x":17.2,"y":17.7,"cat":"Mid Iron","club":"8i","gir":true},{"x":14.7,"y":-52.0,"cat":"Mid Iron","club":"5i","gir":false},{"x":10.7,"y":-18.9,"cat":"Mid Iron","club":"6i","gir":true},{"x":-22.5,"y":-6.4,"cat":"Mid Iron","club":"7i","gir":false},{"x":-25.0,"y":17.5,"cat":"Mid Iron","club":"8i","gir":true},{"x":-6.6,"y":-11.4,"cat":"Mid Iron","club":"5i","gir":true},{"x":2.8,"y":-12.1,"cat":"Mid Iron","club":"6i","gir":false},{"x":12.0,"y":-26.9,"cat":"Mid Iron","club":"7i","gir":true},{"x":-21.3,"y":-6.6,"cat":"Mid Iron","club":"8i","gir":true},{"x":-4.8,"y":-4.0,"cat":"Mid Iron","club":"5i","gir":false},{"x":20.3,"y":-32.2,"cat":"Mid Iron","club":"6i","gir":false},{"x":-7.0,"y":-14.4,"cat":"Mid Iron","club":"7i","gir":true},{"x":-1.9,"y":-41.7,"cat":"Mid Iron","club":"8i","gir":true},{"x":1.9,"y":-11.1,"cat":"Mid Iron","club":"5i","gir":false},{"x":5.8,"y":0.2,"cat":"Mid Iron","club":"6i","gir":true},{"x":1.6,"y":-18.0,"cat":"Mid Iron","club":"7i","gir":true},{"x":-2.5,"y":-19.1,"cat":"Mid Iron","club":"8i","gir":true},{"x":26.7,"y":-4.4,"cat":"Mid Iron","club":"5i","gir":true},{"x":-14.9,"y":-11.7,"cat":"Mid Iron","club":"6i","gir":false},{"x":-7.0,"y":-35.2,"cat":"Mid Iron","club":"7i","gir":true},{"x":-5.8,"y":22.7,"cat":"Mid Iron","club":"8i","gir":true},{"x":-10.4,"y":-21.9,"cat":"Mid Iron","club":"5i","gir":true},{"x":-10.6,"y":-8.2,"cat":"Mid Iron","club":"6i","gir":true},{"x":-1.1,"y":-10.0,"cat":"Mid Iron","club":"7i","gir":true},{"x":17.6,"y":8.3,"cat":"Mid Iron","club":"8i","gir":true},{"x":-12.2,"y":-39.7,"cat":"Mid Iron","club":"5i","gir":true},{"x":8.1,"y":-16.8,"cat":"Mid Iron","club":"6i","gir":true},{"x":-21.6,"y":-9.5,"cat":"Mid Iron","club":"7i","gir":false},{"x":4.6,"y":20.2,"cat":"Mid Iron","club":"8i","gir":true},{"x":-3.4,"y":24.5,"cat":"Mid Iron","club":"5i","gir":false},{"x":3.5,"y":-23.9,"cat":"Mid Iron","club":"6i","gir":false},{"x":1.9,"y":-58.6,"cat":"Mid Iron","club":"7i","gir":false},{"x":10.5,"y":-11.5,"cat":"Mid Iron","club":"8i","gir":false},{"x":-0.4,"y":-33.0,"cat":"Mid Iron","club":"5i","gir":true},{"x":-22.8,"y":9.7,"cat":"Mid Iron","club":"6i","gir":true},{"x":-3.5,"y":-34.6,"cat":"Mid Iron","club":"7i","gir":false},{"x":-5.0,"y":-4.7,"cat":"Mid Iron","club":"8i","gir":false},{"x":3.7,"y":1.9,"cat":"Mid Iron","club":"5i","gir":false},{"x":22.0,"y":0.5,"cat":"Mid Iron","club":"6i","gir":true},{"x":-19.9,"y":-21.6,"cat":"Mid Iron","club":"7i","gir":true},{"x":7.6,"y":1.5,"cat":"Short Iron","club":"9i","gir":true},{"x":-14.6,"y":-18.4,"cat":"Short Iron","club":"PW","gir":true},{"x":6.1,"y":25.6,"cat":"Short Iron","club":"9i","gir":true},{"x":-16.2,"y":-2.8,"cat":"Short Iron","club":"PW","gir":false},{"x":5.6,"y":8.5,"cat":"Short Iron","club":"9i","gir":true},{"x":-15.8,"y":3.6,"cat":"Short Iron","club":"PW","gir":false},{"x":7.6,"y":4.6,"cat":"Short Iron","club":"9i","gir":true},{"x":-23.7,"y":17.9,"cat":"Short Iron","club":"PW","gir":false},{"x":-4.4,"y":-0.7,"cat":"Short Iron","club":"9i","gir":true},{"x":-4.7,"y":-4.5,"cat":"Short Iron","club":"PW","gir":true},{"x":0.1,"y":-21.9,"cat":"Short Iron","club":"9i","gir":false},{"x":-15.1,"y":-17.8,"cat":"Short Iron","club":"PW","gir":true},{"x":-6.6,"y":-5.2,"cat":"Short Iron","club":"9i","gir":true},{"x":2.8,"y":-1.9,"cat":"Short Iron","club":"PW","gir":true},{"x":-1.1,"y":11.2,"cat":"Short Iron","club":"9i","gir":true},{"x":-4.2,"y":-11.7,"cat":"Short Iron","club":"PW","gir":true},{"x":-1.2,"y":13.4,"cat":"Short Iron","club":"9i","gir":false},{"x":-14.0,"y":10.3,"cat":"Short Iron","club":"PW","gir":true},{"x":-1.0,"y":16.3,"cat":"Short Iron","club":"9i","gir":true},{"x":-24.4,"y":-26.4,"cat":"Short Iron","club":"PW","gir":true},{"x":-8.7,"y":-10.7,"cat":"Short Iron","club":"9i","gir":true},{"x":-1.7,"y":12.0,"cat":"Short Iron","club":"PW","gir":true},{"x":-3.4,"y":9.7,"cat":"Short Iron","club":"9i","gir":true},{"x":1.4,"y":13.8,"cat":"Short Iron","club":"PW","gir":false},{"x":-13.7,"y":-3.4,"cat":"Short Iron","club":"9i","gir":true},{"x":-3.8,"y":27.4,"cat":"Short Iron","club":"PW","gir":true},{"x":-7.8,"y":-10.0,"cat":"Short Iron","club":"9i","gir":true},{"x":1.6,"y":-0.6,"cat":"Short Iron","club":"PW","gir":true},{"x":-8.6,"y":-1.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":10.0,"y":-12.1,"cat":"Wedge","club":"54 Deg","gir":true},{"x":4.0,"y":-11.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":13.8,"y":-10.3,"cat":"Wedge","club":"54 Deg","gir":true},{"x":6.0,"y":-7.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":10.3,"y":2.5,"cat":"Wedge","club":"54 Deg","gir":false},{"x":-12.1,"y":8.1,"cat":"Wedge","club":"50 Deg","gir":true},{"x":3.8,"y":1.0,"cat":"Wedge","club":"54 Deg","gir":true},{"x":11.1,"y":-2.1,"cat":"Wedge","club":"50 Deg","gir":true},{"x":5.1,"y":-6.7,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-13.4,"y":7.8,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-4.8,"y":0.9,"cat":"Wedge","club":"54 Deg","gir":true},{"x":13.8,"y":12.5,"cat":"Wedge","club":"50 Deg","gir":true},{"x":2.0,"y":-5.5,"cat":"Wedge","club":"54 Deg","gir":true},{"x":10.2,"y":2.5,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-3.3,"y":3.3,"cat":"Wedge","club":"54 Deg","gir":true},{"x":16.9,"y":5.7,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-4.6,"y":-6.2,"cat":"Wedge","club":"54 Deg","gir":true},{"x":12.1,"y":3.5,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-0.5,"y":12.7,"cat":"Wedge","club":"54 Deg","gir":false},{"x":-7.4,"y":-0.2,"cat":"Wedge","club":"50 Deg","gir":true},{"x":2.2,"y":-1.3,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-8.9,"y":-6.8,"cat":"Wedge","club":"50 Deg","gir":true},{"x":6.9,"y":-15.1,"cat":"Wedge","club":"54 Deg","gir":true},{"x":3.2,"y":-0.6,"cat":"Wedge","club":"50 Deg","gir":true},{"x":4.9,"y":3.8,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-1.2,"y":-10.5,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-6.3,"y":-2.5,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-5.6,"y":6.4,"cat":"Wedge","club":"50 Deg","gir":true},{"x":6.9,"y":8.7,"cat":"Wedge","club":"54 Deg","gir":true},{"x":5.7,"y":-23.5,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-2.8,"y":10.5,"cat":"Wedge","club":"54 Deg","gir":true},{"x":2.6,"y":18.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":9.7,"y":-2.1,"cat":"Wedge","club":"54 Deg","gir":false},{"x":-10.0,"y":-11.0,"cat":"Wedge","club":"50 Deg","gir":true},{"x":12.8,"y":-18.8,"cat":"Wood","club":"3w","gir":false},{"x":15.4,"y":-29.8,"cat":"Wood","club":"3w","gir":false},{"x":5.5,"y":-48.9,"cat":"Wood","club":"3w","gir":true},{"x":3.3,"y":-40.4,"cat":"Wood","club":"3w","gir":true},{"x":-15.0,"y":-44.4,"cat":"Wood","club":"3w","gir":false},{"x":-15.9,"y":-25.4,"cat":"Wood","club":"3w","gir":true},{"x":4.8,"y":-35.3,"cat":"Wood","club":"3w","gir":true},{"x":-19.1,"y":5.8,"cat":"Wood","club":"3w","gir":true},{"x":0.8,"y":-18.1,"cat":"Long Iron","club":"3i","gir":true},{"x":41.6,"y":-36.2,"cat":"Long Iron","club":"4i","gir":true},{"x":27.9,"y":-26.8,"cat":"Long Iron","club":"3i","gir":true},{"x":-22.4,"y":21.6,"cat":"Long Iron","club":"4i","gir":true},{"x":11.7,"y":-71.5,"cat":"Long Iron","club":"3i","gir":false},{"x":9.9,"y":-69.8,"cat":"Long Iron","club":"4i","gir":true}]
   }
 };
 
@@ -987,7 +1243,7 @@ function handleLogin(){
   const pin=document.getElementById('login-pin').value;
   const err=document.getElementById('login-error');
   if(!pid||!PLAYERS[pid]){err.style.display='block';err.textContent='Please select a player.';return}
-  if(PLAYERS[pid].pin!==pin){err.style.display='block';err.textContent='Incorrect PIN. Please try again.';return}
+  if(pid!=='demo_player'&&PLAYERS[pid].pin!==pin){err.style.display='block';err.textContent='Incorrect PIN. Please try again.';return}
   err.style.display='none';
   currentPlayer=PLAYERS[pid];
   document.getElementById('player-name-badge').textContent=currentPlayer.name;
@@ -1074,6 +1330,7 @@ function initApp(){
   buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();
   buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
+  initDataEntry();
 }
 
 // ===== DASHBOARD =====
@@ -1845,38 +2102,7 @@ function buildBadGood(){
       <div class="h-bar-val">${c}</div>
     </div>`).join('')
   }</div>`;
-  const cd=currentPlayer.course_data;
-  if(cd.length>0){
-    const warmupG={},sleepG={};
-    cd.forEach(d=>{
-      const w=d.warmup||'Unknown',sl=d.sleep||'Unknown';
-      if(!warmupG[w])warmupG[w]=[];warmupG[w].push(d.score);
-      if(!sleepG[sl])sleepG[sl]=[];sleepG[sl].push(d.score);
-    });
-    const wa={},sa={};
-    Object.entries(warmupG).forEach(([k,v])=>wa[k]=avg(v));
-    Object.entries(sleepG).forEach(([k,v])=>sa[k]=avg(v));
-    const wkeys=Object.keys(wa),skeys=Object.keys(sa);
-    const colMap={'None':C.rd,'Below Average':C.rd,'Average':C.ad,'Strong':C.gd};
-    const bcolMap={'None':C.red,'Below Average':C.red,'Average':C.amber,'Strong':C.green};
-    const wVals=wkeys.map(k=>wa[k]).filter(v=>v!=null);
-    const sVals=skeys.map(k=>sa[k]).filter(v=>v!=null);
-    const wMin=wVals.length?Math.min(...wVals)-2:65,wMax=wVals.length?Math.max(...wVals)+2:90;
-    const sMin=sVals.length?Math.min(...sVals)-2:65,sMax=sVals.length?Math.max(...sVals)+2:90;
-    mkChart('chart-warmup','bar',{
-      labels:wkeys,
-      datasets:[{data:wkeys.map(k=>wa[k]),backgroundColor:wkeys.map(k=>colMap[k]||C.bd),borderColor:wkeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
-    },{...bOpts('Avg Score'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:wMin,max:wMax}}});
-    mkChart('chart-sleep','bar',{
-      labels:skeys,
-      datasets:[{data:skeys.map(k=>sa[k]),backgroundColor:skeys.map(k=>colMap[k]||C.bd),borderColor:skeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
-    },{...bOpts('Avg Score'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:sMin,max:sMax}}});
-  } else {
-    ['warmup-chart-wrap','sleep-chart-wrap'].forEach(id=>{
-      const el=document.getElementById(id);
-      if(el)el.innerHTML=`<div class="empty-state">Track more rounds with warmup &amp; sleep data to unlock this insight.</div>`;
-    });
-  }
+
 }
 
 
@@ -2071,37 +2297,8 @@ async function processFile(){
     }
     addLog('✓ Processed '+rowsProcessed+' hole rows across '+Object.keys(roundMap).length+' rounds','ok');
 
-    setProgress(65,'Parsing course-level metadata...');
-    let courseMetaMap={};
-    if(courseSheetName){
-      const csSheet=wb.Sheets[courseSheetName];
-      const csRaw=XLSX.utils.sheet_to_json(csSheet,{header:1,defval:null,raw:false});
-      let csHeaderIdx=-1;
-      for(let i=0;i<Math.min(csRaw.length,15);i++){
-        const row=csRaw[i];
-        const rs=row.map(c=>String(c||'')).join('|').toLowerCase();
-        if(rs.includes('course')&&rs.includes('date')){csHeaderIdx=i;break}
-      }
-      if(csHeaderIdx>=0){
-        const csHeaders=csRaw[csHeaderIdx].map(h=>String(h||'').trim());
-        const csData=csRaw.slice(csHeaderIdx+1).filter(r=>r.some(c=>c!=null&&c!==''));
-        const cscol=(n)=>csHeaders.findIndex(h=>h.toLowerCase().includes(n.toLowerCase()));
-        const cdPlayer=cscol('player'),cdDate=cscol('date'),cdCourse=cscol('course');
-        const cdWarmup=cscol('warm'),cdSleep=cscol('sleep'),cdRating=cscol('rating'),cdSlope=cscol('slope');
-        for(const row of csData){
-          const p=row[cdPlayer],d=row[cdDate],c=row[cdCourse];
-          if(!p||!d||!c)continue;
-          const ds=formatDate(d);
-          if(!ds)continue;
-          const key=`${p}__${ds}__${c}`;
-          courseMetaMap[key]={warmup:cdWarmup>=0?String(row[cdWarmup]||''):null,
-            sleep:cdSleep>=0?String(row[cdSleep]||''):null,
-            rating:cdRating>=0?toNum(row[cdRating]):null,
-            slope:cdSlope>=0?toNum(row[cdSlope]):null};
-        }
-        addLog('✓ Loaded metadata for '+Object.keys(courseMetaMap).length+' rounds from course sheet','ok');
-      }
-    }
+    setProgress(65,'Aggregating hole data...');
+    const courseMetaMap={};
 
     setProgress(75,'Building rounds array...');
     const rounds=[];
@@ -2141,7 +2338,7 @@ async function processFile(){
         putts:totalPutts,gir_pct:girPct,penalties,fw_pct:fwPct,
         driver_dist:driverDist,scrambling:scramPct,
         one_putts:onePutts,three_putts:threePutts,
-        warmup:meta.warmup||null,sleep:meta.sleep||null,holes:validHoles.length
+        holes:validHoles.length
       });
     }
     rounds.sort((a,b)=>a.date.localeCompare(b.date));
@@ -2251,10 +2448,7 @@ async function processFile(){
     const bad_reasons=Object.fromEntries(Object.entries(badReasonCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
     const bad_clubs=Object.fromEntries(Object.entries(badClubCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
 
-    // Course data
-    const course_data=rounds.filter(r=>r.warmup||r.sleep).map(r=>({
-      date:r.date,warmup:r.warmup,sleep:r.sleep,score:r.score
-    }));
+    const course_data=[];
 
     // Collect individual approach shots for dispersion chart
     const approach_shots=[];
@@ -2297,8 +2491,7 @@ async function processFile(){
     document.getElementById('upload-summary').innerHTML=
       `<strong style="color:var(--text)">${uploadProfile.name}</strong><br>`+
       `${rounds.length} rounds loaded &nbsp;|&nbsp; `+
-      `${Object.keys(approach_cats).length} approach categories &nbsp;|&nbsp; `+
-      `${course_data.length} rounds with prep data`;
+      `${Object.keys(approach_cats).length} approach categories`;
 
     setTimeout(()=>setStep(4),600);
 
@@ -2398,6 +2591,15 @@ function setDispCI(ci,btn){
   dispCI=ci;
   document.querySelectorAll('#disp-ci-btns .roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
+  buildShotDispersion();
+}
+function clickDispCatCard(cat){
+  dispCat=cat;
+  // Sync the top buttons
+  document.querySelectorAll('#disp-cat-btns .roll-btn').forEach(b=>{
+    if(b.textContent.trim()===cat)b.classList.add('active');
+    else b.classList.remove('active');
+  });
   buildShotDispersion();
 }
 
@@ -2527,7 +2729,7 @@ function buildShotDispersion(){
     } else { dispBox.innerHTML=''; }
   }
 
-  // stats cards below — always show ALL categories, highlight active
+  // stats cards below — clickable filter buttons, always show ALL categories
   const allCats=['Wood','Long Iron','Mid Iron','Short Iron','Wedge'];
   document.getElementById('disp-stats').innerHTML=allCats.map(cat=>{
     const pts=(currentPlayer.approach_shots||[]).filter(s=>s.cat===cat);
@@ -2538,13 +2740,21 @@ function buildShotDispersion(){
     const lrStr=lrA>0?`${lrA.toFixed(1)}ft Right`:`${Math.abs(lrA).toFixed(1)}ft Left`;
     const slStr=slA>0?`${slA.toFixed(1)}ft Long`:`${Math.abs(slA).toFixed(1)}ft Short`;
     const isActive=dispCat===cat;
-    return`<div class="stat-card" style="border-top-color:${col?col.el:'var(--blue)'};${isActive?'border:1px solid '+col.el+';background:var(--surface3)':'opacity:0.55'}">
-      <div class="stat-label" style="${isActive?'color:var(--text)':''}">${cat}${isActive?' ◀':''}</div>
+    const borderStyle=isActive?`border:2px solid ${col?col.el:'var(--blue)'};background:var(--surface3);box-shadow:0 0 12px ${col?col.fill:'rgba(96,165,250,0.2)'}`:
+      `border:1px solid var(--border);opacity:0.6`;
+    return`<div class="stat-card" onclick="clickDispCatCard('${cat}')"
+      style="cursor:pointer;transition:all 0.2s;border-top-color:${col?col.el:'var(--blue)'};${borderStyle}"
+      onmouseover="if(dispCat!=='${cat}')this.style.opacity='0.9'"
+      onmouseout="if(dispCat!=='${cat}')this.style.opacity='0.6'">
+      <div class="stat-label" style="color:${isActive?'var(--text)':'var(--text-dim)'};font-weight:${isActive?'600':'400'}">
+        ${isActive?'▶ ':''}${cat}
+      </div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.8">
         ${pts.length} shots<br>
         L/R: <span style="color:var(--text)">${lrStr}</span><br>
         S/L: <span style="color:var(--text)">${slStr}</span>
       </div>
+      ${isActive?`<div style="font-family:'DM Mono',monospace;font-size:9px;color:${col?col.el:'var(--blue)'};margin-top:8px;letter-spacing:1px;text-transform:uppercase">Showing in scatter ✓</div>`:''}
     </div>`;
   }).join('');
 }
@@ -2558,10 +2768,8 @@ const CADDIE_PROMPTS = [
   "How has my scoring trended over my last 10 rounds?",
   "Where am I losing the most shots on approach?",
   "What does my putting data tell you?",
-  "Am I hitting enough fairways and greens?",
   "What's one thing I should focus on to break 75?",
   "Compare my scrambling to what a good amateur should average",
-  "Which par type do I play best and why?",
   "What patterns do you see in my bad rounds?"
 ];
 
@@ -2786,6 +2994,808 @@ function buildDefinitions(){
       `).join('')}
     </div>
   `).join('');
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// DATA ENTRY
+// ═══════════════════════════════════════════════════════════════════
+const DE_FIELDS = {
+  // TEE SHOT
+  tee_club:       {label:'Tee Club',             group:'Tee Shot',   def:true},
+  shape_ott:      {label:'Shot Shape (OTT)',      group:'Tee Shot',   def:true},
+  tee_dist:       {label:'Drive Distance (yds)',  group:'Tee Shot',   def:true},
+  fairway:        {label:'Fairway Result',        group:'Tee Shot',   def:true},
+  tee_miss_lr:    {label:'Tee Target Miss L/R (ft)',group:'Tee Shot', def:false},
+  // APPROACH
+  appr_club:      {label:'Approach Club',         group:'Approach',   def:true},
+  appr_dist:      {label:'Target Distance (yds)', group:'Approach',   def:true},
+  shape_appr:     {label:'Approach Shape',        group:'Approach',   def:false},
+  appr_lr:        {label:'Approach L/R Miss (ft)',group:'Approach',   def:true},
+  appr_sl:        {label:'Approach S/L Miss (ft)',group:'Approach',   def:true},
+  pin_loc:        {label:'Pin Location',          group:'Approach',   def:true},
+  green:          {label:'Green Result',          group:'Approach',   def:true},
+  short_sided:    {label:'Short Sided?',          group:'Approach',   def:false},
+  // PUTTING
+  num_putts:      {label:'# of Putts',            group:'Putting',    def:true},
+  putt1_len:      {label:'Putt 1 Length (ft)',    group:'Putting',    def:true},
+  putt1_break:    {label:'Putt 1 Break Direction',group:'Putting',    def:false},
+  putt1_break_amt:{label:'Putt 1 Break Amount',   group:'Putting',    def:false},
+  putt1_slope:    {label:'Putt 1 Slope',          group:'Putting',    def:false},
+  putt1_hl:       {label:'Putt 1 High/Low Side',  group:'Putting',    def:false},
+  putt1_miss:     {label:'Putt 1 Miss Direction', group:'Putting',    def:false},
+  putt2_len:      {label:'Putt 2 Length (ft)',    group:'Putting',    def:false},
+  putt2_break:    {label:'Putt 2 Break Direction',group:'Putting',    def:false},
+  // NOTES
+  penalty:        {label:'Penalty Strokes',       group:'Notes',      def:true},
+  swing_thought:  {label:'Swing Thought',         group:'Notes',      def:false},
+  pressure:       {label:'Under Pressure?',       group:'Notes',      def:false},
+  bad_reason:     {label:'Reason for Bad Score',  group:'Notes',      def:true},
+  bad_club:       {label:'Bad Score – Club',      group:'Notes',      def:true},
+  good_reason:    {label:'Reason for Good Score', group:'Notes',      def:false},
+  good_club:      {label:'Good Score – Club',     group:'Notes',      def:false},
+  putt_notes:     {label:'Putting Notes',         group:'Notes',      def:false},
+};
+
+const CLUBS_LIST = ['Dr','3w','4w','5w','7w','2h','3h','4h','5h','7h',
+  '2i','3i','4i','5i','6i','7i','8i','9i','PW','50 Deg','54 Deg','56 Deg','58 Deg','60 Deg','Putter'];
+const CAT_MAP_DE = {
+  'dr':'Driver','3w':'Wood','4w':'Wood','5w':'Wood','7w':'Wood',
+  '2h':'Hybrid','3h':'Hybrid','4h':'Hybrid','5h':'Hybrid','7h':'Hybrid',
+  '2i':'Long Iron','3i':'Long Iron','4i':'Long Iron',
+  '5i':'Mid Iron','6i':'Mid Iron','7i':'Mid Iron','8i':'Mid Iron',
+  '9i':'Short Iron','pw':'Short Iron',
+  '50 deg':'Wedge','54 deg':'Wedge','56 deg':'Wedge','58 deg':'Wedge','60 deg':'Wedge'
+};
+
+let deHoles = [];        // completed holes this round
+let deCurrentHole = 0;   // 0-indexed hole we're entering
+let deEditingHole = -1;  // -1 = new, >=0 = editing
+let deTotalHoles = 18;
+let deRoundMeta = {};
+let deEnabled = {};      // which fields are enabled
+
+function initDataEntry(){
+  // Set default date to today
+  const today = new Date();
+  const y=today.getFullYear(),m=String(today.getMonth()+1).padStart(2,'0'),d=String(today.getDate()).padStart(2,'0');
+  const el=document.getElementById('de-date');
+  if(el) el.value=`${y}-${m}-${d}`;
+
+  // Populate course select from current player's history
+  const sel=document.getElementById('de-course-select');
+  if(sel && currentPlayer){
+    const courses=[...new Set(currentPlayer.rounds.map(r=>r.course))].sort();
+    const opts=courses.map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel.innerHTML='<option value="">— Select a course —</option>'+opts+'<option value="__new__">+ Enter a new course…</option>';
+    sel.style.display='block';
+    document.getElementById('de-course').style.display='none';
+    document.getElementById('de-course-new-btn').style.display='none';
+    document.getElementById('de-course').value='';
+  }
+  // Check for saved in-progress round
+  deMaybeRestoreProgress();
+
+  // Load or set default field preferences
+  const saved = (() => { try{const s=localStorage.getItem('ti_de_fields_'+currentPlayer?.name);return s?JSON.parse(s):null;}catch(e){return null;} })();
+  for(const [k,v] of Object.entries(DE_FIELDS)){
+    deEnabled[k] = saved ? (saved[k]??v.def) : v.def;
+  }
+
+  // Render field config checkboxes
+  deRenderFieldConfig();
+}
+
+function deRenderFieldConfig(){
+  const container = document.getElementById('de-field-cfg');
+  if(!container) return;
+  const groups = [...new Set(Object.values(DE_FIELDS).map(f=>f.group))];
+  container.innerHTML = groups.map(g=>`
+    <div class="de-field-group">
+      <div class="de-field-group-title">${g}</div>
+      ${Object.entries(DE_FIELDS).filter(([k,v])=>v.group===g).map(([k,v])=>`
+        <label class="de-field-check">
+          <input type="checkbox" id="de-chk-${k}" ${deEnabled[k]?'checked':''} onchange="deToggleField('${k}',this.checked)">
+          <span class="de-field-check-label">${v.label}</span>
+        </label>
+      `).join('')}
+    </div>
+  `).join('');
+}
+
+function deToggleField(key, val){
+  deEnabled[key]=val;
+  try{ const o=JSON.parse(localStorage.getItem('ti_de_fields_'+currentPlayer?.name)||'{}'); o[key]=val; localStorage.setItem('ti_de_fields_'+currentPlayer?.name,JSON.stringify(o)); }catch(e){}
+}
+function deCheckAll(val){
+  for(const k of Object.keys(DE_FIELDS)){
+    deEnabled[k]=val;
+    const el=document.getElementById('de-chk-'+k);
+    if(el) el.checked=val;
+  }
+  try{ localStorage.setItem('ti_de_fields_'+currentPlayer?.name,JSON.stringify(deEnabled)); }catch(e){}
+}
+
+function deSetOpt(btn, grpId, val){
+  const grp=document.getElementById(grpId);
+  if(grp) grp.querySelectorAll('.de-opt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  btn._val = val;
+}
+function deGetOpt(grpId, fallback=''){
+  const grp=document.getElementById(grpId);
+  if(!grp) return fallback;
+  const active=grp.querySelector('.de-opt-btn.active');
+  return active?active._val||active.textContent.trim():fallback;
+}
+function deToggle(divId, btnId){
+  const div=document.getElementById(divId), btn=document.getElementById(btnId);
+  if(!div||!btn) return;
+  const open=div.style.display!=='none';
+  div.style.display=open?'none':'block';
+  btn.textContent=btn.textContent.replace(/^[▶▼] /,'')
+  btn.textContent=(open?'▶ ':'▼ ')+btn.textContent;
+}
+function deCourseSelectChange(sel){
+  const courseInput=document.getElementById('de-course');
+  const newBtn=document.getElementById('de-course-new-btn');
+  if(sel.value==='__new__'){
+    sel.style.display='none';
+    courseInput.style.display='block';
+    newBtn.style.display='block';
+    courseInput.focus();
+  } else {
+    courseInput.value=sel.value;
+  }
+}
+function deCourseBack(){
+  const sel=document.getElementById('de-course-select');
+  const courseInput=document.getElementById('de-course');
+  const newBtn=document.getElementById('de-course-new-btn');
+  sel.style.display='block';sel.value='';
+  courseInput.style.display='none';courseInput.value='';
+  newBtn.style.display='none';
+}
+function deGetCourse(){
+  const sel=document.getElementById('de-course-select');
+  const input=document.getElementById('de-course');
+  if(sel&&sel.style.display!=='none'&&sel.value&&sel.value!=='__new__') return sel.value;
+  return input?input.value.trim():'';
+}
+// ── Progress save/restore ──────────────────────────────────────────
+function deSaveProgress(){
+  if(!currentPlayer||deHoles.filter(h=>h!=null).length===0)return;
+  try{
+    const key='ti_de_progress_'+currentPlayer.name;
+    const data={holes:deHoles,currentHole:deCurrentHole,totalHoles:deTotalHoles,meta:deRoundMeta,savedAt:new Date().toISOString()};
+    localStorage.setItem(key,JSON.stringify(data));
+  }catch(e){}
+}
+function deMaybeRestoreProgress(){
+  if(!currentPlayer)return;
+  try{
+    const key='ti_de_progress_'+currentPlayer.name;
+    const saved=localStorage.getItem(key);
+    if(!saved)return;
+    const data=JSON.parse(saved);
+    const filledHoles=data.holes.filter(h=>h!=null).length;
+    if(filledHoles===0){localStorage.removeItem(key);return;}
+    const savedAt=new Date(data.savedAt).toLocaleDateString();
+    const banner=document.getElementById('de-restore-banner');
+    if(banner){
+      banner.style.display='flex';
+      banner.querySelector('#de-restore-info').textContent=
+        `${filledHoles} hole${filledHoles>1?'s':''} from ${data.meta.course||'unknown course'} (${data.meta.date||savedAt})`;
+    }
+  }catch(e){}
+}
+function deRestoreProgress(){
+  try{
+    const key='ti_de_progress_'+currentPlayer.name;
+    const data=JSON.parse(localStorage.getItem(key));
+    deHoles=data.holes;
+    deTotalHoles=data.totalHoles;
+    deRoundMeta=data.meta;
+    deCurrentHole=data.currentHole;
+    deEditingHole=-1;
+    // Restore UI
+    document.getElementById('de-setup').style.display='none';
+    document.getElementById('de-entry').style.display='block';
+    document.getElementById('de-round-info').textContent=`${deRoundMeta.course} · ${deRoundMeta.date} · ${deTotalHoles} holes`;
+    deRenderScorecard();
+    // Find next empty hole or go to last filled
+    let nextEmpty=deHoles.findIndex(h=>h==null);
+    if(nextEmpty<0)nextEmpty=deTotalHoles-1;
+    deShowHole(Math.min(nextEmpty,deTotalHoles-1));
+    document.getElementById('de-restore-banner').style.display='none';
+  }catch(e){alert('Could not restore progress.');}
+}
+function deClearProgress(){
+  try{localStorage.removeItem('ti_de_progress_'+(currentPlayer?.name||''));}catch(e){}
+  document.getElementById('de-restore-banner').style.display='none';
+}
+
+function deStartRound(){
+  const date=document.getElementById('de-date').value;
+  const course=deGetCourse();
+  const err=document.getElementById('de-setup-err');
+  if(!date){err.style.display='block';err.textContent='Please enter a date.';return}
+  if(!course){err.style.display='block';err.textContent='Please enter a course name.';return}
+  err.style.display='none';
+
+  deTotalHoles = deGetOpt('de-holes-grp','18')==='9'||deGetOpt('de-holes-grp','')==='9 Holes'?9:18;
+  // Fix: read active btn value
+  const holesBtn = document.querySelector('#de-holes-grp .de-opt-btn.active');
+  deTotalHoles = holesBtn && holesBtn.textContent.includes('9') ? 9 : 18;
+
+  deRoundMeta = {
+    date, course,
+    tees: deGetOpt('de-tees-grp','Blue'),
+    wind: deGetOpt('de-wind-grp','Calm'),
+    weather: deGetOpt('de-weather-grp','Sunny'),
+    warmup: deGetOpt('de-warmup-grp','Average'),
+    sleep: deGetOpt('de-sleep-grp','Average'),
+    temp: document.getElementById('de-temp').value||null,
+    notes: document.getElementById('de-notes').value||null,
+  };
+  deHoles = [];
+  deCurrentHole = 0;
+  deEditingHole = -1;
+
+  document.getElementById('de-setup').style.display='none';
+  document.getElementById('de-entry').style.display='block';
+  document.getElementById('de-round-info').textContent=`${course} · ${date} · ${deTotalHoles} holes`;
+  deShowHole(0);
+}
+
+function deAbortRound(){
+  // Show inline confirmation instead of browser confirm() which breaks on some mobile
+  const banner=document.getElementById('de-abort-banner');
+  if(banner) banner.style.display='flex';
+}
+function deAbortConfirm(){
+  deClearProgress();
+  deHoles=[];deCurrentHole=0;deEditingHole=-1;
+  document.getElementById('de-entry').style.display='none';
+  document.getElementById('de-setup').style.display='block';
+  initDataEntry();
+}
+function deAbortCancel(){
+  const banner=document.getElementById('de-abort-banner');
+  if(banner) banner.style.display='none';
+}
+
+// ── Hole Form ──────────────────────────────────────────────────────
+function deShowHole(idx){
+  deCurrentHole=idx;
+  deEditingHole=-1;
+  const existing=deHoles[idx]||null;
+  const holeNum=idx+1;
+
+  document.getElementById('de-hole-title').textContent=`Hole ${holeNum}`;
+  const pct=Math.round(idx/deTotalHoles*100);
+  document.getElementById('de-progress').style.width=pct+'%';
+
+  deRenderForm(holeNum, existing);
+  deRenderScorecard();
+  document.getElementById('de-form-body').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function deEditHole(idx){
+  deCurrentHole=idx;
+  deEditingHole=idx;
+  const existing=deHoles[idx];
+  const holeNum=idx+1;
+  document.getElementById('de-hole-title').textContent=`Edit Hole ${holeNum}`;
+  deRenderForm(holeNum, existing);
+  document.getElementById('de-form-body').scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function deRenderForm(holeNum, existing){
+  const par = existing?.par || 4;
+  const score = existing?.score || par;
+
+  let html = `
+    <!-- Core: Par + Score -->
+    <div style="display:flex;align-items:flex-start;gap:24px;margin-bottom:20px;flex-wrap:wrap">
+      <div>
+        <div class="de-label">Par</div>
+        <div class="de-btn-group" id="form-par-grp">
+          ${[3,4,5].map(p=>`<button class="de-opt-btn${par===p?' active':''}" onclick="deSetParBtn(${p},this)">${p}</button>`).join('')}
+        </div>
+      </div>
+      <div>
+        <div class="de-label">Score</div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <button class="de-num-btn" onclick="deChangeScore(-1)">−</button>
+          <div style="text-align:center;min-width:70px">
+            <div id="form-score-num" style="font-family:'Bebas Neue',sans-serif;font-size:42px;line-height:1">${score}</div>
+            <div id="form-score-lbl" style="font-family:'DM Mono',monospace;font-size:11px;margin-top:-2px" class="${deScoreClass(score,par)}">${deScoreLabel(score,par)}</div>
+          </div>
+          <button class="de-num-btn" onclick="deChangeScore(1)">+</button>
+        </div>
+      </div>
+    </div>
+    <input type="hidden" id="form-par" value="${par}">
+    <input type="hidden" id="form-score" value="${score}">
+    <input type="hidden" id="form-hole" value="${holeNum}">
+  `;
+
+  // ── TEE SHOT (hidden for par 3) ───────────────────────────────
+  const teeFields=['tee_club','shape_ott','tee_dist','fairway','tee_miss_lr'];
+  if(teeFields.some(f=>deEnabled[f])){
+    html+=`<div class="de-section" id="form-tee-section" style="${par===3?'opacity:0.4;pointer-events:none':''}">
+      <div class="de-section-title" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Tee Shot</span>
+        <span id="form-tee-par3-note" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)">${par===3?'(par 3 — N/A)':''}</span>
+      </div>`;
+    if(deEnabled['tee_club']) html+=deSelectHTML('form-tee-club','Club',CLUBS_LIST,existing?.teeClub||'Dr');
+    if(deEnabled['shape_ott']) html+=deBtnGroupHTML('form-shape-ott','Shot Shape',['Draw','Straight','Fade'],existing?.shapeOTT||'Straight');
+    if(deEnabled['tee_dist']) html+=`<div class="de-field"><label class="de-label">Drive Distance (yds)</label><input type="number" id="form-tee-dist" class="de-input" placeholder="e.g. 265" value="${existing?.teeDist||''}"></div>`;
+    if(deEnabled['fairway']) html+=deBtnGroupHTML('form-fairway','Fairway Result',['Hit','Left','Right','Short','Long'],existing?.fairway||'');
+    if(deEnabled['tee_miss_lr']) html+=`<div class="de-field"><label class="de-label">Target Miss L/R (ft) <span style="color:var(--text-dim);font-weight:400">neg=left, pos=right</span></label><input type="number" id="form-tee-miss" class="de-input" placeholder="0" value="${existing?.teeMissLR||''}"></div>`;
+    html+=`</div>`;
+  }
+
+  // ── APPROACH ─────────────────────────────────────────────────
+  const apprFields=['appr_club','appr_dist','shape_appr','appr_lr','appr_sl','pin_loc','green','short_sided'];
+  if(apprFields.some(f=>deEnabled[f])){
+    html+=`<div class="de-section">
+      <div class="de-section-title">Approach / Green</div>`;
+    if(deEnabled['appr_club']) html+=deSelectHTML('form-appr-club','Approach Club',CLUBS_LIST,existing?.apprClub||'7i');
+    if(deEnabled['appr_dist']) html+=`<div class="de-field"><label class="de-label">Target Distance (yds)</label><input type="number" id="form-appr-dist" class="de-input" placeholder="e.g. 145" value="${existing?.apprDist||''}"></div>`;
+    if(deEnabled['shape_appr']) html+=deBtnGroupHTML('form-shape-appr','Approach Shape',['Draw','Straight','Fade'],existing?.shapeAppr||'Straight');
+    if(deEnabled['appr_lr']) html+=`<div class="de-field"><label class="de-label">L/R Miss (ft) <span style="color:var(--text-dim);font-weight:400">neg=left</span></label><input type="number" id="form-appr-lr" class="de-input" placeholder="0" value="${existing?.apprLR||''}"></div>`;
+    if(deEnabled['appr_sl']) html+=`<div class="de-field"><label class="de-label">Short/Long Miss (ft) <span style="color:var(--text-dim);font-weight:400">neg=short</span></label><input type="number" id="form-appr-sl" class="de-input" placeholder="0" value="${existing?.apprSL||''}"></div>`;
+    if(deEnabled['pin_loc']) html+=dePinLocHTML(existing?.pinLoc||'');
+    if(deEnabled['green']) html+=deBtnGroupHTML('form-green','Green Result',['Hit','Left','Right','Short','Long','Duffed Shot','Skulled Shot'],existing?.green||'');
+    if(deEnabled['short_sided']) html+=deBtnGroupHTML('form-short-sided','Short Sided?',['Yes','No'],existing?.shortSided||'');
+    html+=`</div>`;
+  }
+
+  // ── PUTTING ──────────────────────────────────────────────────
+  const puttFields=['num_putts','putt1_len','putt1_break','putt1_break_amt','putt1_slope','putt1_hl','putt1_miss','putt2_len','putt2_break'];
+  if(puttFields.some(f=>deEnabled[f])){
+    html+=`<div class="de-section">
+      <div class="de-section-title">Putting</div>`;
+    if(deEnabled['num_putts']){
+      const np=existing?.numPutts||2;
+      html+=`<div class="de-field">
+        <div class="de-label"># of Putts</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <button class="de-num-btn" onclick="dePuttChange(-1)">−</button>
+          <div id="form-putts-num" style="font-family:'Bebas Neue',sans-serif;font-size:36px;min-width:40px;text-align:center">${np}</div>
+          <button class="de-num-btn" onclick="dePuttChange(1)">+</button>
+        </div>
+        <input type="hidden" id="form-num-putts" value="${np}">
+      </div>`;
+    }
+    if(deEnabled['putt1_len']) html+=`<div class="de-field"><label class="de-label">Putt 1 Length (ft)</label><input type="number" id="form-putt1-len" class="de-input" placeholder="e.g. 18" value="${existing?.putt1Len||''}"></div>`;
+    if(deEnabled['putt1_break']) html+=deBtnGroupHTML('form-putt1-break','Putt 1 Break',['LR','RL','No Break','Double'],existing?.putt1Break||'');
+    if(deEnabled['putt1_break_amt']) html+=`<div class="de-field"><label class="de-label">Break Amount (in)</label><input type="number" id="form-putt1-amt" class="de-input" placeholder="e.g. 3" value="${existing?.putt1BreakAmt||''}"></div>`;
+    if(deEnabled['putt1_slope']) html+=deBtnGroupHTML('form-putt1-slope','Slope',['Uphill','Downhill','Flat','Uphill then Downhill','Downhill then Uphill'],existing?.putt1Slope||'');
+    if(deEnabled['putt1_hl']) html+=deBtnGroupHTML('form-putt1-hl','High / Low',['High','Low'],existing?.putt1HL||'');
+    if(deEnabled['putt1_miss']) html+=deBtnGroupHTML('form-putt1-miss','1st Putt Miss',['Left','Right','Short','Long','Made'],existing?.putt1Miss||'Made');
+    if(deEnabled['putt2_len']) html+=`<div class="de-field"><label class="de-label">Putt 2 Length (ft)</label><input type="number" id="form-putt2-len" class="de-input" placeholder="" value="${existing?.putt2Len||''}"></div>`;
+    if(deEnabled['putt2_break']) html+=deBtnGroupHTML('form-putt2-break','Putt 2 Break',['LR','RL','No Break'],existing?.putt2Break||'');
+    html+=`</div>`;
+  }
+
+  // ── NOTES ────────────────────────────────────────────────────
+  const noteFields=['penalty','swing_thought','pressure','bad_reason','bad_club','good_reason','good_club','putt_notes'];
+  if(noteFields.some(f=>deEnabled[f])){
+    html+=`<div class="de-section">
+      <div class="de-section-title">Notes</div>`;
+    if(deEnabled['penalty']){
+      const pen=existing?.penalty||0;
+      html+=`<div class="de-field">
+        <div class="de-label">Penalty Strokes</div>
+        <div class="de-btn-group" id="form-penalty-grp">
+          ${[0,1,2,3].map(n=>`<button class="de-opt-btn${pen===n?' active':''}" onclick="deSetOpt(this,'form-penalty-grp',${n})">${n}</button>`).join('')}
+        </div>
+      </div>`;
+    }
+    if(deEnabled['swing_thought']) html+=`<div class="de-field"><label class="de-label">Swing Thought</label><input type="text" id="form-swing" class="de-input" placeholder="e.g. Stay through the ball" value="${existing?.swingThought||''}"></div>`;
+    if(deEnabled['pressure']) html+=deBtnGroupHTML('form-pressure','Under Pressure?',['Yes','No'],existing?.pressure||'No');
+    if(deEnabled['bad_reason']) html+=`<div class="de-field"><label class="de-label">Reason for Bad Score</label><input type="text" id="form-bad-reason" class="de-input" placeholder="e.g. Pulled tee shot" value="${existing?.badReason||''}"></div>`;
+    if(deEnabled['bad_club']) html+=deSelectHTML('form-bad-club','Bad Score Club',['','Dr','3w','5i','6i','7i','8i','9i','PW','54 Deg','Putter'],existing?.badClub||'');
+    if(deEnabled['good_reason']) html+=`<div class="de-field"><label class="de-label">Reason for Good Score</label><input type="text" id="form-good-reason" class="de-input" placeholder="e.g. Great lag putt" value="${existing?.goodReason||''}"></div>`;
+    if(deEnabled['good_club']) html+=deSelectHTML('form-good-club','Good Score Club',['','Dr','3w','5i','6i','7i','8i','9i','PW','54 Deg','Putter'],existing?.goodClub||'');
+    if(deEnabled['putt_notes']) html+=`<div class="de-field"><label class="de-label">Putting Notes</label><textarea id="form-putt-notes" class="de-input" rows="2" placeholder="Anything notable about your putting…" style="resize:vertical">${existing?.puttNotes||''}</textarea></div>`;
+    html+=`</div>`;
+  }
+
+  // Nav buttons
+  const isEditing = deEditingHole >= 0;
+  const isLast = (deCurrentHole === deTotalHoles - 1);
+  html += `<div class="de-hole-nav">
+    <button class="btn-upload" onclick="deSubmitHole()" style="flex:1;font-size:16px">
+      ${isEditing ? 'Update Hole ✓' : isLast ? 'Save Last Hole →' : `Save Hole ${holeNum} →`}
+    </button>
+    ${deCurrentHole>0?`<button class="roll-btn" onclick="deEditHole(${deCurrentHole-1})" style="font-size:12px;padding:8px 14px">← Prev</button>`:''}
+  </div>`;
+
+  document.getElementById('de-form-body').innerHTML = html;
+}
+
+// ── Form helpers ──────────────────────────────────────────────────
+function deSelectHTML(id, label, options, selected){
+  return `<div class="de-field"><label class="de-label">${label}</label>
+    <select id="${id}" class="de-input">
+      ${options.map(o=>`<option value="${o}"${o===selected?' selected':''}>${o||'—'}</option>`).join('')}
+    </select></div>`;
+}
+function deBtnGroupHTML(id, label, options, selected){
+  return `<div class="de-field"><div class="de-label">${label}</div>
+    <div class="de-btn-group" id="${id}-grp">
+      ${options.map(o=>`<button class="de-opt-btn${o===selected?' active':''}" onclick="deSetOpt(this,'${id}-grp','${o.replace(/'/g,"\\'")}')">${o}</button>`).join('')}
+    </div></div>`;
+}
+function dePinLocHTML(selected){
+  const positions=['FL','FM','FR','ML','MM','MR','BL','BM','BR'];
+  const labels={FL:'F-Left',FM:'F-Mid',FR:'F-Right',ML:'M-Left',MM:'M-Mid',MR:'M-Right',BL:'B-Left',BM:'B-Mid',BR:'B-Right'};
+  return `<div class="de-field"><div class="de-label">Pin Location</div>
+    <div class="de-pin-grid" id="form-pin-loc-grp">
+      ${positions.map(p=>`<button class="de-pin-btn${p===selected?' active':''}" onclick="dePinSelect(this,'${p}')">${labels[p]}</button>`).join('')}
+    </div></div>`;
+}
+function dePinSelect(btn, val){
+  document.querySelectorAll('#form-pin-loc-grp .de-pin-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active'); btn._val=val;
+}
+
+function deSetParBtn(par, btn){
+  document.querySelectorAll('#form-par-grp .de-opt-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('form-par').value=par;
+  // Update score display
+  const score=parseInt(document.getElementById('form-score').value)||par;
+  const newScore=score;
+  document.getElementById('form-score-num').textContent=newScore;
+  const lbl=document.getElementById('form-score-lbl');
+  lbl.textContent=deScoreLabel(newScore,par);
+  lbl.className=deScoreClass(newScore,par);
+  // Show/hide tee section for par 3
+  const teeSection=document.getElementById('form-tee-section');
+  if(teeSection){
+    teeSection.style.opacity=par===3?'0.4':'1';
+    teeSection.style.pointerEvents=par===3?'none':'auto';
+    const note=document.getElementById('form-tee-par3-note');
+    if(note) note.textContent=par===3?'(par 3 — N/A)':'';
+  }
+}
+
+function deChangeScore(delta){
+  const par=parseInt(document.getElementById('form-par').value)||4;
+  const current=parseInt(document.getElementById('form-score').value)||par;
+  const next=Math.max(1,Math.min(12,current+delta));
+  document.getElementById('form-score').value=next;
+  document.getElementById('form-score-num').textContent=next;
+  const lbl=document.getElementById('form-score-lbl');
+  lbl.textContent=deScoreLabel(next,par);
+  lbl.className=deScoreClass(next,par);
+}
+
+function dePuttChange(delta){
+  const el=document.getElementById('form-num-putts');
+  if(!el)return;
+  const next=Math.max(0,Math.min(8,parseInt(el.value||2)+delta));
+  el.value=next;
+  document.getElementById('form-putts-num').textContent=next;
+}
+
+function deScoreLabel(score,par){
+  const d=score-par;
+  if(d<=-3)return'Albatross!';if(d===-2)return'Eagle';if(d===-1)return'Birdie';
+  if(d===0)return'Par';if(d===1)return'Bogey';if(d===2)return'Double';
+  if(d===3)return'Triple';return d+'+ over';
+}
+function deScoreClass(score,par){
+  const d=score-par;
+  if(d<=-2)return'de-score-eagle';if(d===-1)return'de-score-birdie';
+  if(d===0)return'de-score-par';if(d===1)return'de-score-bogey';
+  if(d===2)return'de-score-double';return'de-score-bad';
+}
+
+// ── Read form values ──────────────────────────────────────────────
+function deGetField(id, fallback=null){
+  const el=document.getElementById(id);
+  if(!el)return fallback;
+  if(el.tagName==='SELECT'||el.tagName==='INPUT'||el.tagName==='TEXTAREA') return el.value||fallback;
+  return fallback;
+}
+function deGetBtn(grpId, fallback=''){
+  const grp=document.getElementById(grpId+'-grp');
+  if(!grp)return fallback;
+  const a=grp.querySelector('.de-opt-btn.active,.de-pin-btn.active');
+  return a?(a._val||a.textContent.trim()):fallback;
+}
+function deGetPinLoc(){
+  const a=document.querySelector('#form-pin-loc-grp .de-pin-btn.active');
+  return a?a._val:null;
+}
+
+function deCollectHole(){
+  const par=parseInt(deGetField('form-par',4));
+  const score=parseInt(deGetField('form-score',par));
+  const holeNum=parseInt(deGetField('form-hole',deCurrentHole+1));
+  return {
+    hole: holeNum, par, score,
+    teeClub: deEnabled.tee_club?deGetField('form-tee-club'):null,
+    shapeOTT: deEnabled.shape_ott?deGetBtn('form-shape-ott'):null,
+    teeDist: deEnabled.tee_dist?parseFloat(deGetField('form-tee-dist'))||null:null,
+    fairway: deEnabled.fairway?deGetBtn('form-fairway'):null,
+    teeMissLR: deEnabled.tee_miss_lr?parseFloat(deGetField('form-tee-miss'))||null:null,
+    apprClub: deEnabled.appr_club?deGetField('form-appr-club'):null,
+    apprDist: deEnabled.appr_dist?parseFloat(deGetField('form-appr-dist'))||null:null,
+    shapeAppr: deEnabled.shape_appr?deGetBtn('form-shape-appr'):null,
+    apprLR: deEnabled.appr_lr?parseFloat(deGetField('form-appr-lr'))||null:null,
+    apprSL: deEnabled.appr_sl?parseFloat(deGetField('form-appr-sl'))||null:null,
+    pinLoc: deEnabled.pin_loc?deGetPinLoc():null,
+    green: deEnabled.green?deGetBtn('form-green'):null,
+    shortSided: deEnabled.short_sided?deGetBtn('form-short-sided'):null,
+    numPutts: deEnabled.num_putts?parseInt(deGetField('form-num-putts',2)):null,
+    putt1Len: deEnabled.putt1_len?parseFloat(deGetField('form-putt1-len'))||null:null,
+    putt1Break: deEnabled.putt1_break?deGetBtn('form-putt1-break'):null,
+    putt1BreakAmt: deEnabled.putt1_break_amt?parseFloat(deGetField('form-putt1-amt'))||null:null,
+    putt1Slope: deEnabled.putt1_slope?deGetBtn('form-putt1-slope'):null,
+    putt1HL: deEnabled.putt1_hl?deGetBtn('form-putt1-hl'):null,
+    putt1Miss: deEnabled.putt1_miss?deGetBtn('form-putt1-miss'):null,
+    putt2Len: deEnabled.putt2_len?parseFloat(deGetField('form-putt2-len'))||null:null,
+    putt2Break: deEnabled.putt2_break?deGetBtn('form-putt2-break'):null,
+    penalty: deEnabled.penalty?parseInt(deGetOpt('form-penalty-grp','0'))||0:0,
+    swingThought: deEnabled.swing_thought?deGetField('form-swing'):null,
+    pressure: deEnabled.pressure?deGetBtn('form-pressure'):null,
+    badReason: deEnabled.bad_reason?deGetField('form-bad-reason'):null,
+    badClub: deEnabled.bad_club?deGetField('form-bad-club'):null,
+    goodReason: deEnabled.good_reason?deGetField('form-good-reason'):null,
+    goodClub: deEnabled.good_club?deGetField('form-good-club'):null,
+    puttNotes: deEnabled.putt_notes?deGetField('form-putt-notes'):null,
+  };
+}
+
+function deSubmitHole(){
+  const data = deCollectHole();
+  if(deEditingHole>=0){
+    deHoles[deEditingHole]=data;
+    deEditingHole=-1;
+  } else {
+    deHoles[deCurrentHole]=data;
+    if(deCurrentHole<deTotalHoles-1){
+      deShowHole(deCurrentHole+1);
+      return;
+    }
+  }
+  // All holes done or editing done
+  deRenderScorecard();
+  deSaveProgress();
+  const allDone=deHoles.filter(h=>h!=null).length===deTotalHoles;
+  if(allDone){
+    document.getElementById('de-hole-title').textContent='Round Complete!';
+    document.getElementById('de-progress').style.width='100%';
+    document.getElementById('de-save-btn').style.display='block';
+    document.getElementById('de-form-body').innerHTML=`
+      <div style="padding:20px;text-align:center">
+        <div style="font-size:40px;margin-bottom:12px">✅</div>
+        <div style="font-family:'Bebas Neue',sans-serif;font-size:24px;letter-spacing:2px;color:var(--blue);margin-bottom:8px">All ${deTotalHoles} Holes Entered</div>
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim);margin-bottom:20px">Review your scorecard. Click any row to edit a hole, then save your round.</div>
+        <button class="roll-btn" onclick="deShowHole(0)" style="font-size:12px;padding:8px 16px">← Review from Hole 1</button>
+      </div>`;
+  } else if(deEditingHole===-1) {
+    // After editing, return to completion screen
+    document.getElementById('de-form-body').innerHTML=`
+      <div style="padding:20px;text-align:center">
+        <div style="font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)">Hole updated. Review scorecard or save.</div>
+        <button class="roll-btn" onclick="deShowHole(${data.hole-1})" style="margin-top:12px;font-size:12px">← Back to Hole ${data.hole}</button>
+      </div>`;
+  }
+}
+
+function deRenderScorecard(){
+  const tbody=document.getElementById('de-sc-body');
+  const tfoot=document.getElementById('de-sc-foot');
+  if(!tbody||!tfoot)return;
+  let totalScore=0,totalPar=0,rowsHtml='';
+  for(let i=0;i<deTotalHoles;i++){
+    const h=deHoles[i];
+    if(h){
+      totalScore+=h.score;totalPar+=h.par;
+      const pm=h.score-h.par;
+      const pmStr=pm>0?'+'+pm:pm===0?'E':String(pm);
+      const pmCls=pm<0?'val-green':pm===0?'':pm===1?'val-amber':'val-red';
+      rowsHtml+=`<tr class="de-sc-row" onclick="deEditHole(${i})">
+        <td>${i+1}</td><td>${h.par}</td>
+        <td class="${pmCls}">${h.score}</td>
+        <td class="${pmCls}">${pmStr}</td>
+        <td class="de-sc-edit">✏</td>
+      </tr>`;
+    } else {
+      rowsHtml+=`<tr style="opacity:0.3"><td>${i+1}</td><td>—</td><td>—</td><td>—</td><td></td></tr>`;
+    }
+  }
+  tbody.innerHTML=rowsHtml;
+  if(deHoles.filter(h=>h!=null).length>0){
+    const pm=totalScore-totalPar;
+    const pmStr=pm>0?'+'+pm:pm===0?'E':String(pm);
+    tfoot.innerHTML=`<tr style="border-top:2px solid var(--border)">
+      <td colspan="2" style="font-weight:700;color:var(--text)">Total</td>
+      <td style="font-weight:700;color:var(--text)">${totalScore}</td>
+      <td style="font-weight:700;color:${pm<0?'var(--green)':pm>0?'var(--red)':'var(--text)'}">${pmStr}</td>
+      <td></td>
+    </tr>`;
+    const pmCls=pm<=4?'val-green':pm>=10?'val-red':'val-amber';
+    document.getElementById('de-running-total').innerHTML=`<span class="${pmCls}">${totalScore} (${pmStr})</span>`;
+  }
+}
+
+// ── Save & Integrate ─────────────────────────────────────────────
+function deSaveRound(){
+  const holes=deHoles.filter(h=>h!=null);
+  if(holes.length<9){alert('Need at least 9 holes to save a round.');return}
+
+  // Aggregate hole data → round record
+  const totalScore=holes.reduce((s,h)=>s+h.score,0);
+  const totalPar=holes.reduce((s,h)=>s+h.par,0);
+  const birdies=holes.filter(h=>h.score<h.par).length;
+  const bogeys=holes.filter(h=>h.score>h.par&&h.score<h.par+2).length;
+  const doubles=holes.filter(h=>h.score>=h.par+2).length;
+  const totalPutts=holes.some(h=>h.numPutts!=null)?holes.reduce((s,h)=>s+(h.numPutts||0),0):null;
+  const girHoles=holes.filter(h=>h.green&&h.green.toLowerCase()==='hit');
+  const girPct=Math.round(girHoles.length/holes.length*1000)/10;
+  const penalties=holes.reduce((s,h)=>s+(h.penalty||0),0);
+  const fwHoles=holes.filter(h=>h.par!==3&&h.fairway&&h.fairway!=='');
+  const fwHit=fwHoles.filter(h=>h.fairway==='Hit').length;
+  const fwPct=fwHoles.length>0?Math.round(fwHit/fwHoles.length*1000)/10:null;
+  const drHoles=holes.filter(h=>h.teeClub&&h.teeClub.toLowerCase()==='dr'&&h.teeDist);
+  const driverDist=drHoles.length>0?Math.round(drHoles.reduce((s,h)=>s+h.teeDist,0)/drHoles.length):null;
+  const missedGIR=holes.filter(h=>!h.green||h.green.toLowerCase()!=='hit');
+  const scramHoles=missedGIR.filter(h=>h.score<=h.par);
+  const scramPct=missedGIR.length>0?Math.round(scramHoles.length/missedGIR.length*1000)/10:0;
+  const onePutts=holes.filter(h=>h.numPutts===1).length;
+  const threePutts=holes.filter(h=>h.numPutts&&h.numPutts>=3).length;
+
+  const newRound = {
+    date: deRoundMeta.date,
+    course: deRoundMeta.course,
+    score: totalScore,
+    par: totalPar,
+    plus_minus: totalScore-totalPar,
+    birdies, bogeys, doubles_plus: doubles,
+    putts: totalPutts,
+    gir_pct: girPct,
+    penalties,
+    fw_pct: fwPct,
+    driver_dist: driverDist,
+    scrambling: scramPct,
+    one_putts: onePutts,
+    three_putts: threePutts,
+    holes: holes.length,
+  };
+
+  // Push to player rounds
+  currentPlayer.rounds.push(newRound);
+
+  // Update par_scoring
+  const psGroups={3:[],4:[],5:[]};
+  currentPlayer.rounds.forEach(r=>{
+    // only use from new holes this time (existing rounds already accounted for in initial data)
+  });
+  holes.forEach(h=>{
+    if([3,4,5].includes(h.par)){
+      if(!psGroups[h.par])psGroups[h.par]=[];
+      psGroups[h.par].push(h.score-h.par);
+    }
+  });
+  const ps=currentPlayer.par_scoring||{};
+  for(const[p,arr]of Object.entries(psGroups)){
+    if(arr.length>0){
+      const oldVal=ps[String(p)]||0;
+      const oldCount=currentPlayer.rounds.length-1;
+      ps[String(p)]=Math.round(((oldVal*oldCount)+arr.reduce((a,b)=>a+b,0))/(oldCount+arr.length)*100)/100;
+    }
+  }
+  currentPlayer.par_scoring=ps;
+
+  // Update approach_cats with new shots
+  const newApprShots=holes.filter(h=>h.apprClub&&h.apprLR!=null);
+  if(newApprShots.length>0){
+    const cats=currentPlayer.approach_cats||{};
+    for(const h of newApprShots){
+      const rawC=h.apprClub.toLowerCase();
+      const cat=CAT_MAP_DE[rawC]||'Other';
+      if(!cats[cat])cats[cat]={shots:0,lr_miss:0,sl_miss:0,gir_pct:0,clubs:[]};
+      const d=cats[cat],n=d.shots;
+      const isGIR=h.green&&h.green.toLowerCase()==='hit'?1:0;
+      d.lr_miss=Math.round(((d.lr_miss*n)+(h.apprLR))/(n+1)*10)/10;
+      d.sl_miss=Math.round(((d.sl_miss*n)+(h.apprSL||0))/(n+1)*10)/10;
+      d.gir_pct=Math.round(((d.gir_pct/100*n)+isGIR)/(n+1)*1000)/10;
+      d.shots++;
+      // Update clubs sub-array
+      const clubKey=h.apprClub;
+      let clubEntry=d.clubs.find(c=>c.club===clubKey);
+      if(!clubEntry){clubEntry={club:clubKey,shots:0,lr_miss:0,sl_miss:0,gir_pct:0};d.clubs.push(clubEntry);}
+      const cn=clubEntry.shots;
+      clubEntry.lr_miss=Math.round(((clubEntry.lr_miss*cn)+(h.apprLR))/(cn+1)*10)/10;
+      clubEntry.sl_miss=Math.round(((clubEntry.sl_miss*cn)+(h.apprSL||0))/(cn+1)*10)/10;
+      clubEntry.gir_pct=Math.round(((clubEntry.gir_pct/100*cn)+isGIR)/(cn+1)*1000)/10;
+      clubEntry.shots++;
+    }
+    currentPlayer.approach_cats=cats;
+
+    // Add to approach_shots scatter
+    const newScatterShots=newApprShots.map(h=>{
+      const rawC=h.apprClub.toLowerCase();
+      const cat=CAT_MAP_DE[rawC]||'Other';
+      return{x:h.apprLR,y:h.apprSL||0,cat,club:h.apprClub,gir:h.green?.toLowerCase()==='hit'};
+    });
+    currentPlayer.approach_shots=[...(currentPlayer.approach_shots||[]),...newScatterShots];
+  }
+
+  // Update tee_shots
+  const newTeeShots=holes.filter(h=>h.teeClub&&h.teeDist).map(h=>({
+    x:h.teeMissLR||0,y:h.teeDist,club:h.teeClub,
+    fairway:h.fairway==='Hit',date:deRoundMeta.date
+  }));
+  currentPlayer.tee_shots=[...(currentPlayer.tee_shots||[]),...newTeeShots];
+
+  // Update make_pct with new putt data
+  const puttBuckets={'0-3':[],'3-5':[],'5-8':[],'8-12':[],'12-20':[],'20-35':[],'35-50':[],'50+':[]};
+  holes.filter(h=>h.putt1Len!=null).forEach(h=>{
+    const d=h.putt1Len;
+    const bkt=d<=3?'0-3':d<=5?'3-5':d<=8?'5-8':d<=12?'8-12':d<=20?'12-20':d<=35?'20-35':d<=50?'35-50':'50+';
+    puttBuckets[bkt].push(h.numPutts===1?1:0);
+  });
+  const mp=currentPlayer.make_pct||{};
+  for(const[b,arr]of Object.entries(puttBuckets)){
+    if(arr.length>0){
+      const existingPct=mp[b]||null;
+      const newPct=arr.reduce((a,b)=>a+b,0)/arr.length*100;
+      mp[b]=existingPct!=null?Math.round((existingPct+newPct)/2*10)/10:Math.round(newPct*10)/10;
+    }
+  }
+  currentPlayer.make_pct=mp;
+
+  // Refresh course select dropdown
+  const sel2=document.getElementById('de-course-select');
+  if(sel2&&currentPlayer){
+    const courses=[...new Set(currentPlayer.rounds.map(r=>r.course))].sort();
+    const opts=courses.map(c=>`<option value="${c}">${c}</option>`).join('');
+    sel2.innerHTML='<option value="">— Select a course —</option>'+opts+'<option value="__new__">+ Enter a new course…</option>';
+  }
+
+  // Try to persist
+  try{
+    const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
+    if(stored[currentPlayer.name]){stored[currentPlayer.name]=currentPlayer;localStorage.setItem('ti_players',JSON.stringify(stored));}
+  }catch(e){}
+
+  // Rebuild all analytics
+  buildDashboard();buildScoring();buildTee();buildApproach();
+  buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();
+
+  // Clear saved progress and reset
+  deClearProgress();
+  deHoles=[];deCurrentHole=0;deEditingHole=-1;
+  document.getElementById('de-entry').style.display='none';
+  document.getElementById('de-setup').style.display='block';
+  document.getElementById('de-course').value='';
+
+  // Re-init to refresh course dropdown and reset form
+  initDataEntry();
+
+  // Show success notification
+  const meta=document.getElementById('dash-meta');
+  if(meta){
+    meta.textContent=`✓ Round saved! ${currentPlayer.rounds.length} rounds tracked`;
+    meta.style.color='var(--green)';
+    setTimeout(()=>{meta.textContent=`${currentPlayer.rounds.length} rounds tracked`;meta.style.color='';},3000);
+  }
+
+  // Navigate to overview
+  const overviewBtn=document.querySelector('.nav-btn');
+  if(overviewBtn) overviewBtn.click();
+
+  alert(`Round saved! ${totalScore} (${totalScore-totalPar>=0?'+':''}${totalScore-totalPar}) at ${deRoundMeta.course}`);
 }
 
 </script>
