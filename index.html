@@ -41,14 +41,13 @@ body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min
 .login-error{color:var(--red);font-size:12px;margin-top:12px;font-family:'DM Mono',monospace;display:none}
 /* APP SHELL */
 #app{display:none}
-header{background:var(--surface);border-bottom:1px solid var(--border);padding:0 32px;display:flex;
-  align-items:center;gap:24px;height:60px;position:sticky;top:0;z-index:100}
+header{background:var(--surface);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:100;display:block}
 .app-logo{font-family:'Bebas Neue',sans-serif;font-size:22px;letter-spacing:3px;color:var(--blue);white-space:nowrap}
-nav{display:flex;gap:2px;flex:1;overflow-x:auto}
+nav{display:flex;gap:2px;overflow-x:auto;background:var(--surface);border-top:1px solid var(--border)}
 nav::-webkit-scrollbar{display:none}
 .nav-btn{background:none;border:none;color:var(--text-dim);padding:8px 14px;font-family:'DM Mono',monospace;
   font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;white-space:nowrap;
-  transition:all 0.15s;border-bottom:2px solid transparent;position:relative;top:1px}
+  transition:all 0.15s;border-bottom:2px solid transparent;position:relative}
 .nav-btn:hover{color:var(--text)}
 .nav-btn.active{color:var(--blue);border-bottom-color:var(--blue)}
 .header-right{display:flex;align-items:center;gap:16px;margin-left:auto}
@@ -129,7 +128,114 @@ tr:hover td{background:var(--surface2)}
 .drill-btn:hover{background:var(--surface3)}
 .drill-row td{background:rgba(22,32,22,0.5)!important;font-size:11px}
 .drill-row td:first-child{padding-left:32px;color:var(--text-dim)}
-@media(max-width:900px){.chart-grid{grid-template-columns:1fr}.tiger-grid{grid-template-columns:repeat(2,1fr)}.stats-grid{grid-template-columns:repeat(2,1fr)}main{padding:16px}header{padding:0 16px}}
+
+/* ── TABLET (≤900px) ── */
+@media(max-width:900px){
+  .chart-grid{grid-template-columns:1fr}
+  .tiger-grid{grid-template-columns:repeat(2,1fr)}
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  main{padding:20px}
+  header{padding:0 16px}
+  .upload-row{grid-template-columns:1fr}
+}
+
+/* ── MOBILE (≤600px) ── */
+@media(max-width:600px){
+  /* Header */
+  header{height:auto;flex-wrap:wrap;padding:0;position:sticky;top:0;z-index:200}
+  .header-top{display:flex;align-items:center;justify-content:space-between;
+    width:100%;padding:0 16px;height:54px;background:var(--surface);
+    border-bottom:1px solid var(--border)}
+  .app-logo{font-size:18px;letter-spacing:2px}
+  .header-right{gap:8px}
+  .player-badge{padding:4px 10px;font-size:12px}
+  .player-badge .dot{width:6px;height:6px}
+  .btn-logout{padding:4px 8px;font-size:10px}
+
+  /* Hamburger button */
+  .hamburger{display:flex!important;flex-direction:column;justify-content:center;
+    gap:4px;width:36px;height:36px;background:none;border:1px solid var(--border);
+    cursor:pointer;padding:6px;flex-shrink:0}
+  .hamburger span{display:block;height:2px;background:var(--text-dim);
+    transition:all 0.25s;border-radius:1px}
+  .hamburger.open span:nth-child(1){transform:translateY(6px) rotate(45deg)}
+  .hamburger.open span:nth-child(2){opacity:0}
+  .hamburger.open span:nth-child(3){transform:translateY(-6px) rotate(-45deg)}
+
+  /* Mobile nav drawer */
+  nav{display:none;flex-direction:column;width:100%;background:var(--surface);
+    border-bottom:2px solid var(--blue);overflow-y:auto;max-height:60vh}
+  nav.open{display:flex!important}
+  .nav-btn{text-align:left;padding:14px 20px;border-bottom:1px solid var(--border);
+    font-size:13px;letter-spacing:0.5px;border-left:3px solid transparent;
+    border-right:none;border-top:none;position:static;
+    border-bottom-width:1px}
+  .nav-btn.active{border-left-color:var(--blue);color:var(--blue);
+    background:rgba(96,165,250,0.06);border-bottom-color:var(--border)}
+  .nav-btn:last-child{border-bottom:none}
+
+  /* Layout */
+  main{padding:14px}
+  .chart-grid{grid-template-columns:1fr;gap:14px;margin-bottom:14px}
+  .stats-grid{grid-template-columns:repeat(2,1fr);gap:10px;margin-bottom:20px}
+  .tiger-grid{grid-template-columns:repeat(2,1fr);gap:10px}
+  .section-title{font-size:26px}
+
+  /* Stat cards */
+  .stat-card{padding:14px}
+  .stat-value{font-size:28px}
+
+  /* Charts — shrink canvases */
+  canvas{max-height:220px}
+  .chart-card{padding:14px}
+  .chart-title{font-size:14px;margin-bottom:10px}
+
+  /* Tables — horizontal scroll */
+  .rounds-scroll{max-height:340px}
+  .card > div{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{min-width:640px}
+  th,td{padding:7px 9px;font-size:11px}
+
+  /* Tiger five */
+  .tiger-card{padding:14px 10px}
+  .tiger-pct{font-size:28px}
+  .tiger-title{font-size:9px}
+
+  /* Upload */
+  .upload-card{padding:24px 20px}
+  .upload-row{grid-template-columns:1fr}
+  .login-card{padding:32px 24px;width:95vw}
+
+  /* Rolling controls wrap */
+  .rolling-controls{flex-wrap:wrap}
+  .roll-btn{font-size:10px;padding:4px 10px}
+
+  /* AI Caddie — stack layout */
+  #section-aicaddie > div{grid-template-columns:1fr!important}
+  #caddie-prompts{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  .prompt-btn{font-size:11px;padding:8px 10px}
+
+  /* Dispersion — filter controls wrap */
+  #disp-cat-btns,#disp-ci-btns{justify-content:flex-start!important}
+
+  /* Shot dispersion — smaller */
+  #chart-dispersion{max-height:260px!important}
+
+  /* Approach drill table */
+  #approach-miss-box{font-size:13px}
+
+  /* Definitions grid */
+  #def-grid{grid-template-columns:1fr!important}
+
+  /* Section header meta */
+  .section-meta{font-size:10px}
+
+  /* Scatter CI controls stack */
+  #tee-scatter-ci-btns,#tee-scatter-club-btns{flex-wrap:wrap}
+
+  /* Hide chart tooltips on touch devices - they appear automatically */
+}
+
 
 /* UPLOAD SCREEN */
 #upload-screen{display:none;align-items:center;justify-content:center;min-height:100vh;
@@ -332,8 +438,22 @@ tr:hover td{background:var(--surface2)}
 
 <div id="app">
   <header>
-    <div class="app-logo">Tour Intelligence</div>
-    <nav>
+    <!-- Desktop top bar / Mobile top bar -->
+    <div class="header-top" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 32px;height:60px">
+      <div class="app-logo">Tour Intelligence</div>
+      <div style="display:flex;align-items:center;gap:16px">
+        <div class="header-right">
+          <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
+          <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+        </div>
+        <!-- Hamburger — hidden on desktop via inline style, shown by mobile CSS -->
+        <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu" style="display:none">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+    <!-- Desktop nav (horizontal) — hidden on mobile, shown inline -->
+    <nav id="main-nav" style="display:flex;gap:2px;flex:1;overflow-x:auto;padding:0 16px">
       <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
@@ -346,10 +466,6 @@ tr:hover td{background:var(--surface2)}
       <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
       <button class="nav-btn" onclick="showSection('definitions',this)">Definitions</button>
     </nav>
-    <div class="header-right">
-      <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
-      <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
-    </div>
   </header>
   <main>
 
@@ -896,7 +1012,36 @@ function showSection(id,btn){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('section-'+id).classList.add('active');
   btn.classList.add('active');
+  // Close mobile nav after selecting a tab
+  closeMobileNav();
+  // Scroll to top of content
+  window.scrollTo({top:0,behavior:'smooth'});
 }
+
+function toggleMobileNav(){
+  const nav=document.getElementById('main-nav');
+  const btn=document.getElementById('hamburger-btn');
+  const isOpen=nav.classList.contains('open');
+  if(isOpen){closeMobileNav();}
+  else{nav.classList.add('open');btn.classList.add('open');btn.setAttribute('aria-expanded','true');}
+}
+
+function closeMobileNav(){
+  const nav=document.getElementById('main-nav');
+  const btn=document.getElementById('hamburger-btn');
+  nav.classList.remove('open');
+  btn.classList.remove('open');
+  btn.setAttribute('aria-expanded','false');
+}
+
+// Close nav when tapping outside it
+document.addEventListener('click',function(e){
+  const nav=document.getElementById('main-nav');
+  const btn=document.getElementById('hamburger-btn');
+  if(nav&&btn&&nav.classList.contains('open')&&!nav.contains(e.target)&&!btn.contains(e.target)){
+    closeMobileNav();
+  }
+});
 
 // ===== HELPERS =====
 function avg(arr){const v=arr.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null}
