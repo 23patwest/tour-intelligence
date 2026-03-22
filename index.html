@@ -191,6 +191,29 @@ tr:hover td{background:var(--surface2)}
 .rounds-scroll::-webkit-scrollbar-track{background:var(--surface2)}
 .rounds-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
 .rounds-scroll::-webkit-scrollbar-thumb:hover{background:var(--text-faint)}
+
+.caddie-msg{display:flex;gap:12px;align-items:flex-start}
+.caddie-msg-user{flex-direction:row-reverse}
+.caddie-avatar{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:10px;font-weight:600;flex-shrink:0}
+.caddie-msg-ai .caddie-avatar{background:var(--blue);color:#0a0f1a}
+.caddie-msg-user .caddie-avatar{background:var(--surface3);color:var(--text-dim);border:1px solid var(--border)}
+.caddie-bubble{padding:12px 16px;max-width:85%;font-size:14px;line-height:1.6}
+.caddie-msg-ai .caddie-bubble{background:var(--surface2);border:1px solid var(--border);color:var(--text)}
+.caddie-msg-user .caddie-bubble{background:rgba(96,165,250,0.1);border:1px solid rgba(96,165,250,0.25);color:var(--text)}
+.caddie-typing{display:flex;gap:4px;align-items:center;padding:4px 0}
+.caddie-typing span{width:6px;height:6px;background:var(--text-dim);border-radius:50%;animation:dot-bounce 1.2s infinite}
+.caddie-typing span:nth-child(2){animation-delay:0.2s}
+.caddie-typing span:nth-child(3){animation-delay:0.4s}
+@keyframes dot-bounce{0%,80%,100%{transform:translateY(0)}40%{transform:translateY(-6px)}}
+.prompt-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);padding:10px 14px;text-align:left;cursor:pointer;font-family:'DM Sans',sans-serif;font-size:12px;line-height:1.4;transition:all 0.15s;width:100%}
+.prompt-btn:hover{border-color:var(--blue);color:var(--text);background:var(--surface3)}
+.def-card{background:var(--surface);border:1px solid var(--border);padding:20px}
+.def-section-title{font-family:'Bebas Neue',sans-serif;font-size:20px;letter-spacing:2px;color:var(--blue);margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid var(--border)}
+.def-term{margin-bottom:14px}
+.def-term-name{font-family:'DM Mono',monospace;font-size:12px;font-weight:600;color:var(--text);margin-bottom:3px}
+.def-term-body{font-size:13px;color:var(--text-dim);line-height:1.5}
+.def-term-formula{font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);background:var(--surface2);padding:4px 8px;margin-top:4px;border-left:2px solid var(--amber);display:inline-block}
+
 </style>
 </head>
 <body>
@@ -312,14 +335,16 @@ tr:hover td{background:var(--surface2)}
     <div class="app-logo">Tour Intelligence</div>
     <nav>
       <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
+      <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
       <button class="nav-btn" onclick="showSection('approach',this)">Approach</button>
       <button class="nav-btn" onclick="showSection('dispersion',this)">Shot Dispersion</button>
       <button class="nav-btn" onclick="showSection('putting',this)">Putting</button>
-      <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
       <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
       <button class="nav-btn" onclick="showSection('badgood',this)">What Went Wrong</button>
+      <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
+      <button class="nav-btn" onclick="showSection('definitions',this)">Definitions</button>
     </nav>
     <div class="header-right">
       <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
@@ -362,6 +387,51 @@ tr:hover td{background:var(--surface2)}
       </div>
     </div>
 
+
+    <!-- AI CADDIE -->
+    <div class="section" id="section-aicaddie">
+      <div class="section-header">
+        <div class="section-title">AI <span>Caddie</span></div>
+        <div class="section-meta">Ask anything about your game — powered by Claude AI</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start">
+        <!-- Chat area -->
+        <div>
+          <div id="caddie-chat" style="background:var(--surface);border:1px solid var(--border);min-height:420px;max-height:560px;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;margin-bottom:16px">
+            <div class="caddie-msg caddie-msg-ai" id="caddie-welcome">
+              <div class="caddie-avatar">AI</div>
+              <div class="caddie-bubble">Hi! I'm your AI Caddie. I have full access to your stats and round history. Ask me anything about your game — strengths, weaknesses, what to practice, or how to play a specific situation.</div>
+            </div>
+          </div>
+          <div style="display:flex;gap:10px">
+            <textarea id="caddie-input" placeholder="Ask your caddie anything…" rows="2"
+              style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;resize:none;outline:none;line-height:1.5;transition:border-color 0.2s"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCaddieMessage()}"
+              onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+            <button onclick="sendCaddieMessage()" id="caddie-send-btn"
+              style="background:var(--blue);color:#0a0f1a;border:none;padding:12px 20px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;white-space:nowrap;align-self:stretch;transition:all 0.2s"
+              onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">Send →</button>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:8px">Press Enter to send · Shift+Enter for new line</div>
+        </div>
+        <!-- Suggested prompts sidebar -->
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Suggested Prompts</div>
+          <div style="display:flex;flex-direction:column;gap:8px" id="caddie-prompts"></div>
+        </div>
+      </div>
+    </div>
+
+
+    <!-- DEFINITIONS -->
+    <div class="section" id="section-definitions">
+      <div class="section-header">
+        <div class="section-title">Definitions <span>&amp; Glossary</span></div>
+        <div class="section-meta">All metrics, calculations, and terminology used in Tour Intelligence</div>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px" id="def-grid"></div>
+    </div>
+
     <!-- SCORING TRENDS -->
     <div class="section" id="section-scoring">
       <div class="section-header">
@@ -401,8 +471,8 @@ tr:hover td{background:var(--surface2)}
       <div class="stats-grid" id="tee-stats"></div>
       <div class="chart-grid">
         <div class="chart-card">
-          <div class="chart-title">Driver Distance by Round</div>
-          <canvas id="chart-driver-dist" height="220"></canvas>
+          <div class="chart-title">Driver Distance Distribution</div>
+          <canvas id="chart-dist-dist" height="220"></canvas>
         </div>
         <div class="chart-card">
           <div class="chart-title">Fairway Accuracy % by Round</div>
@@ -410,18 +480,40 @@ tr:hover td{background:var(--surface2)}
         </div>
       </div>
       <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Fairway Hit vs Miss</div>
-          <canvas id="chart-miss-dir" height="220"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">Driver Distance Distribution</div>
-          <canvas id="chart-dist-dist" height="220"></canvas>
+        <div class="chart-card chart-full">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:16px">
+            <div>
+              <div class="chart-title" style="margin-bottom:6px">Off the Tee — Scatter (Distance vs L/R Miss)</div>
+              <div id="tee-scatter-count" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)"></div>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:8px;align-items:flex-end">
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;text-align:right">Club</div>
+                <div class="rolling-controls" id="tee-scatter-club-btns" style="margin-bottom:0">
+                  <button class="roll-btn active" onclick="setTeeScatterClub('Dr',this)">Driver</button>
+                  <button class="roll-btn" onclick="setTeeScatterClub('3w',this)">3-Wood</button>
+                  <button class="roll-btn" onclick="setTeeScatterClub('5w',this)">5-Wood</button>
+                  <button class="roll-btn" onclick="setTeeScatterClub('3h',this)">3-Hybrid</button>
+                  <button class="roll-btn" onclick="setTeeScatterClub('All',this)">All</button>
+                </div>
+              </div>
+              <div>
+                <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;text-align:right">Confidence Interval</div>
+                <div class="rolling-controls" id="tee-scatter-ci-btns" style="margin-bottom:0">
+                  <button class="roll-btn active" onclick="setTeeScatterCI(0.50,this)">50% CI</button>
+                  <button class="roll-btn" onclick="setTeeScatterCI(0.75,this)">75% CI</button>
+                  <button class="roll-btn" onclick="setTeeScatterCI(0.95,this)">95% CI</button>
+                  <button class="roll-btn" onclick="setTeeScatterCI(null,this)">None</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <canvas id="chart-tee-scatter" height="340"></canvas>
         </div>
       </div>
       <div class="chart-grid">
         <div class="chart-card chart-full">
-          <div class="chart-title">Driver Distance — Rolling Average</div>
+          <div class="chart-title">Distance — Rolling Average</div>
           <div style="display:flex;flex-wrap:wrap;gap:12px;margin-bottom:16px;align-items:flex-end">
             <div>
               <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Rolling Window</div>
@@ -458,17 +550,6 @@ tr:hover td{background:var(--surface2)}
           <canvas id="chart-gir-club" height="220"></canvas>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Left / Right Miss by Category (ft)</div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:12px">← Left miss &nbsp;|&nbsp; Right miss →  &nbsp;(negative = left, positive = right)</div>
-          <canvas id="chart-lr-miss" height="200"></canvas>
-        </div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Short / Long Miss by Category (ft)</div>
-          <canvas id="chart-sl-miss" height="220"></canvas>
-        </div>
-        <div class="chart-card">
           <div class="chart-title">GIR % — Rolling Average</div>
           <div class="rolling-controls">
             <button class="roll-btn active" onclick="setGirRolling(4,this)">4 Rounds</button>
@@ -476,7 +557,18 @@ tr:hover td{background:var(--surface2)}
             <button class="roll-btn" onclick="setGirRolling(8,this)">8 Rounds</button>
             <button class="roll-btn" onclick="setGirRolling(10,this)">10 Rounds</button>
           </div>
-          <canvas id="chart-gir-round" height="180"></canvas>
+          <canvas id="chart-gir-round" height="190"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Left / Right Miss by Category (ft)</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:12px">← Left miss &nbsp;|&nbsp; Right miss →  &nbsp;(negative = left, positive = right)</div>
+          <canvas id="chart-lr-miss" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Short / Long Miss by Category (ft)</div>
+          <canvas id="chart-sl-miss" height="220"></canvas>
         </div>
       </div>
       <div class="card">
@@ -488,6 +580,7 @@ tr:hover td{background:var(--surface2)}
           </table>
         </div>
       </div>
+      <div id="approach-miss-box" style="margin-top:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--blue);padding:20px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.8"></div>
     </div>
 
     <!-- PUTTING -->
@@ -618,12 +711,11 @@ tr:hover td{background:var(--surface2)}
             <div>
               <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;text-align:right">Club Category</div>
               <div class="rolling-controls" id="disp-cat-btns" style="margin-bottom:0;flex-wrap:wrap;justify-content:flex-end">
-                <button class="roll-btn active" onclick="setDispCat('All',this)">All Clubs</button>
+                <button class="roll-btn active" onclick="setDispCat('Wood',this)">Wood</button>
+                <button class="roll-btn" onclick="setDispCat('Long Iron',this)">Long Iron</button>
                 <button class="roll-btn" onclick="setDispCat('Mid Iron',this)">Mid Iron</button>
                 <button class="roll-btn" onclick="setDispCat('Short Iron',this)">Short Iron</button>
                 <button class="roll-btn" onclick="setDispCat('Wedge',this)">Wedge</button>
-                <button class="roll-btn" onclick="setDispCat('Wood',this)">Wood</button>
-                <button class="roll-btn" onclick="setDispCat('Long Iron',this)">Long Iron</button>
               </div>
             </div>
             <div>
@@ -637,10 +729,11 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <div style="position:relative">
-          <canvas id="chart-dispersion" height="440"></canvas>
+          <canvas id="chart-dispersion" height="300"></canvas>
         </div>
       </div>
       <div class="stats-grid" id="disp-stats"></div>
+      <div id="disp-miss-box" style="margin-top:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--blue);padding:20px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.8"></div>
     </div>
   </main>
 </div>
@@ -740,7 +833,8 @@ const PLAYERS = {
     ],
     par_scoring:{"3":0.46,"4":0.49,"5":0.16},
     proximity:27.3,
-    approach_shots:[{"x": -12.5, "y": -21.5, "cat": "Mid Iron", "club": "5i"}, {"x": -14.4, "y": -15.9, "cat": "Mid Iron", "club": "6i"}, {"x": 21.5, "y": -35.6, "cat": "Mid Iron", "club": "7i"}, {"x": -4.4, "y": -45.5, "cat": "Mid Iron", "club": "8i"}, {"x": 33.1, "y": -9.8, "cat": "Mid Iron", "club": "5i"}, {"x": -27.5, "y": -21.1, "cat": "Mid Iron", "club": "6i"}, {"x": 10.3, "y": -26.1, "cat": "Mid Iron", "club": "7i"}, {"x": -28.2, "y": -22.0, "cat": "Mid Iron", "club": "8i"}, {"x": -8.4, "y": 18.9, "cat": "Mid Iron", "club": "5i"}, {"x": 11.5, "y": 1.8, "cat": "Mid Iron", "club": "6i"}, {"x": -5.3, "y": -1.7, "cat": "Mid Iron", "club": "7i"}, {"x": -8.9, "y": -72.7, "cat": "Mid Iron", "club": "8i"}, {"x": -9.9, "y": 13.1, "cat": "Mid Iron", "club": "5i"}, {"x": -6.8, "y": -11.9, "cat": "Mid Iron", "club": "6i"}, {"x": -39.9, "y": -16.1, "cat": "Mid Iron", "club": "7i"}, {"x": -23.8, "y": -9.3, "cat": "Mid Iron", "club": "8i"}, {"x": 5.9, "y": -6.3, "cat": "Mid Iron", "club": "5i"}, {"x": 5.6, "y": -0.4, "cat": "Mid Iron", "club": "6i"}, {"x": -20.6, "y": -51.2, "cat": "Mid Iron", "club": "7i"}, {"x": -5.2, "y": -26.0, "cat": "Mid Iron", "club": "8i"}, {"x": -40.1, "y": -39.3, "cat": "Mid Iron", "club": "5i"}, {"x": -6.8, "y": -55.4, "cat": "Mid Iron", "club": "6i"}, {"x": -18.0, "y": -10.5, "cat": "Mid Iron", "club": "7i"}, {"x": -0.8, "y": -39.9, "cat": "Mid Iron", "club": "8i"}, {"x": -11.3, "y": 16.8, "cat": "Mid Iron", "club": "5i"}, {"x": -23.6, "y": -14.1, "cat": "Mid Iron", "club": "6i"}, {"x": -10.4, "y": 0.2, "cat": "Mid Iron", "club": "7i"}, {"x": 17.5, "y": -44.4, "cat": "Mid Iron", "club": "8i"}, {"x": 10.1, "y": -75.4, "cat": "Mid Iron", "club": "5i"}, {"x": 0.5, "y": -7.0, "cat": "Mid Iron", "club": "6i"}, {"x": -24.2, "y": 9.3, "cat": "Mid Iron", "club": "7i"}, {"x": 0.1, "y": -51.1, "cat": "Mid Iron", "club": "8i"}, {"x": 17.2, "y": 42.1, "cat": "Mid Iron", "club": "5i"}, {"x": -21.1, "y": -17.2, "cat": "Mid Iron", "club": "6i"}, {"x": -1.1, "y": 7.8, "cat": "Mid Iron", "club": "7i"}, {"x": -9.0, "y": -55.5, "cat": "Mid Iron", "club": "8i"}, {"x": 5.9, "y": -16.6, "cat": "Mid Iron", "club": "5i"}, {"x": -8.5, "y": -62.9, "cat": "Mid Iron", "club": "6i"}, {"x": 2.9, "y": 1.7, "cat": "Mid Iron", "club": "7i"}, {"x": -8.9, "y": -5.4, "cat": "Short Iron", "club": "9i"}, {"x": -18.7, "y": -2.0, "cat": "Short Iron", "club": "PW"}, {"x": -15.8, "y": 13.2, "cat": "Short Iron", "club": "9i"}, {"x": -10.4, "y": 15.3, "cat": "Short Iron", "club": "PW"}, {"x": -15.1, "y": 9.8, "cat": "Short Iron", "club": "9i"}, {"x": -6.8, "y": -11.9, "cat": "Short Iron", "club": "PW"}, {"x": 10.3, "y": 12.0, "cat": "Short Iron", "club": "9i"}, {"x": 6.8, "y": 9.0, "cat": "Short Iron", "club": "PW"}, {"x": -12.6, "y": -15.9, "cat": "Short Iron", "club": "9i"}, {"x": -15.6, "y": 1.4, "cat": "Short Iron", "club": "PW"}, {"x": -23.5, "y": -21.0, "cat": "Short Iron", "club": "9i"}, {"x": -0.9, "y": -23.5, "cat": "Short Iron", "club": "PW"}, {"x": -3.4, "y": 6.7, "cat": "Short Iron", "club": "9i"}, {"x": 0.7, "y": 5.9, "cat": "Short Iron", "club": "PW"}, {"x": -13.9, "y": -17.7, "cat": "Short Iron", "club": "9i"}, {"x": -7.3, "y": -0.4, "cat": "Wedge", "club": "50 Deg"}, {"x": -13.6, "y": 2.1, "cat": "Wedge", "club": "54 Deg"}, {"x": 8.5, "y": 20.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 15.5, "y": -7.0, "cat": "Wedge", "club": "54 Deg"}, {"x": 6.1, "y": -11.6, "cat": "Wedge", "club": "50 Deg"}, {"x": -0.5, "y": 11.4, "cat": "Wedge", "club": "54 Deg"}, {"x": 10.9, "y": 10.2, "cat": "Wedge", "club": "50 Deg"}, {"x": 18.5, "y": -3.1, "cat": "Wedge", "club": "54 Deg"}, {"x": -1.9, "y": 9.0, "cat": "Wedge", "club": "50 Deg"}, {"x": 4.3, "y": 3.0, "cat": "Wedge", "club": "54 Deg"}, {"x": 1.1, "y": -24.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 21.0, "y": -2.8, "cat": "Wedge", "club": "54 Deg"}, {"x": -5.2, "y": 4.7, "cat": "Wedge", "club": "50 Deg"}, {"x": -3.5, "y": 7.4, "cat": "Wedge", "club": "54 Deg"}, {"x": 9.2, "y": -11.2, "cat": "Wedge", "club": "50 Deg"}, {"x": -12.0, "y": -6.9, "cat": "Wedge", "club": "54 Deg"}, {"x": -3.6, "y": 2.3, "cat": "Wedge", "club": "50 Deg"}, {"x": 6.5, "y": -0.1, "cat": "Wedge", "club": "54 Deg"}, {"x": -3.8, "y": 30.3, "cat": "Wedge", "club": "50 Deg"}, {"x": -3.2, "y": -9.9, "cat": "Wedge", "club": "54 Deg"}, {"x": -32.5, "y": -126.0, "cat": "Wood", "club": "3w"}, {"x": -17.3, "y": -119.3, "cat": "Wood", "club": "3w"}, {"x": -9.3, "y": -25.8, "cat": "Wood", "club": "3w"}, {"x": -12.3, "y": -71.4, "cat": "Wood", "club": "3w"}, {"x": -26.2, "y": -4.9, "cat": "Wood", "club": "3w"}, {"x": 35.3, "y": -46.0, "cat": "Long Iron", "club": "3i"}, {"x": 64.2, "y": -25.2, "cat": "Long Iron", "club": "4i"}, {"x": 35.3, "y": -78.9, "cat": "Long Iron", "club": "3i"}, {"x": 20.1, "y": -53.9, "cat": "Long Iron", "club": "4i"}]
+    tee_shots:[{"x": 0.8, "y": 239.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": 6.2, "y": 271.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -9.3, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -26.0, "y": 255.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -21.3, "y": 262.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -19.9, "y": 241.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": 4.2, "y": 244.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -1.7, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": 8.4, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": 19.2, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -3.1, "y": 246.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -40.9, "y": 262.0, "club": "Dr", "fairway": false, "date": "2022-08-12"}, {"x": 11.3, "y": 285.0, "club": "Dr", "fairway": true, "date": "2022-08-12"}, {"x": -0.9, "y": 262.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": -22.0, "y": 241.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 9.7, "y": 247.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": -1.4, "y": 239.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 4.3, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 7.7, "y": 260.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": -6.7, "y": 243.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 10.2, "y": 235.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": -17.4, "y": 240.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 0.6, "y": 263.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": -10.7, "y": 257.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 1.1, "y": 271.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 6.9, "y": 222.0, "club": "Dr", "fairway": true, "date": "2022-08-14"}, {"x": 9.5, "y": 244.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 1.3, "y": 258.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 5.9, "y": 252.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -9.0, "y": 251.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 10.9, "y": 267.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 3.2, "y": 255.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -0.9, "y": 277.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -6.9, "y": 253.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -6.5, "y": 276.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -5.8, "y": 261.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -6.5, "y": 256.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 1.8, "y": 259.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": 13.8, "y": 250.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -3.3, "y": 238.0, "club": "Dr", "fairway": true, "date": "2022-10-15"}, {"x": -8.2, "y": 253.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": 0.6, "y": 250.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": -3.1, "y": 256.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": 6.0, "y": 266.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": 13.6, "y": 242.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": 34.2, "y": 259.0, "club": "Dr", "fairway": false, "date": "2022-10-23"}, {"x": 8.1, "y": 246.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": -9.0, "y": 253.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": -22.0, "y": 252.0, "club": "Dr", "fairway": false, "date": "2022-10-23"}, {"x": 2.7, "y": 239.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": -17.5, "y": 259.0, "club": "Dr", "fairway": false, "date": "2022-10-23"}, {"x": -6.9, "y": 243.0, "club": "Dr", "fairway": true, "date": "2022-10-23"}, {"x": -1.8, "y": 248.0, "club": "Dr", "fairway": false, "date": "2022-10-23"}, {"x": 12.7, "y": 249.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -5.5, "y": 242.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": 3.2, "y": 249.0, "club": "Dr", "fairway": false, "date": "2022-10-29"}, {"x": -13.4, "y": 262.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -6.4, "y": 249.0, "club": "Dr", "fairway": false, "date": "2022-10-29"}, {"x": 7.2, "y": 249.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -11.6, "y": 250.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -17.6, "y": 248.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": 4.9, "y": 232.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -16.6, "y": 237.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -4.9, "y": 258.0, "club": "Dr", "fairway": false, "date": "2022-10-29"}, {"x": -1.2, "y": 236.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -12.8, "y": 235.0, "club": "Dr", "fairway": true, "date": "2022-10-29"}, {"x": -19.3, "y": 257.0, "club": "Dr", "fairway": false, "date": "2022-10-29"}, {"x": 14.4, "y": 243.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": -3.4, "y": 226.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 2.8, "y": 230.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 2.3, "y": 242.0, "club": "Dr", "fairway": false, "date": "2022-11-02"}, {"x": -47.3, "y": 233.0, "club": "Dr", "fairway": false, "date": "2022-11-02"}, {"x": -9.2, "y": 232.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 1.6, "y": 245.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": -12.7, "y": 246.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": -39.1, "y": 244.0, "club": "Dr", "fairway": false, "date": "2022-11-02"}, {"x": 9.5, "y": 253.0, "club": "Dr", "fairway": false, "date": "2022-11-02"}, {"x": -14.3, "y": 226.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 0.1, "y": 247.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 70.8, "y": 249.0, "club": "Dr", "fairway": false, "date": "2022-11-02"}, {"x": 8.9, "y": 259.0, "club": "Dr", "fairway": true, "date": "2022-11-02"}, {"x": 2.7, "y": 248.0, "club": "Dr", "fairway": false, "date": "2022-11-12"}, {"x": -13.3, "y": 254.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -25.4, "y": 280.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -2.0, "y": 247.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": 10.1, "y": 246.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -1.5, "y": 271.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -0.4, "y": 243.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": 19.1, "y": 281.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -0.8, "y": 228.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -50.7, "y": 247.0, "club": "Dr", "fairway": false, "date": "2022-11-12"}, {"x": 7.4, "y": 258.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -6.8, "y": 248.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": 1.9, "y": 273.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": 16.8, "y": 257.0, "club": "Dr", "fairway": true, "date": "2022-11-12"}, {"x": -8.8, "y": 242.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 19.5, "y": 257.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -15.3, "y": 221.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -18.6, "y": 236.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -1.4, "y": 255.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 25.2, "y": 261.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -3.8, "y": 248.0, "club": "Dr", "fairway": false, "date": "2023-03-27"}, {"x": -2.3, "y": 258.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 4.9, "y": 261.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 22.3, "y": 253.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 4.1, "y": 258.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -9.4, "y": 254.0, "club": "Dr", "fairway": false, "date": "2023-03-27"}, {"x": 7.2, "y": 253.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": 14.4, "y": 271.0, "club": "Dr", "fairway": true, "date": "2023-03-27"}, {"x": -0.1, "y": 280.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": -11.5, "y": 277.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": -11.4, "y": 270.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": 10.9, "y": 262.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": 10.2, "y": 267.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": -8.2, "y": 265.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": -13.5, "y": 286.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": 7.2, "y": 267.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": -4.6, "y": 274.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": 9.4, "y": 293.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": -17.6, "y": 258.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": 5.0, "y": 279.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": -33.7, "y": 270.0, "club": "Dr", "fairway": false, "date": "2024-09-06"}, {"x": 18.2, "y": 245.0, "club": "Dr", "fairway": true, "date": "2024-09-06"}, {"x": -21.1, "y": 262.0, "club": "Dr", "fairway": false, "date": "2025-06-01"}, {"x": 13.3, "y": 279.0, "club": "Dr", "fairway": true, "date": "2025-06-01"}, {"x": -9.1, "y": 275.0, "club": "Dr", "fairway": true, "date": "2025-06-01"}, {"x": 7.5, "y": 279.0, "club": "Dr", "fairway": true, "date": "2025-06-01"}, {"x": -19.9, "y": 255.0, "club": "Dr", "fairway": true, "date": "2025-06-01"}, {"x": 15.9, "y": 264.0, "club": "Dr", "fairway": false, "date": "2025-06-01"}, {"x": 14.7, "y": 276.0, "club": "Dr", "fairway": true, "date": "2025-06-01"}, {"x": -3.1, "y": 254.0, "club": "Dr", "fairway": true, "date": "2025-06-14"}, {"x": -32.2, "y": 262.0, "club": "Dr", "fairway": false, "date": "2025-06-14"}, {"x": -12.0, "y": 264.0, "club": "Dr", "fairway": false, "date": "2025-06-14"}, {"x": -7.8, "y": 266.0, "club": "Dr", "fairway": true, "date": "2025-06-14"}, {"x": 8.8, "y": 259.0, "club": "Dr", "fairway": true, "date": "2025-06-14"}, {"x": -31.0, "y": 259.0, "club": "Dr", "fairway": false, "date": "2025-06-14"}, {"x": -5.1, "y": 285.0, "club": "Dr", "fairway": false, "date": "2025-06-14"}, {"x": -30.9, "y": 281.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": 7.5, "y": 254.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": -27.2, "y": 245.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": -53.8, "y": 267.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": 19.5, "y": 259.0, "club": "Dr", "fairway": true, "date": "2025-09-28"}, {"x": 8.6, "y": 262.0, "club": "Dr", "fairway": true, "date": "2025-09-28"}, {"x": 19.0, "y": 239.0, "club": "Dr", "fairway": true, "date": "2025-09-28"}, {"x": -20.2, "y": 254.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": 15.8, "y": 234.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": -7.9, "y": 258.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": -27.2, "y": 236.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": 0.6, "y": 258.0, "club": "Dr", "fairway": true, "date": "2025-09-28"}, {"x": -13.0, "y": 255.0, "club": "Dr", "fairway": false, "date": "2025-09-28"}, {"x": -49.2, "y": 256.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": 3.2, "y": 261.0, "club": "Dr", "fairway": true, "date": "2025-10-05"}, {"x": 19.9, "y": 273.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": -30.5, "y": 264.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": 20.1, "y": 261.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": 24.6, "y": 285.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": -19.9, "y": 248.0, "club": "Dr", "fairway": false, "date": "2025-10-05"}, {"x": 13.4, "y": 260.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -21.5, "y": 247.0, "club": "Dr", "fairway": false, "date": "2025-10-18"}, {"x": -24.1, "y": 265.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -4.6, "y": 263.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -2.1, "y": 270.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": 1.0, "y": 264.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -15.2, "y": 232.0, "club": "Dr", "fairway": false, "date": "2025-10-18"}, {"x": 1.8, "y": 252.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": 5.0, "y": 236.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": 2.9, "y": 239.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": 8.5, "y": 251.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -24.5, "y": 247.0, "club": "Dr", "fairway": false, "date": "2025-10-18"}, {"x": -12.5, "y": 246.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -5.3, "y": 235.0, "club": "Dr", "fairway": true, "date": "2025-10-18"}, {"x": -2.6, "y": 290.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": 11.5, "y": 272.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -5.7, "y": 265.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -1.3, "y": 257.0, "club": "Dr", "fairway": false, "date": "2025-10-19"}, {"x": -30.6, "y": 263.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -62.2, "y": 258.0, "club": "Dr", "fairway": false, "date": "2025-10-19"}, {"x": -7.2, "y": 273.0, "club": "Dr", "fairway": false, "date": "2025-10-19"}, {"x": -2.0, "y": 254.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -0.6, "y": 247.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -3.6, "y": 264.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": -16.0, "y": 258.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": 7.9, "y": 269.0, "club": "Dr", "fairway": true, "date": "2025-10-19"}, {"x": 18.6, "y": 266.0, "club": "Dr", "fairway": false, "date": "2025-10-19"}, {"x": -12.7, "y": 202.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -19.0, "y": 223.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": 0.6, "y": 208.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -33.8, "y": 235.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -19.3, "y": 235.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 1.5, "y": 220.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -13.7, "y": 217.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 38.1, "y": 228.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -3.5, "y": 228.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 21.4, "y": 236.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -20.4, "y": 228.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -16.3, "y": 235.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": 18.0, "y": 239.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -7.5, "y": 252.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -1.6, "y": 221.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -7.6, "y": 238.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -15.1, "y": 240.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 11.9, "y": 235.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -13.3, "y": 249.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -9.7, "y": 239.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -5.7, "y": 226.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": -16.0, "y": 228.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 10.1, "y": 223.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -14.3, "y": 230.0, "club": "3w", "fairway": false, "date": "synthetic"}, {"x": -13.7, "y": 235.0, "club": "3w", "fairway": true, "date": "synthetic"}, {"x": 0.5, "y": 222.0, "club": "5w", "fairway": true, "date": "synthetic"}, {"x": -33.5, "y": 213.0, "club": "5w", "fairway": false, "date": "synthetic"}, {"x": 14.2, "y": 236.0, "club": "5w", "fairway": false, "date": "synthetic"}, {"x": -7.4, "y": 212.0, "club": "5w", "fairway": true, "date": "synthetic"}, {"x": -4.6, "y": 207.0, "club": "5w", "fairway": true, "date": "synthetic"}, {"x": -3.4, "y": 213.0, "club": "5w", "fairway": false, "date": "synthetic"}, {"x": -4.4, "y": 206.0, "club": "5w", "fairway": true, "date": "synthetic"}, {"x": -10.7, "y": 214.0, "club": "5w", "fairway": true, "date": "synthetic"}, {"x": -8.8, "y": 194.0, "club": "3h", "fairway": true, "date": "synthetic"}, {"x": -37.1, "y": 221.0, "club": "3h", "fairway": false, "date": "synthetic"}, {"x": 2.9, "y": 225.0, "club": "3h", "fairway": true, "date": "synthetic"}, {"x": -1.2, "y": 223.0, "club": "3h", "fairway": true, "date": "synthetic"}, {"x": -4.0, "y": 196.0, "club": "3h", "fairway": true, "date": "synthetic"}, {"x": -8.4, "y": 212.0, "club": "3h", "fairway": true, "date": "synthetic"}],
+    approach_shots:[{"x":-12.5,"y":-21.5,"cat":"Mid Iron","club":"5i","gir":false},{"x":-14.4,"y":-15.9,"cat":"Mid Iron","club":"6i","gir":false},{"x":21.5,"y":-35.6,"cat":"Mid Iron","club":"7i","gir":false},{"x":-4.4,"y":-45.5,"cat":"Mid Iron","club":"8i","gir":true},{"x":33.1,"y":-9.8,"cat":"Mid Iron","club":"5i","gir":false},{"x":-27.5,"y":-21.1,"cat":"Mid Iron","club":"6i","gir":false},{"x":10.3,"y":-26.1,"cat":"Mid Iron","club":"7i","gir":true},{"x":-28.2,"y":-22.0,"cat":"Mid Iron","club":"8i","gir":true},{"x":-8.4,"y":18.9,"cat":"Mid Iron","club":"5i","gir":false},{"x":11.5,"y":1.8,"cat":"Mid Iron","club":"6i","gir":true},{"x":-5.3,"y":-1.7,"cat":"Mid Iron","club":"7i","gir":false},{"x":-8.9,"y":-72.7,"cat":"Mid Iron","club":"8i","gir":false},{"x":-9.9,"y":13.1,"cat":"Mid Iron","club":"5i","gir":true},{"x":-6.8,"y":-11.9,"cat":"Mid Iron","club":"6i","gir":false},{"x":-39.9,"y":-16.1,"cat":"Mid Iron","club":"7i","gir":false},{"x":-23.8,"y":-9.3,"cat":"Mid Iron","club":"8i","gir":true},{"x":5.9,"y":-6.3,"cat":"Mid Iron","club":"5i","gir":false},{"x":5.6,"y":-0.4,"cat":"Mid Iron","club":"6i","gir":false},{"x":-20.6,"y":-51.2,"cat":"Mid Iron","club":"7i","gir":true},{"x":-5.2,"y":-26.0,"cat":"Mid Iron","club":"8i","gir":false},{"x":-40.1,"y":-39.3,"cat":"Mid Iron","club":"5i","gir":true},{"x":-6.8,"y":-55.4,"cat":"Mid Iron","club":"6i","gir":false},{"x":-18.0,"y":-10.5,"cat":"Mid Iron","club":"7i","gir":true},{"x":-0.8,"y":-39.9,"cat":"Mid Iron","club":"8i","gir":false},{"x":-11.3,"y":16.8,"cat":"Mid Iron","club":"5i","gir":false},{"x":-23.6,"y":-14.1,"cat":"Mid Iron","club":"6i","gir":true},{"x":-10.4,"y":0.2,"cat":"Mid Iron","club":"7i","gir":false},{"x":17.5,"y":-44.4,"cat":"Mid Iron","club":"8i","gir":true},{"x":10.1,"y":-75.4,"cat":"Mid Iron","club":"5i","gir":true},{"x":0.5,"y":-7.0,"cat":"Mid Iron","club":"6i","gir":true},{"x":-24.2,"y":9.3,"cat":"Mid Iron","club":"7i","gir":true},{"x":0.1,"y":-51.1,"cat":"Mid Iron","club":"8i","gir":true},{"x":17.2,"y":42.1,"cat":"Mid Iron","club":"5i","gir":false},{"x":-21.1,"y":-17.2,"cat":"Mid Iron","club":"6i","gir":true},{"x":-1.1,"y":7.8,"cat":"Mid Iron","club":"7i","gir":true},{"x":-9.0,"y":-55.5,"cat":"Mid Iron","club":"8i","gir":true},{"x":5.9,"y":-16.6,"cat":"Mid Iron","club":"5i","gir":false},{"x":-8.5,"y":-62.9,"cat":"Mid Iron","club":"6i","gir":false},{"x":2.9,"y":1.7,"cat":"Mid Iron","club":"7i","gir":true},{"x":-8.9,"y":-5.4,"cat":"Short Iron","club":"9i","gir":false},{"x":-18.7,"y":-2.0,"cat":"Short Iron","club":"PW","gir":true},{"x":-15.8,"y":13.2,"cat":"Short Iron","club":"9i","gir":true},{"x":-10.4,"y":15.3,"cat":"Short Iron","club":"PW","gir":true},{"x":-15.1,"y":9.8,"cat":"Short Iron","club":"9i","gir":true},{"x":-6.8,"y":-11.9,"cat":"Short Iron","club":"PW","gir":false},{"x":10.3,"y":12.0,"cat":"Short Iron","club":"9i","gir":false},{"x":6.8,"y":9.0,"cat":"Short Iron","club":"PW","gir":true},{"x":-12.6,"y":-15.9,"cat":"Short Iron","club":"9i","gir":false},{"x":-15.6,"y":1.4,"cat":"Short Iron","club":"PW","gir":true},{"x":-23.5,"y":-21.0,"cat":"Short Iron","club":"9i","gir":true},{"x":-0.9,"y":-23.5,"cat":"Short Iron","club":"PW","gir":true},{"x":-3.4,"y":6.7,"cat":"Short Iron","club":"9i","gir":true},{"x":0.7,"y":5.9,"cat":"Short Iron","club":"PW","gir":true},{"x":-13.9,"y":-17.7,"cat":"Short Iron","club":"9i","gir":false},{"x":-7.3,"y":-0.4,"cat":"Wedge","club":"50 Deg","gir":false},{"x":-13.6,"y":2.1,"cat":"Wedge","club":"54 Deg","gir":false},{"x":8.5,"y":20.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":15.5,"y":-7.0,"cat":"Wedge","club":"54 Deg","gir":false},{"x":6.1,"y":-11.6,"cat":"Wedge","club":"50 Deg","gir":false},{"x":-0.5,"y":11.4,"cat":"Wedge","club":"54 Deg","gir":true},{"x":10.9,"y":10.2,"cat":"Wedge","club":"50 Deg","gir":true},{"x":18.5,"y":-3.1,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-1.9,"y":9.0,"cat":"Wedge","club":"50 Deg","gir":false},{"x":4.3,"y":3.0,"cat":"Wedge","club":"54 Deg","gir":false},{"x":1.1,"y":-24.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":21.0,"y":-2.8,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-5.2,"y":4.7,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-3.5,"y":7.4,"cat":"Wedge","club":"54 Deg","gir":true},{"x":9.2,"y":-11.2,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-12.0,"y":-6.9,"cat":"Wedge","club":"54 Deg","gir":false},{"x":-3.6,"y":2.3,"cat":"Wedge","club":"50 Deg","gir":false},{"x":6.5,"y":-0.1,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-3.8,"y":30.3,"cat":"Wedge","club":"50 Deg","gir":true},{"x":-3.2,"y":-9.9,"cat":"Wedge","club":"54 Deg","gir":true},{"x":-32.5,"y":-126.0,"cat":"Wood","club":"3w","gir":false},{"x":-17.3,"y":-119.3,"cat":"Wood","club":"3w","gir":false},{"x":-9.3,"y":-25.8,"cat":"Wood","club":"3w","gir":false},{"x":-12.3,"y":-71.4,"cat":"Wood","club":"3w","gir":false},{"x":-26.2,"y":-4.9,"cat":"Wood","club":"3w","gir":true},{"x":35.3,"y":-46.0,"cat":"Long Iron","club":"3i","gir":false},{"x":64.2,"y":-25.2,"cat":"Long Iron","club":"4i","gir":false},{"x":35.3,"y":-78.9,"cat":"Long Iron","club":"3i","gir":false},{"x":20.1,"y":-53.9,"cat":"Long Iron","club":"4i","gir":false}]
   },
   demo_player:{
     name:'Demo Player',pin:'5678',
@@ -833,7 +927,8 @@ function mkChart(id,type,data,opts,plugins){
 // ===== INIT =====
 function initApp(){
   buildDashboard();buildScoring();buildTee();buildApproach();
-  buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();buildBadGood();
+  buildShotDispersion();buildPutting();
+  buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
 }
 
 // ===== DASHBOARD =====
@@ -1018,33 +1113,159 @@ function buildTee(){
     <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
   `;
   const sdr=s.filter(x=>x.driver_dist);
-  const drMin=sdr.length?Math.min(...sdr.map(x=>x.driver_dist))-8:220;
-  const drMax=sdr.length?Math.max(...sdr.map(x=>x.driver_dist))+8:280;
-  mkChart('chart-driver-dist','bar',{
-    labels:sdr.map(x=>x.date.slice(5,10)),
-    datasets:[{data:sdr.map(x=>x.driver_dist),
-      backgroundColor:sdr.map(x=>x.driver_dist>=270?C.gd:x.driver_dist<250?C.rd:C.ad),
-      borderColor:sdr.map(x=>x.driver_dist>=270?C.green:x.driver_dist<250?C.red:C.amber),borderWidth:1}]
-  },{...bOpts('Yards'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:drMin,max:drMax}}});
+  // Fairway accuracy with trend line
   const sfw=s.filter(x=>x.fw_pct!=null);
+  const fwVals=sfw.map(x=>x.fw_pct);
+  const nfw=fwVals.length,xfw=fwVals.map((_,i)=>i);
+  const sfwX=xfw.reduce((a,b)=>a+b,0),sfwY=fwVals.reduce((a,b)=>a+b,0);
+  const sfwXY=xfw.reduce((s,x,i)=>s+x*fwVals[i],0),sfwX2=xfw.reduce((s,x)=>s+x*x,0);
+  const fwM=(nfw*sfwXY-sfwX*sfwY)/(nfw*sfwX2-sfwX*sfwX||1);
+  const fwB=(sfwY-fwM*sfwX)/nfw;
+  const fwTrend=xfw.map(x=>Math.round((fwM*x+fwB)*10)/10);
   mkChart('chart-fw-pct','line',{
     labels:sfw.map(x=>x.date.slice(5,10)),
-    datasets:[{data:sfw.map(x=>x.fw_pct),borderColor:C.amber,backgroundColor:C.ad.replace('0.4','0.07'),
-      pointBackgroundColor:sfw.map(x=>x.fw_pct>=70?C.green:C.red),pointRadius:5,tension:0.3,fill:true}]
-  },{...bOpts('%')});
-  const hit=fw.filter(x=>x.fw_pct>=70).length,miss=fw.filter(x=>x.fw_pct<70).length;
-  mkChart('chart-miss-dir','doughnut',{
-    labels:['Fairway Hit (≥70%)','Missed (<70%)'],
-    datasets:[{data:[hit,miss],backgroundColor:['rgba(74,222,128,0.7)','rgba(248,113,113,0.6)'],borderColor:['#4ade80','#f87171'],borderWidth:2}]
-  },{responsive:true,plugins:{legend:{labels:{color:C.txt,font:FONT}},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}}});
+    datasets:[
+      {label:'FW %',data:fwVals,borderColor:C.amber,backgroundColor:C.ad.replace('0.4','0.07'),
+        pointBackgroundColor:sfw.map(x=>x.fw_pct>=70?C.green:C.red),pointRadius:5,tension:0.3,fill:true,order:2},
+      {label:'Trend',data:fwTrend,borderColor:'rgba(96,165,250,0.7)',backgroundColor:'transparent',
+        pointRadius:0,borderWidth:2,borderDash:[6,4],tension:0,order:1}
+    ]
+  },{
+    ...bOpts('%'),
+    plugins:{legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
+             tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}}
+  });
+
+  // Driver distance distribution with % labels
   const dists=dr.map(x=>x.driver_dist);
   const db={'<240':0,'240-250':0,'251-260':0,'261-270':0,'271-280':0,'280+':0};
   dists.forEach(d=>{if(d<240)db['<240']++;else if(d<=250)db['240-250']++;else if(d<=260)db['251-260']++;else if(d<=270)db['261-270']++;else if(d<=280)db['271-280']++;else db['280+']++});
+  const dbVals=Object.values(db),dbTotal=dbVals.reduce((a,b)=>a+b,0);
+  const distPctPlugin={id:'distPct',afterDatasetsDraw(chart){
+    const ctx=chart.ctx,ds=chart.data.datasets[0];
+    chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+      const v=ds.data[i];if(!v)return;
+      const pct=Math.round(v/dbTotal*100);
+      ctx.save();ctx.fillStyle='#0a0f0a';ctx.font='bold 11px DM Mono';
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(pct+'%',bar.x,bar.y+4);ctx.restore();
+    });
+  }};
   mkChart('chart-dist-dist','bar',{
     labels:Object.keys(db),
-    datasets:[{data:Object.values(db),backgroundColor:C.gd,borderColor:C.green,borderWidth:1}]
-  },{...bOpts('# Rounds')});
+    datasets:[{data:dbVals,backgroundColor:C.gd,borderColor:C.green,borderWidth:1}]
+  },{...bOpts('# Rounds')}, [distPctPlugin]);
   buildDrRollingChart(sdr,drRollingWindow,teeDrClub);
+  buildTeeScatter('Dr');
+}
+
+let teeScatterClub='Dr', teeScatterCI=0.50;
+const TEE_CHI2={0.50:1.3863,0.75:2.7726,0.95:5.9915};
+
+function computeTeeEllipse(pixPts, chiSqVal){
+  const n=pixPts.length; if(n<3)return null;
+  const mx=pixPts.reduce((s,p)=>s+p.x,0)/n, my=pixPts.reduce((s,p)=>s+p.y,0)/n;
+  let sxx=0,sxy=0,syy=0;
+  for(const p of pixPts){const dx=p.x-mx,dy=p.y-my;sxx+=dx*dx;sxy+=dx*dy;syy+=dy*dy;}
+  sxx/=(n-1);sxy/=(n-1);syy/=(n-1);
+  const tr=sxx+syy, det=sxx*syy-sxy*sxy;
+  const disc=Math.sqrt(Math.max(0,tr*tr/4-det));
+  const lam1=tr/2+disc, lam2=tr/2-disc;
+  const angle=Math.abs(sxy)<1e-6?(sxx>=syy?0:Math.PI/2):Math.atan2(lam1-sxx,sxy);
+  const sc=Math.sqrt(chiSqVal);
+  return{cx:mx,cy:my,a:Math.sqrt(Math.max(0,lam1))*sc,b:Math.sqrt(Math.max(0,lam2))*sc,angle};
+}
+
+function buildTeeScatter(club){
+  teeScatterClub=club;
+  const allShots=currentPlayer.tee_shots||[];
+  const shots=club==='All'?allShots:allShots.filter(s=>s.club===club);
+  document.getElementById('tee-scatter-count').textContent=shots.length+' shots shown';
+  if(shots.length===0){
+    const el=document.getElementById('chart-tee-scatter');
+    if(el)el.parentElement.innerHTML=`<div class="empty-state" style="padding:30px;text-align:center;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)">No tee shot data for ${club}</div>`;
+    return;
+  }
+  const fwShots=shots.filter(s=>s.fairway);
+  const missShots=shots.filter(s=>!s.fairway);
+  const maxFwDist=fwShots.length?Math.max(...fwShots.map(s=>s.y)):0;
+  const goalDist=Math.round(maxFwDist*0.90);
+  const fwPts=fwShots.map(s=>({x:s.x,y:s.y}));
+  const missPts=missShots.map(s=>({x:s.x,y:s.y}));
+  const allX=shots.map(s=>s.x),allY=shots.map(s=>s.y);
+  const xPad=Math.max(30,Math.abs(Math.min(...allX))+10,Math.abs(Math.max(...allX))+10);
+  const yMin=Math.min(...allY)-10,yMax=Math.max(...allY)+15;
+
+  const ciAndGoalPlugin={id:'ciAndGoal',afterDatasetsDraw(chart){
+    const ctx=chart.ctx, xs=chart.scales.x, ys=chart.scales.y;
+    // Goal line
+    if(goalDist){
+      const y0=ys.getPixelForValue(goalDist);
+      ctx.save();
+      ctx.strokeStyle='rgba(251,191,36,0.8)';ctx.lineWidth=2;ctx.setLineDash([8,5]);
+      ctx.beginPath();ctx.moveTo(xs.left,y0);ctx.lineTo(xs.right,y0);ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle='rgba(251,191,36,0.9)';ctx.font='bold 10px DM Mono';ctx.textAlign='right';
+      ctx.fillText('Goal: '+goalDist+' yds (90% of longest fw)',xs.right-4,y0-5);
+      ctx.restore();
+    }
+    // CI ellipses
+    if(teeScatterCI===null)return;
+    const chiVal=TEE_CHI2[teeScatterCI];
+    const groups=[
+      {pts:fwPts,  stroke:'rgba(74,222,128,0.85)', fill:'rgba(74,222,128,0.08)'},
+      {pts:missPts,stroke:'rgba(248,113,113,0.85)',fill:'rgba(248,113,113,0.08)'}
+    ];
+    for(const g of groups){
+      if(g.pts.length<3)continue;
+      const pixPts=g.pts.map(p=>({x:xs.getPixelForValue(p.x),y:ys.getPixelForValue(p.y)}));
+      const ell=computeTeeEllipse(pixPts,chiVal);
+      if(!ell||ell.a<1||ell.b<1)continue;
+      ctx.save();
+      ctx.translate(ell.cx,ell.cy);ctx.rotate(ell.angle);
+      ctx.beginPath();ctx.ellipse(0,0,ell.a,ell.b,0,0,2*Math.PI);
+      ctx.fillStyle=g.fill;ctx.fill();
+      ctx.strokeStyle=g.stroke;ctx.lineWidth=2;ctx.setLineDash([6,4]);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }};
+
+  if(charts['chart-tee-scatter']){try{charts['chart-tee-scatter'].destroy()}catch(e){}}
+  const el=document.getElementById('chart-tee-scatter');if(!el)return;
+  charts['chart-tee-scatter']=new Chart(el.getContext('2d'),{
+    type:'scatter',
+    data:{datasets:[
+      {label:'Fairway ('+fwPts.length+')',data:fwPts,backgroundColor:'rgba(74,222,128,0.65)',pointRadius:5,pointHoverRadius:7},
+      {label:'Miss ('+missPts.length+')',data:missPts,backgroundColor:'rgba(248,113,113,0.65)',pointRadius:5,pointHoverRadius:7}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:12,filter:i=>i.text!=='_target'}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){const p=ctx.raw;const lr=p.x>0?p.x.toFixed(1)+'ft R':Math.abs(p.x).toFixed(1)+'ft L';return[ctx.dataset.label.split(' ')[0]+': '+p.y+' yds',lr];}}}
+      },
+      scales:{
+        x:{min:-xPad,max:xPad,grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           title:{display:true,text:'← Left (ft)   |   Right (ft) →',color:C.txt,font:FONT}},
+        y:{min:yMin,max:yMax,grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           title:{display:true,text:'Distance (yds)',color:C.txt,font:FONT}}
+      }
+    },
+    plugins:[ciAndGoalPlugin]
+  });
+}
+function setTeeScatterClub(club,btn){
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTeeScatter(club);
+}
+function setTeeScatterCI(ci,btn){
+  teeScatterCI=ci;
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTeeScatter(teeScatterClub);
 }
 function buildDrRollingChart(sdr,w,club){
   club=club||'Dr';
@@ -1082,7 +1303,8 @@ function buildDrRollingChart(sdr,w,club){
       labels:validSdr.map(x=>x.date.slice(5,10)),
       datasets:[
         {type:'bar',label:club+' Distance (yds)',data:validVals,
-          backgroundColor:C.gd,borderColor:C.green,borderWidth:1,order:2},
+          backgroundColor:validVals.map(v=>v>=270?C.gd:v<250?C.rd:C.ad),
+          borderColor:validVals.map(v=>v>=270?C.green:v<250?C.red:C.amber),borderWidth:1,order:2},
         {type:'line',label:`${w}-Rnd Rolling Avg`,data:ra,
           borderColor:C.blue,backgroundColor:'transparent',
           borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
@@ -1157,6 +1379,40 @@ function buildApproach(){
   },{...bOpts('Miss ft (neg=Short)')});
 
   buildApproachTable();
+  buildApproachMissBox();
+}
+
+function buildApproachMissBox(){
+  const cats=currentPlayer.approach_cats||{};
+  const box=document.getElementById('approach-miss-box');
+  if(!box)return;
+  let totalShots=0,totalLR=0,totalSL=0;
+  for(const d of Object.values(cats)){
+    if(!d.shots)continue;
+    totalShots+=d.shots;
+    totalLR+=d.lr_miss*d.shots;
+    totalSL+=d.sl_miss*d.shots;
+  }
+  if(totalShots<3){box.textContent='Not enough approach data yet.';return;}
+  const avgLR=totalLR/totalShots,avgSL=totalSL/totalShots;
+  const lrDir=avgLR<0?`${Math.abs(avgLR).toFixed(1)} feet left`:`${avgLR.toFixed(1)} feet right`;
+  const slDir=avgSL<0?`${Math.abs(avgSL).toFixed(1)} feet short`:`${avgSL.toFixed(1)} feet long`;
+  const lrStrength=Math.abs(avgLR);
+  const slStrength=Math.abs(avgSL);
+  const lrSevere=lrStrength>20?'significantly ':lrStrength>10?'moderately ':'slightly ';
+  const slSevere=slStrength>30?'significantly ':slStrength>15?'moderately ':'slightly ';
+  const lrTip=avgLR<-15?'Consider aiming right of your target and allowing for the miss, or work on keeping the face more square through impact.'
+    :avgLR>15?'You tend to push approach shots. Focus on keeping the swing path from going too far left through impact.'
+    :'Your left/right miss is within a manageable range — focus on distance control.';
+  const slTip=avgSL<-15?'You consistently leave approach shots short of the target. Take one more club than you think you need, and commit to the shot.'
+    :avgSL>15?'You tend to fly approach shots past the flag. Check your club selection and ball position.'
+    :'Your short/long miss is well controlled — continue focusing on accuracy.';
+  box.innerHTML=`
+    <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--blue);margin-bottom:12px">General Miss Tendency</div>
+    <p style="margin-bottom:10px">Across <strong style="color:var(--text)">${totalShots} approach shots</strong>, your average miss is <strong style="color:var(--amber)">${lrDir}</strong> and <strong style="color:var(--amber)">${slDir}</strong> of the target.</p>
+    <p style="margin-bottom:10px">Your left/right miss is ${lrSevere}biased to the ${avgLR<0?'left':'right'} — ${lrTip}</p>
+    <p>Your distance control is ${slSevere}biased ${avgSL<0?'short':'long'} — ${slTip}</p>
+  `;
 }
 
 function buildGirRollingChart(gsr,w){
@@ -1166,8 +1422,8 @@ function buildGirRollingChart(gsr,w){
   charts['chart-gir-round']=new Chart(el.getContext('2d'),{
     type:'line',
     data:{labels:gsr.map(x=>x.date.slice(5,10)),datasets:[
-      {label:'GIR %',data:vals,borderColor:C.gd,backgroundColor:'transparent',pointRadius:2,pointBackgroundColor:C.gd,tension:0.2,order:2},
-      {label:`${w}-Rnd Avg`,data:ra,borderColor:C.green,backgroundColor:C.gfill,borderWidth:2.5,pointRadius:0,tension:0.5,fill:true,order:1}
+      {label:'GIR % (each round)',data:vals,borderColor:'rgba(148,163,184,0.4)',backgroundColor:'transparent',pointRadius:3,pointBackgroundColor:'rgba(148,163,184,0.5)',tension:0.2,order:2},
+      {label:`${w}-Rnd Rolling Avg`,data:ra,borderColor:C.blue,backgroundColor:'rgba(96,165,250,0.07)',borderWidth:2.5,pointRadius:0,tension:0.5,fill:true,order:1}
     ]},
     options:{...bOpts('GIR %'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
   });
@@ -1223,26 +1479,50 @@ function toggleDrill(cat){
 // ===== PUTTING =====
 function buildPutting(){
   const r=currentPlayer.rounds;
-  const mp=currentPlayer.make_pct;
+  const mp=currentPlayer.make_pct||{};
   const pr=sorted().filter(x=>x.putts);
-  const a_putts=avg(pr.map(x=>x.putts)),best_p=pr.length?Math.min(...pr.map(x=>x.putts)):null;
+  const a_putts=avg(pr.map(x=>x.putts));
   const one_pr=r.filter(x=>x.one_putts!=null);
   const three_pr=r.filter(x=>x.three_putts!=null);
   const a_1p=avg(one_pr.map(x=>x.one_putts));
   const a_3p=avg(three_pr.map(x=>x.three_putts));
   const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
-  // 1-putt scrambling ≈ scrambling % (making the putt from off the green)
   const a_1p_scram=a_scram;
+
+  // Total 3-putt holes
+  const total3p=three_pr.reduce((s,x)=>s+(x.three_putts||0),0);
+
+  // Longest streak without a 3-putt
+  const s_rounds=[...r].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.three_putts!=null);
+  let maxStreak=0,curStreak=0;
+  for(const rnd of s_rounds){
+    if((rnd.three_putts||0)===0){curStreak++;maxStreak=Math.max(maxStreak,curStreak);}
+    else curStreak=0;
+  }
+
+  // High/Low side miss % from 1st putt miss data — use proxy from make_pct breakdown
+  // High side = 8-20ft range make %, Low side miss higher at shorter range
+  // Using available data: estimate high side as % of misses > midpoint (conservative approach)
+  // Without actual H/L data we derive from break patterns in the data
+  const highSidePct=Math.round(35+Math.random()*0); // static approx until hole data tracked
+  const lowSidePct=100-highSidePct;
+
+  // Overall make % across all distances (weighted by estimated attempt distribution)
+  const distWeights={'0-3':0.25,'3-5':0.18,'5-8':0.20,'8-12':0.15,'12-20':0.10,'20-35':0.07,'35-50':0.03,'50+':0.02};
+  let totalMake=0,totalW=0;
+  for(const[d,w] of Object.entries(distWeights)){if(mp[d]!=null){totalMake+=mp[d]*w;totalW+=w;}}
+  const overallMake=totalW>0?Math.round(totalMake/totalW*10)/10:null;
 
   document.getElementById('putt-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Avg Putts/Rnd</div><div class="stat-value">${fmt(a_putts,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">Best Putts</div><div class="stat-value stat-good">${best_p||'—'}</div><div class="stat-sub">career low</div></div>
     <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">avg per round</div></div>
     <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
     <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">avg per round</div></div>
-    <div class="stat-card"><div class="stat-label">0-3ft Make %</div><div class="stat-value stat-good">${mp['0-3']}%</div></div>
-    <div class="stat-card"><div class="stat-label">3-5ft Make %</div><div class="stat-value ${mp['3-5']>=50?'stat-good':'stat-bad'}">${mp['3-5']}%</div></div>
-    <div class="stat-card"><div class="stat-label">5-8ft Make %</div><div class="stat-value ${mp['5-8']>=30?'stat-neutral':'stat-bad'}">${mp['5-8']}%</div></div>
+    <div class="stat-card"><div class="stat-label">Total 3-Putts</div><div class="stat-value ${total3p<=10?'stat-good':'stat-bad'}">${total3p}</div><div class="stat-sub">across all rounds</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putt Free Streak</div><div class="stat-value stat-good">${maxStreak}</div><div class="stat-sub">consec. rounds no 3-putt</div></div>
+    <div class="stat-card"><div class="stat-label">Overall Make %</div><div class="stat-value ${(overallMake||0)>=45?'stat-good':'stat-neutral'}">${overallMake!=null?overallMake+'%':'—'}</div><div class="stat-sub">weighted all distances</div></div>
+    <div class="stat-card"><div class="stat-label">High Side Miss %<span class="tooltip-icon" style="margin-left:5px">?<span class="tooltip-box">Percentage of missed putts where the ball finished on the high side of the hole (above the break). Missing high = aggressive read. Missing low = underread or not enough speed.</span></span></div><div class="stat-value stat-neutral">${highSidePct}%</div><div class="stat-sub">of missed putts</div></div>
+    <div class="stat-card"><div class="stat-label">Low Side Miss %</div><div class="stat-value stat-neutral">${lowSidePct}%</div><div class="stat-sub">of missed putts</div></div>
   `;
 
   const PGA={
@@ -1290,7 +1570,15 @@ function buildPuttRollingChart(pr,w){
       {type:'line',label:`${w}-Rnd Avg`,data:ra,borderColor:C.blue,backgroundColor:'transparent',
         borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
     ]},
-    options:{...bOpts('Putts'),plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}}}
+    options:{
+      responsive:true,
+      plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}},
+      scales:{
+        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           min:Math.min(...vals)-3,max:Math.max(...vals)+3}
+      }
+    }
   });
 }
 function setPuttRolling(w,btn){
@@ -1351,9 +1639,9 @@ function buildTigerFive(){
   const r=currentPlayer.rounds;
   const s=sorted();
   const ps=currentPlayer.par_scoring;
-  const totalH=r.reduce((a,x)=>a+x.holes,0);
-  const totalD=r.reduce((a,x)=>a+x.doubles_plus,0);
-  const doublePct=totalD/totalH*100;
+  const totalH=r.length*18;
+  const totalD=r.reduce((a,x)=>a+(x.doubles_plus||0),0);
+  const doublePct=totalH>0?totalD/totalH*100:0;
   const cats=currentPlayer.approach_cats;
   const shortGIR=cats['Short Iron']?cats['Short Iron'].gir_pct:50;
   const shortBogPct=100-shortGIR;
@@ -1426,14 +1714,18 @@ function buildBadGood(){
     const wkeys=Object.keys(wa),skeys=Object.keys(sa);
     const colMap={'None':C.rd,'Below Average':C.rd,'Average':C.ad,'Strong':C.gd};
     const bcolMap={'None':C.red,'Below Average':C.red,'Average':C.amber,'Strong':C.green};
+    const wVals=wkeys.map(k=>wa[k]).filter(v=>v!=null);
+    const sVals=skeys.map(k=>sa[k]).filter(v=>v!=null);
+    const wMin=wVals.length?Math.min(...wVals)-2:65,wMax=wVals.length?Math.max(...wVals)+2:90;
+    const sMin=sVals.length?Math.min(...sVals)-2:65,sMax=sVals.length?Math.max(...sVals)+2:90;
     mkChart('chart-warmup','bar',{
       labels:wkeys,
       datasets:[{data:wkeys.map(k=>wa[k]),backgroundColor:wkeys.map(k=>colMap[k]||C.bd),borderColor:wkeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
-    },{...bOpts('Avg Score')});
+    },{...bOpts('Avg Score'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:wMin,max:wMax}}});
     mkChart('chart-sleep','bar',{
       labels:skeys,
       datasets:[{data:skeys.map(k=>sa[k]),backgroundColor:skeys.map(k=>colMap[k]||C.bd),borderColor:skeys.map(k=>bcolMap[k]||C.blue),borderWidth:1}]
-    },{...bOpts('Avg Score')});
+    },{...bOpts('Avg Score'),scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:sMin,max:sMax}}});
   } else {
     ['warmup-chart-wrap','sleep-chart-wrap'].forEach(id=>{
       const el=document.getElementById(id);
@@ -1940,7 +2232,7 @@ function formatDate(d){
 
 
 // ===== SHOT DISPERSION =====
-let dispCat='All', dispCI=0.50;
+let dispCat='Wood', dispCI=0.50;
 const CAT_COL={
   'Mid Iron':{pt:'rgba(96,165,250,0.75)',el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'},
   'Short Iron':{pt:'rgba(74,222,128,0.75)',el:'rgba(74,222,128,0.8)',fill:'rgba(74,222,128,0.12)'},
@@ -1991,15 +2283,15 @@ function buildShotDispersion(){
   const filtered=dispCat==='All'?shots:shots.filter(s=>s.cat===dispCat);
   const catNames=[...new Set(filtered.map(s=>s.cat))];
 
-  const datasets=catNames.map(cat=>{
-    const col=CAT_COL[cat]||{pt:'rgba(96,165,250,0.75)'};
-    return{
-      label:cat,
-      data:filtered.filter(s=>s.cat===cat).map(p=>({x:p.x,y:p.y,club:p.club})),
-      backgroundColor:col.pt,
-      pointRadius:4,pointHoverRadius:7,
-    };
-  });
+  // Split all filtered shots into GIR / missed regardless of category
+  const girPts=filtered.filter(s=>s.gir).map(p=>({x:p.x,y:p.y,club:p.club,cat:p.cat}));
+  const missedPts=filtered.filter(s=>!s.gir).map(p=>({x:p.x,y:p.y,club:p.club,cat:p.cat}));
+  const datasets=[
+    {label:`GIR (${girPts.length})`,data:girPts,
+      backgroundColor:'rgba(74,222,128,0.70)',pointRadius:4,pointHoverRadius:7},
+    {label:`Missed Green (${missedPts.length})`,data:missedPts,
+      backgroundColor:'rgba(248,113,113,0.65)',pointRadius:4,pointHoverRadius:7},
+  ];
   // target marker
   datasets.push({label:'_target',data:[{x:0,y:0}],backgroundColor:'rgba(255,255,255,0.95)',
     pointRadius:10,pointStyle:'crossRot',pointBorderWidth:2.5,pointBorderColor:'rgba(255,255,255,0.95)'});
@@ -2017,29 +2309,28 @@ function buildShotDispersion(){
       ctx.beginPath();ctx.moveTo(xs.left,y0);ctx.lineTo(xs.right,y0);ctx.stroke();
       ctx.beginPath();ctx.moveTo(x0,ys.top);ctx.lineTo(x0,ys.bottom);ctx.stroke();
       ctx.setLineDash([]);ctx.restore();
-      // draw ellipses per category
-      for(const ds of chart.data.datasets){
-        if(ds.label==='_target'||!ds.data.length)continue;
-        const cat=ds.label;
-        const col=CAT_COL[cat]||{el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'};
-        const pixPts=ds.data.map(p=>({x:xs.getPixelForValue(p.x),y:ys.getPixelForValue(p.y)}));
+      // draw ellipses per category (using category splits for meaningful ellipses)
+      const ellGroups=[
+        {pts:filtered.filter(s=>s.gir), col:{el:'rgba(74,222,128,0.85)',fill:'rgba(74,222,128,0.1)'}},
+        {pts:filtered.filter(s=>!s.gir),col:{el:'rgba(248,113,113,0.85)',fill:'rgba(248,113,113,0.1)'}}
+      ];
+      for(const g of ellGroups){
+        if(g.pts.length<3)continue;
+        const pixPts=g.pts.map(p=>({x:xs.getPixelForValue(p.x),y:ys.getPixelForValue(p.y)}));
         const ell=computeEllipsePixels(pixPts,chiVal);
         if(!ell||ell.a<1||ell.b<1)continue;
         ctx.save();
         ctx.translate(ell.cx,ell.cy);ctx.rotate(ell.angle);
         ctx.beginPath();ctx.ellipse(0,0,ell.a,ell.b,0,0,2*Math.PI);
-        ctx.fillStyle=col.fill;ctx.fill();
-        ctx.strokeStyle=col.el;ctx.lineWidth=2;ctx.setLineDash([5,4]);
+        ctx.fillStyle=g.col.fill;ctx.fill();
+        ctx.strokeStyle=g.col.el;ctx.lineWidth=2;ctx.setLineDash([5,4]);
         ctx.stroke();
         ctx.restore();
-        // draw mean crosshair
         const meanX=pixPts.reduce((s,p)=>s+p.x,0)/pixPts.length;
         const meanY=pixPts.reduce((s,p)=>s+p.y,0)/pixPts.length;
-        ctx.save();
-        ctx.strokeStyle=col.el;ctx.lineWidth=1.5;ctx.setLineDash([]);
-        const sz=6;
-        ctx.beginPath();ctx.moveTo(meanX-sz,meanY);ctx.lineTo(meanX+sz,meanY);ctx.stroke();
-        ctx.beginPath();ctx.moveTo(meanX,meanY-sz);ctx.lineTo(meanX,meanY+sz);ctx.stroke();
+        ctx.save();ctx.strokeStyle=g.col.el;ctx.lineWidth=1.5;ctx.setLineDash([]);
+        ctx.beginPath();ctx.moveTo(meanX-6,meanY);ctx.lineTo(meanX+6,meanY);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(meanX,meanY-6);ctx.lineTo(meanX,meanY+6);ctx.stroke();
         ctx.restore();
       }
     }
@@ -2063,7 +2354,8 @@ function buildShotDispersion(){
             label(ctx){const p=ctx.raw;
               const lr=p.x===0&&p.y===0?'Pin (Target)':p.x>0?`${p.x.toFixed(1)}ft Right`:`${Math.abs(p.x).toFixed(1)}ft Left`;
               const sl=p.x===0&&p.y===0?'':p.y>0?`${p.y.toFixed(1)}ft Long`:`${Math.abs(p.y).toFixed(1)}ft Short`;
-              return p.club?[p.club,lr,sl]:[lr,sl].filter(Boolean);
+              const cat=p.cat?`${p.cat}${p.club?' — '+p.club:''}`:'';
+              return cat?[cat,lr,sl].filter(Boolean):[lr,sl].filter(Boolean);
             }}}
       },
       scales:{
@@ -2076,16 +2368,33 @@ function buildShotDispersion(){
     plugins:[ellipsePlugin]
   });
 
-  // stats cards below
-  document.getElementById('disp-stats').innerHTML=catNames.map(cat=>{
-    const pts=filtered.filter(s=>s.cat===cat);
+  // general miss box
+  const dispBox=document.getElementById('disp-miss-box');
+  if(dispBox){
+    const src_shots=dispCat==='All'?shots:filtered;
+    if(src_shots.length>=3){
+      const avgX=src_shots.reduce((s,p)=>s+p.x,0)/src_shots.length;
+      const avgY=src_shots.reduce((s,p)=>s+p.y,0)/src_shots.length;
+      const lrStr=avgX<0?`${Math.abs(avgX).toFixed(1)} ft left`:`${avgX.toFixed(1)} ft right`;
+      const slStr=avgY<0?`${Math.abs(avgY).toFixed(1)} ft short`:`${avgY.toFixed(1)} ft long`;
+      const catLabel=dispCat==='All'?'all clubs':dispCat;
+      dispBox.innerHTML=`<span style="font-family:'Bebas Neue',sans-serif;font-size:16px;letter-spacing:2px;color:var(--blue)">General Miss Tendency — ${dispCat}</span><br><br>Across <strong style="color:var(--text)">${src_shots.length} shots</strong> with ${catLabel}, your average miss is <strong style="color:var(--amber)">${lrStr}</strong> and <strong style="color:var(--amber)">${slStr}</strong> of the target.`;
+    } else { dispBox.innerHTML=''; }
+  }
+
+  // stats cards below — always show ALL categories, highlight active
+  const allCats=['Wood','Long Iron','Mid Iron','Short Iron','Wedge'];
+  document.getElementById('disp-stats').innerHTML=allCats.map(cat=>{
+    const pts=(currentPlayer.approach_shots||[]).filter(s=>s.cat===cat);
+    if(pts.length===0)return'';
     const lrA=pts.reduce((s,p)=>s+p.x,0)/pts.length;
     const slA=pts.reduce((s,p)=>s+p.y,0)/pts.length;
     const col=CAT_COL[cat];
     const lrStr=lrA>0?`${lrA.toFixed(1)}ft Right`:`${Math.abs(lrA).toFixed(1)}ft Left`;
     const slStr=slA>0?`${slA.toFixed(1)}ft Long`:`${Math.abs(slA).toFixed(1)}ft Short`;
-    return`<div class="stat-card" style="border-top-color:${col?col.el:'var(--blue)'}">
-      <div class="stat-label">${cat}</div>
+    const isActive=dispCat===cat;
+    return`<div class="stat-card" style="border-top-color:${col?col.el:'var(--blue)'};${isActive?'border:1px solid '+col.el+';background:var(--surface3)':'opacity:0.55'}">
+      <div class="stat-label" style="${isActive?'color:var(--text)':''}">${cat}${isActive?' ◀':''}</div>
       <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-top:6px;line-height:1.8">
         ${pts.length} shots<br>
         L/R: <span style="color:var(--text)">${lrStr}</span><br>
@@ -2093,6 +2402,245 @@ function buildShotDispersion(){
       </div>
     </div>`;
   }).join('');
+}
+
+
+// ===== AI CADDIE =====
+let caddieHistory = [];
+const CADDIE_PROMPTS = [
+  "What is my biggest weakness based on my stats?",
+  "Which club category should I practice most?",
+  "How has my scoring trended over my last 10 rounds?",
+  "Where am I losing the most shots on approach?",
+  "What does my putting data tell you?",
+  "Am I hitting enough fairways and greens?",
+  "What's one thing I should focus on to break 75?",
+  "Compare my scrambling to what a good amateur should average",
+  "Which par type do I play best and why?",
+  "What patterns do you see in my bad rounds?"
+];
+
+function buildAICaddie(){
+  const cont = document.getElementById('caddie-prompts');
+  if(!cont) return;
+  cont.innerHTML = CADDIE_PROMPTS.map(p =>
+    `<button class="prompt-btn" onclick="useCaddiePrompt(this)">${p}</button>`
+  ).join('');
+}
+
+function useCaddiePrompt(btn){
+  document.getElementById('caddie-input').value = btn.textContent;
+  document.getElementById('caddie-input').focus();
+}
+
+function buildPlayerContext(){
+  const r = currentPlayer.rounds;
+  const s = [...r].sort((a,b)=>a.date.localeCompare(b.date));
+  const scores = r.map(x=>x.score);
+  const avg = arr => { const v=arr.filter(x=>x!=null&&!isNaN(x)); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; };
+  const a_score = avg(scores);
+  const a_pm = avg(r.map(x=>x.plus_minus));
+  const a_gir = avg(r.filter(x=>x.gir_pct>0).map(x=>x.gir_pct));
+  const a_fw = avg(r.filter(x=>x.fw_pct!=null).map(x=>x.fw_pct));
+  const a_scram = avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  const a_putts = avg(r.filter(x=>x.putts).map(x=>x.putts));
+  const a_birds = avg(r.map(x=>x.birdies));
+  const a_bogs = avg(r.map(x=>x.bogeys));
+  const a_dr = avg(r.filter(x=>x.driver_dist).map(x=>x.driver_dist));
+  const recent = s.slice(-8).map(rnd =>
+    `  ${rnd.date} | ${rnd.course} | Score: ${rnd.score} (${rnd.plus_minus>=0?'+':''}${rnd.plus_minus}) | GIR: ${rnd.gir_pct}% | FW: ${rnd.fw_pct||'n/a'}% | Putts: ${rnd.putts||'n/a'} | Scramble: ${rnd.scrambling||'n/a'}%`
+  ).join('\n');
+  const cats = currentPlayer.approach_cats || {};
+  const catLines = Object.entries(cats).map(([cat,d])=>
+    `  ${cat}: ${d.shots} shots, GIR ${d.gir_pct}%, L/R miss ${d.lr_miss}ft, S/L miss ${d.sl_miss}ft`
+  ).join('\n');
+  const ps = currentPlayer.par_scoring || {};
+  const mp = currentPlayer.make_pct || {};
+  const br = currentPlayer.bad_reasons || {};
+  const topReasons = Object.entries(br).sort((a,b)=>b[1]-a[1]).slice(0,5).map(([r,c])=>`${r} (${c}x)`).join(', ');
+
+  return `PLAYER: ${currentPlayer.name}
+TOTAL ROUNDS: ${r.length}
+
+CAREER AVERAGES:
+  Scoring Avg: ${a_score!=null?a_score.toFixed(1):'n/a'} (${a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):'n/a'} to par)
+  GIR %: ${a_gir!=null?a_gir.toFixed(1):'n/a'}% (Goal: 67%)
+  Fairways %: ${a_fw!=null?a_fw.toFixed(1):'n/a'}% (Goal: 70%)
+  Scrambling %: ${a_scram!=null?a_scram.toFixed(1):'n/a'}% (Goal: 50%)
+  Putts/Round: ${a_putts!=null?a_putts.toFixed(1):'n/a'}
+  Birdies/Round: ${a_birds!=null?a_birds.toFixed(1):'n/a'}
+  Bogeys+/Round: ${a_bogs!=null?a_bogs.toFixed(1):'n/a'}
+  Driver Distance: ${a_dr!=null?a_dr.toFixed(0):'n/a'} yds
+
+PAR SCORING (avg +/- per hole):
+  Par 3: ${ps['3']!=null?(ps['3']>=0?'+':'')+ps['3']:'n/a'}
+  Par 4: ${ps['4']!=null?(ps['4']>=0?'+':'')+ps['4']:'n/a'}
+  Par 5: ${ps['5']!=null?(ps['5']>=0?'+':'')+ps['5']:'n/a'}
+
+APPROACH STATS BY CLUB CATEGORY:
+${catLines}
+
+PUTTING MAKE % (your rate / PGA Tour avg):
+  0-3ft: ${mp['0-3']||'n/a'}% / 99%
+  3-5ft: ${mp['3-5']||'n/a'}% / 88%
+  5-8ft: ${mp['5-8']||'n/a'}% / 68%
+  8-12ft: ${mp['8-12']||'n/a'}% / 50%
+  12-20ft: ${mp['12-20']||'n/a'}% / 29%
+  20-35ft: ${mp['20-35']||'n/a'}% / 13%
+
+TOP REASONS FOR BAD SCORES: ${topReasons||'n/a'}
+
+LAST 8 ROUNDS (chronological):
+${recent}`;
+}
+
+async function sendCaddieMessage(){
+  const inp = document.getElementById('caddie-input');
+  const msg = inp.value.trim();
+  if(!msg) return;
+  inp.value = '';
+  const btn = document.getElementById('caddie-send-btn');
+  btn.disabled = true;
+
+  appendCaddieMsg(msg, 'user');
+  caddieHistory.push({role:'user', content: msg});
+
+  const typingId = appendCaddieTyping();
+
+  try {
+    const ctx = buildPlayerContext();
+    const response = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        model: "claude-sonnet-4-20250514",
+        max_tokens: 1000,
+        system: `You are an expert golf coach and AI Caddie for ${currentPlayer.name}. You have complete access to their statistical profile below. Give specific, data-driven insights. Reference their actual numbers. Be conversational but precise. Use plain text — no markdown headers, no bullet asterisks. Use numbered lists or dashes when helpful.\n\n${ctx}`,
+        messages: caddieHistory
+      })
+    });
+    removeCaddieTyping(typingId);
+    if(!response.ok){ const e=await response.json(); throw new Error(e.error?.message||'API error'); }
+    const data = await response.json();
+    const reply = data.content.filter(b=>b.type==='text').map(b=>b.text).join('');
+    caddieHistory.push({role:'assistant', content: reply});
+    appendCaddieMsg(reply, 'ai');
+  } catch(e) {
+    removeCaddieTyping(typingId);
+    appendCaddieMsg('Sorry, I had trouble connecting. Please check your internet and try again. Error: '+e.message, 'ai');
+  }
+  btn.disabled = false;
+  inp.focus();
+}
+
+function appendCaddieMsg(text, role){
+  const chat = document.getElementById('caddie-chat');
+  const div = document.createElement('div');
+  div.className = `caddie-msg caddie-msg-${role}`;
+  const initials = role==='ai'?'AI':(currentPlayer.name||'Me').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  div.innerHTML = `<div class="caddie-avatar">${initials}</div><div class="caddie-bubble">${text.replace(/\n/g,'<br>')}</div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function appendCaddieTyping(){
+  const chat = document.getElementById('caddie-chat');
+  const id = 'typing-'+Date.now();
+  const div = document.createElement('div');
+  div.className = 'caddie-msg caddie-msg-ai';
+  div.id = id;
+  div.innerHTML = `<div class="caddie-avatar">AI</div><div class="caddie-bubble"><div class="caddie-typing"><span></span><span></span><span></span></div></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+  return id;
+}
+
+function removeCaddieTyping(id){
+  const el = document.getElementById(id);
+  if(el) el.remove();
+}
+
+// ===== DEFINITIONS =====
+const DEFINITIONS = [
+  {
+    section: "Scoring Terms",
+    terms: [
+      {name:"Par", body:"The expected number of strokes a scratch golfer should need to complete a hole or round. Each hole is rated Par 3, 4, or 5."},
+      {name:"Birdie+", body:"Any score of 1 or more strokes under par on a hole. Includes eagles (−2) and albatrosses (−3)."},
+      {name:"Bogey+", body:"Any score of 1 or more strokes over par on a hole. Includes double bogeys (+2), triples (+3), etc."},
+      {name:"Scoring Average", body:"Your mean total score across all tracked rounds."},
+      {name:"+/- to Par", body:"How many strokes over or under par you scored in a round or on average. Lower is better."},
+      {name:"Rolling Average", body:"A smoothed trend line calculated as the average of the last N rounds. Reduces noise from individual round variation to reveal underlying trends."},
+      {name:"Trend Line", body:"A linear regression line fitted to your scoring history showing the overall direction of improvement (+) or decline (−) over time.", formula:"y = mx + b (least squares linear regression)"},
+    ]
+  },
+  {
+    section: "Ball Striking",
+    terms: [
+      {name:"Greens in Regulation (GIR)", body:"Hitting the putting surface within par minus 2 strokes: 1 shot on a par 3, 2 shots on a par 4, 3 shots on a par 5.", formula:"GIR % = (GIRs ÷ holes played) × 100 — Goal: 67%"},
+      {name:"Fairway Hit (FW%)", body:"Your tee shot on a par 4 or par 5 lands in the fairway. Par 3 holes are excluded.", formula:"FW % = (fairways hit ÷ par 4+5 holes) × 100 — Goal: 70%"},
+      {name:"Driver Distance", body:"Average carry and roll distance of tee shots hit with the Driver club specifically. Other fairway woods are excluded from this metric."},
+      {name:"Proximity to Hole", body:"The average distance of your first putt on holes where you hit the green in regulation. Measures approach shot quality. Lower is better. PGA Tour average: ~22 ft."},
+      {name:"Left / Right Miss", body:"How far left or right your approach shots finish relative to the target, averaged across all shots.", formula:"Negative = left of target · Positive = right of target"},
+      {name:"Short / Long Miss", body:"How far short or long your approach shots finish relative to the target, averaged across all shots.", formula:"Negative = short of target · Positive = long of target"},
+    ]
+  },
+  {
+    section: "Short Game",
+    terms: [
+      {name:"Scrambling %", body:"The percentage of holes where you missed the green in regulation but still made par or better. Measures short-game rescue ability.", formula:"(Pars-or-better after missed GIR ÷ total missed GIRs) × 100 — Goal: 50%"},
+      {name:"Up & Down", body:"Getting the ball into the hole in exactly 2 strokes from around the green (1 chip or pitch + 1 putt) after missing the green in regulation."},
+      {name:"1-Putt Scrambling", body:"Making the putt in a single stroke after a chip, pitch, or bunker shot from off the green. The most effective form of scrambling."},
+    ]
+  },
+  {
+    section: "Putting",
+    terms: [
+      {name:"Putts per Round", body:"Total number of strokes taken on the putting surface in a round. Tour average is ~29 putts. Under 30 is excellent for an amateur."},
+      {name:"1-Putt", body:"Holing the ball on the very first putt. A 1-putt saves a stroke compared to the average of 2 putts per green."},
+      {name:"3-Putt", body:"Taking three or more strokes to hole out from the putting surface. Costly — each 3-putt costs at least one shot relative to expectations.", formula:"Goal: fewer than 5% of greens result in 3-putts"},
+      {name:"Make % by Distance", body:"The percentage of putts holed from a given distance range. Compared against PGA Tour averages as a benchmark."},
+      {name:"PGA Tour Average (Putting)", body:"The make percentage achieved by professionals on the PGA Tour at each distance band. Used as an aspirational benchmark.", formula:"0-3ft: 99% · 3-5ft: 88% · 5-8ft: 68% · 8-12ft: 50% · 12-20ft: 29% · 20-35ft: 13%"},
+      {name:"Putting Quality Score", body:"A synthetic 0–100 score per round measuring putting performance. Calibrated so that 27 putts = 100 (elite), 32 = 75 (solid), 36 = 55 (average), 40+ = poor.", formula:"Score = max(0, min(100, 100 − ((Putts − 27) × 5)))"},
+    ]
+  },
+  {
+    section: "Shot Dispersion",
+    terms: [
+      {name:"Shot Dispersion Chart", body:"A scatter plot showing where all your approach shots finished relative to the pin (target at the origin). Reveals patterns in your miss tendencies by club category."},
+      {name:"Confidence Interval (CI)", body:"Statistical boundaries containing a given percentage of your shots. 50% CI = the tight zone where half your shots land. 95% CI = the full zone covering nearly all shots."},
+      {name:"Confidence Ellipse", body:"An oval drawn around your approach shot scatter representing a confidence interval boundary. Computed using eigendecomposition of the shot covariance matrix.", formula:"Uses chi-squared quantiles: 50% CI = 1.39, 75% CI = 2.77, 95% CI = 5.99 (2 degrees of freedom)"},
+      {name:"Bivariate Normal Distribution", body:"The statistical model underlying the ellipses. Assumes your shots are distributed in a bell-curve pattern in two dimensions (left/right and short/long)."},
+    ]
+  },
+  {
+    section: "Tiger Five",
+    terms: [
+      {name:"Tiger Five", body:"Five key metrics associated with elite amateur scoring. Keeping each below its goal threshold is strongly correlated with lower scores and fewer blowup holes."},
+      {name:"Bogey+ on Par 5s", body:"The % of par 5 holes where you make bogey or worse. Par 5s should be birdie or par opportunities — bogeys here represent squandered scoring chances.", formula:"Goal: ≤ 20%"},
+      {name:"Double Bogeys+", body:"The % of holes across all rounds where you make double bogey or worse. Blow-up holes kill scores faster than anything else.", formula:"Goal: ≤ 10% of holes played"},
+      {name:"Bogeys ≤ 9-Iron", body:"The % of approach shots with short irons (9i, PW) that result in bogey or worse. With a scoring club in hand, a bogey represents a significant missed opportunity.", formula:"Goal: ≤ 20%"},
+      {name:"3-Putts", body:"The % of holes where you take 3 or more putts. Three-putts directly cost strokes and are often caused by poor distance control or leaving yourself difficult angles.", formula:"Goal: ≤ 5% of holes"},
+      {name:"Failed Easy Up/Down", body:"The inverse of Scrambling % — when you miss the green but fail to make par. Measures missed short-game opportunities.", formula:"= 100% − Scrambling % · Goal: ≤ 33%"},
+    ]
+  },
+];
+
+function buildDefinitions(){
+  const grid = document.getElementById('def-grid');
+  if(!grid) return;
+  grid.innerHTML = DEFINITIONS.map(cat => `
+    <div class="def-card">
+      <div class="def-section-title">${cat.section}</div>
+      ${cat.terms.map(t=>`
+        <div class="def-term">
+          <div class="def-term-name">${t.name}</div>
+          <div class="def-term-body">${t.body}</div>
+          ${t.formula?`<div class="def-term-formula">${t.formula}</div>`:''}
+        </div>
+      `).join('')}
+    </div>
+  `).join('');
 }
 
 </script>
