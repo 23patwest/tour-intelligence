@@ -374,6 +374,31 @@ tr:hover td{background:var(--surface2)}
   #de-entry>div[style*="grid-template-columns:1fr 320px"]{grid-template-columns:1fr!important}
 }
 
+
+/* ── ALERTS ── */
+.alerts-stat-btn{background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);
+  padding:8px 14px;font-family:'DM Mono',monospace;font-size:11px;letter-spacing:0.5px;cursor:pointer;
+  transition:all 0.15s;border-radius:2px;white-space:nowrap}
+.alerts-stat-btn:hover{border-color:var(--blue);color:var(--text)}
+.alerts-stat-btn.active{background:rgba(96,165,250,0.12);border-color:var(--blue);color:var(--blue);font-weight:600}
+.alert-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
+.alert-kpi{background:var(--surface);border:1px solid var(--border);padding:20px;position:relative}
+.alert-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.alert-kpi.kpi-last::before{background:var(--blue)}
+.alert-kpi.kpi-4::before{background:var(--amber)}
+.alert-kpi.kpi-10::before{background:var(--green)}
+.alert-kpi-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.alert-kpi-val{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:1px;line-height:1}
+.alert-kpi-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:5px}
+.alert-delta{display:inline-block;font-family:'DM Mono',monospace;font-size:12px;padding:2px 8px;border-radius:2px;margin-top:6px}
+.alert-delta.up{background:rgba(74,222,128,0.15);color:var(--green)}
+.alert-delta.down{background:rgba(248,113,113,0.15);color:var(--red)}
+.alert-delta.flat{background:rgba(148,163,184,0.12);color:var(--text-dim)}
+@media(max-width:600px){
+  .alert-kpi-grid{grid-template-columns:1fr 1fr}
+  .alerts-stat-btn{font-size:10px;padding:6px 10px}
+}
+
 </style>
 </head>
 <body>
@@ -497,6 +522,7 @@ tr:hover td{background:var(--surface2)}
       <div><div class="app-logo">Tour Intelligence</div><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:1px">Outsmart your competition</div></div>
       <div style="display:flex;align-items:center;gap:16px">
         <div class="header-right">
+          <button id="header-de-btn" onclick="showDataEntryFromHeader()" style="background:var(--blue);color:#0a0f1a;border:none;padding:6px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;cursor:pointer;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">+ Log Round</button>
           <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
           <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
         </div>
@@ -509,7 +535,7 @@ tr:hover td{background:var(--surface2)}
     <!-- Desktop nav (horizontal) — hidden on mobile, shown inline -->
     <nav id="main-nav">
       <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
-      <button class="nav-btn" onclick="showSection('dataentry',this)">Data Entry</button>
+      <button class="nav-btn" onclick="showSection('alerts',this)">Alerts</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
@@ -771,6 +797,24 @@ tr:hover td{background:var(--surface2)}
             <button id="de-save-btn" class="btn-upload" style="display:none;margin-top:16px;width:100%;font-size:16px" onclick="deSaveRound()">Save Round &amp; Update Analytics →</button>
           </div>
         </div>
+      </div>
+    </div>
+
+
+    <!-- ALERTS -->
+    <div class="section" id="section-alerts">
+      <div class="section-header">
+        <div class="section-title">Performance <span>Alerts</span></div>
+        <div class="section-meta">Track trends across key stats — last round, 4-round avg, and 10-round avg</div>
+      </div>
+      <!-- Stat picker -->
+      <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px" id="alerts-stat-picker"></div>
+      <!-- KPI tiles -->
+      <div class="alert-kpi-grid" id="alerts-kpis"></div>
+      <!-- Trend chart -->
+      <div class="chart-card" style="margin-bottom:24px">
+        <div class="chart-title" id="alerts-chart-title">GIR % — Trend</div>
+        <canvas id="chart-alerts-trend" height="160"></canvas>
       </div>
     </div>
 
@@ -1330,7 +1374,7 @@ function initApp(){
   buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();
   buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
-  initDataEntry();
+  initDataEntry();buildAlerts();
 }
 
 // ===== DASHBOARD =====
@@ -3796,6 +3840,202 @@ function deSaveRound(){
   if(overviewBtn) overviewBtn.click();
 
   alert(`Round saved! ${totalScore} (${totalScore-totalPar>=0?'+':''}${totalScore-totalPar}) at ${deRoundMeta.course}`);
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ALERTS
+// ═══════════════════════════════════════════════════════════════════
+
+// Move to Data Entry from header button
+function showDataEntryFromHeader(){
+  const btn = document.querySelector('.nav-btn[onclick*="dataentry"]') ||
+    Array.from(document.querySelectorAll('.nav-btn')).find(b=>b.textContent.trim()==='Data Entry');
+  // Navigate to data entry section without a nav button
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const sec = document.getElementById('section-dataentry');
+  if(sec){ sec.classList.add('active'); window.scrollTo({top:0,behavior:'smooth'}); closeMobileNav(); }
+}
+
+const ALERT_STATS = [
+  {key:'score',       label:'Total Score',         unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'plus_minus',  label:'+/- to Par',           unit:'',     dir:'low',   fmt:(v)=>v==null?'—':(v>=0?'+':'')+v.toFixed(1)},
+  {key:'gir_pct',     label:'GIR %',               unit:'%',    dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
+  {key:'fw_pct',      label:'Fairways Hit %',       unit:'%',    dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
+  {key:'scrambling',  label:'Scrambling %',         unit:'%',    dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
+  {key:'driver_dist', label:'Driver Distance',      unit:'yds',  dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(0)+' yds'},
+  {key:'birdies',     label:'Birdie+ per Round',    unit:'',     dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'bogeys_total',label:'Bogey+ per Round',     unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'one_putts',   label:'1-Putts (GIR)',        unit:'',     dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'one_putt_scram',label:'1-Putts Scrambling', unit:'%',   dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
+  {key:'proximity',   label:'Approach Proximity',   unit:'ft',   dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)+' ft'},
+  {key:'putts',       label:'Putts per Round',      unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'three_putts', label:'3-Putts',              unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'longest_putt',label:'Longest Putt Made',    unit:'ft',   dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(0)+' ft'},
+  {key:'penalties',   label:'Penalty Strokes',      unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'short_sided', label:'Short-Sided Count',    unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+];
+
+let alertsStatKey = 'gir_pct';
+
+// Extract value per round for a given stat key
+function alertGetVal(rnd){
+  const r = rnd;
+  switch(alertsStatKey){
+    case 'score':           return r.score!=null?r.score:null;
+    case 'plus_minus':      return r.plus_minus!=null?r.plus_minus:null;
+    case 'gir_pct':         return r.gir_pct>0?r.gir_pct:null;
+    case 'fw_pct':          return r.fw_pct!=null?r.fw_pct:null;
+    case 'scrambling':      return r.scrambling!=null?r.scrambling:null;
+    case 'driver_dist':     return r.driver_dist!=null?r.driver_dist:null;
+    case 'birdies':         return r.birdies!=null?r.birdies:null;
+    case 'bogeys_total':    return r.bogeys!=null?(r.bogeys+(r.doubles_plus||0)):null;
+    case 'one_putts':       return r.one_putts!=null?r.one_putts:null;
+    case 'one_putt_scram':  return r.scrambling!=null?r.scrambling:null;
+    case 'proximity':       return null; // not stored per round — falls back gracefully
+    case 'putts':           return r.putts!=null?r.putts:null;
+    case 'three_putts':     return r.three_putts!=null?r.three_putts:null;
+    case 'longest_putt':    return null; // not stored per round
+    case 'penalties':       return r.penalties!=null?r.penalties:null;
+    case 'short_sided':     return null; // not stored per round
+    default:                return null;
+  }
+}
+
+function alertsAvg(rounds){
+  const vals = rounds.map(r=>alertGetVal(r)).filter(v=>v!=null);
+  return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null;
+}
+
+function alertsDelta(a, b, dir){
+  // returns {pct, label, cls}
+  if(a==null||b==null) return null;
+  const diff = a - b;
+  const improving = dir==='high'?diff>0:diff<0;
+  const neutral = Math.abs(diff) < 0.15;
+  if(neutral) return {diff, cls:'flat', arrow:'→'};
+  return {diff, cls:improving?'up':'down', arrow:improving?'↑':'↓'};
+}
+
+function buildAlerts(){
+  const picker = document.getElementById('alerts-stat-picker');
+  if(!picker) return;
+  picker.innerHTML = ALERT_STATS.map(s=>
+    `<button class="alerts-stat-btn${s.key===alertsStatKey?' active':''}" onclick="setAlertsStat('${s.key}',this)">${s.label}</button>`
+  ).join('');
+  renderAlertsContent();
+}
+
+function setAlertsStat(key, btn){
+  alertsStatKey = key;
+  document.querySelectorAll('.alerts-stat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderAlertsContent();
+}
+
+function renderAlertsContent(){
+  const r = currentPlayer.rounds;
+  const s = [...r].sort((a,b)=>a.date.localeCompare(b.date));
+  const stat = ALERT_STATS.find(x=>x.key===alertsStatKey);
+  if(!stat||!s.length) return;
+
+  // Get values for KPIs
+  const lastRnd = s[s.length-1];
+  const last4 = s.slice(-4);
+  const last10 = s.slice(-10);
+
+  const valLast = alertGetVal(lastRnd);
+  const avg4 = alertsAvg(last4);
+  const avg10 = alertsAvg(last10);
+
+  // Delta: last vs 4-avg, 4-avg vs 10-avg
+  const d1 = alertsDelta(valLast, avg4, stat.dir);
+  const d2 = alertsDelta(avg4, avg10, stat.dir);
+
+  function kpiCard(label, val, delta, cls, note){
+    const formatted = stat.fmt(val);
+    const color = val==null?'var(--text-dim)':stat.dir==='high'?
+      (val>=avg10*1.05?'var(--green)':val<=avg10*0.95?'var(--red)':'var(--text)'):
+      (val<=avg10*0.95?'var(--green)':val>=avg10*1.05?'var(--red)':'var(--text)');
+    const deltaHtml = delta?`<div class="alert-delta ${delta.cls}">${delta.arrow} ${Math.abs(delta.diff).toFixed(1)}${stat.unit} vs ${note}</div>`:'';
+    return `<div class="alert-kpi ${cls}">
+      <div class="alert-kpi-label">${label}</div>
+      <div class="alert-kpi-val" style="color:${color}">${formatted}</div>
+      <div class="alert-kpi-sub">${lastRnd.date.slice(5)} — ${lastRnd.course}</div>
+      ${deltaHtml}
+    </div>`;
+  }
+
+  const kpiEl = document.getElementById('alerts-kpis');
+  if(kpiEl){
+    const d1_vs4 = alertsDelta(valLast, avg4, stat.dir);
+    const d2_vs10 = alertsDelta(avg4, avg10, stat.dir);
+    kpiEl.innerHTML =
+      kpiCard('Last Round', valLast, d1_vs4, 'kpi-last', '4-rnd avg') +
+      kpiCard('4-Round Avg', avg4, d2_vs10, 'kpi-4', '10-rnd avg') +
+      kpiCard('10-Round Avg', avg10, null, 'kpi-10', '');
+  }
+
+  // Chart title
+  const titleEl = document.getElementById('alerts-chart-title');
+  if(titleEl) titleEl.textContent = stat.label + ' — Rolling Trend';
+
+  // Build chart data - rolling 4 and 10 round averages
+  const allVals = s.map(r=>alertGetVal(r));
+  const validPairs = s.map((r,i)=>({date:r.date.slice(5,10),val:allVals[i]}));
+
+  function rollingAvgStat(arr, w){
+    return arr.map((_,i)=>{
+      if(i<w-1)return null;
+      const slice=arr.slice(i-w+1,i+1).filter(v=>v!=null);
+      return slice.length?slice.reduce((a,b)=>a+b,0)/slice.length:null;
+    });
+  }
+
+  const ra4 = rollingAvgStat(allVals, 4);
+  const ra10 = rollingAvgStat(allVals, 10);
+  const labels = validPairs.map(p=>p.date);
+
+  if(charts['chart-alerts-trend']){try{charts['chart-alerts-trend'].destroy();}catch(e){}}
+  const el = document.getElementById('chart-alerts-trend');
+  if(!el) return;
+
+  // Find y range
+  const allChartVals = [...allVals, ...ra4, ...ra10].filter(v=>v!=null);
+  const yMin = allChartVals.length?Math.min(...allChartVals)-Math.abs(Math.min(...allChartVals)*0.05)-1:0;
+  const yMax = allChartVals.length?Math.max(...allChartVals)+Math.abs(Math.max(...allChartVals)*0.05)+1:100;
+
+  charts['chart-alerts-trend'] = new Chart(el.getContext('2d'),{
+    type:'line',
+    data:{
+      labels,
+      datasets:[
+        {label:'Each Round',data:allVals,
+          borderColor:'rgba(148,163,184,0.3)',backgroundColor:'transparent',
+          pointBackgroundColor:'rgba(148,163,184,0.5)',pointRadius:3,tension:0.2,order:3},
+        {label:'4-Round Avg',data:ra4,
+          borderColor:C.amber,backgroundColor:'transparent',
+          borderWidth:2.5,pointRadius:0,tension:0.4,order:2},
+        {label:'10-Round Avg',data:ra10,
+          borderColor:C.green,backgroundColor:'transparent',
+          borderWidth:2.5,pointRadius:0,tension:0.4,order:1},
+      ]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){return `${ctx.dataset.label}: ${ctx.parsed.y!=null?stat.fmt(ctx.parsed.y):'—'}`}}}
+      },
+      scales:{
+        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT,maxTicksLimit:16}},
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:yMin,max:yMax,
+           title:{display:true,text:stat.unit||stat.label,color:C.txt,font:FONT}}
+      }
+    }
+  });
 }
 
 </script>
