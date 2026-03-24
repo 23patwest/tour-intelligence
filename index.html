@@ -381,6 +381,10 @@ tr:hover td{background:var(--surface2)}
   transition:all 0.15s;border-radius:2px;white-space:nowrap}
 .alerts-stat-btn:hover{border-color:var(--blue);color:var(--text)}
 .alerts-stat-btn.active{background:rgba(96,165,250,0.12);border-color:var(--blue);color:var(--blue);font-weight:600}
+.alerts-stat-btn.btn-trend-good{border-color:rgba(74,222,128,0.5);background:rgba(74,222,128,0.08);color:var(--green)}
+.alerts-stat-btn.btn-trend-bad{border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.07);color:var(--red)}
+.alerts-stat-btn.btn-trend-good.active{background:rgba(74,222,128,0.2);border-color:var(--green)}
+.alerts-stat-btn.btn-trend-bad.active{background:rgba(248,113,113,0.18);border-color:var(--red)}
 .alert-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
 .alert-kpi{background:var(--surface);border:1px solid var(--border);padding:20px;position:relative}
 .alert-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
@@ -400,6 +404,11 @@ tr:hover td{background:var(--surface2)}
 }
 
 </style>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script>
+const { createClient } = supabase;
+const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU');
+</script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3NQDVQDK65"></script>
 <script>
@@ -419,8 +428,6 @@ tr:hover td{background:var(--surface2)}
       <label>Select Player</label>
       <select id="login-player">
         <option value="">— Choose your profile —</option>
-        <option value="pat_west">Pat West</option>
-        <option value="demo_player">Demo Player</option>
       </select>
     </div>
     <div class="login-field">
@@ -428,7 +435,8 @@ tr:hover td{background:var(--surface2)}
       <input type="password" id="login-pin" placeholder="Enter your PIN" maxlength="6">
     </div>
     <button class="btn-login" onclick="handleLogin()">Sign In &rarr;</button>
-    <div class="login-error" id="login-error">Incorrect PIN. Please try again.</div>
+    <div id="login-loading" style="display:none;text-align:center;padding:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue)">Signing in…</div>
+    <div class="login-error" id="login-error" style="display:none"></div>
   <button class="btn-secondary" onclick="showUpload()" style="margin-top:16px;width:100%;text-align:center">New player? Upload your data →</button>
   </div>
 </div>
@@ -546,14 +554,15 @@ tr:hover td{background:var(--surface2)}
       <button class="nav-btn" onclick="showSection('alerts',this)">Alerts</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
+      <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
       <button class="nav-btn" onclick="showSection('approach',this)">Approach</button>
       <button class="nav-btn" onclick="showSection('dispersion',this)">Shot Dispersion</button>
       <button class="nav-btn" onclick="showSection('putting',this)">Putting</button>
-      <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
       <button class="nav-btn" onclick="showSection('badgood',this)">What Went Wrong</button>
       <button class="nav-btn" onclick="showSection('birdies',this)">Birdies &amp; Bogeys</button>
       <button class="nav-btn" onclick="showSection('definitions',this)">Definitions</button>
+      <button class="nav-btn" id="nav-admin-btn" onclick="showSection('admin',this)" style="display:none;border-bottom-color:var(--amber);color:var(--amber)">⚙ Admin</button>
     </nav>
   </header>
   <main>
@@ -570,7 +579,7 @@ tr:hover td{background:var(--surface2)}
           <div class="card-title">Recent Rounds</div>
           <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)" id="rounds-count"></div>
         </div>
-        <div class="rounds-scroll" style="overflow-x:auto">
+        <div class="rounds-scroll" style="overflow-x:auto;overflow-y:auto">
           <table>
             <thead><tr>
               <th>Date &amp; Course</th><th>Score</th><th>+/-</th><th>Birdie+</th><th>Bogey+</th>
@@ -823,6 +832,35 @@ tr:hover td{background:var(--surface2)}
       <div class="chart-card" style="margin-bottom:24px">
         <div class="chart-title" id="alerts-chart-title">GIR % — Trend</div>
         <canvas id="chart-alerts-trend" height="160"></canvas>
+      </div>
+    </div>
+
+
+    <!-- ADMIN DASHBOARD -->
+    <div class="section" id="section-admin">
+      <div class="section-header">
+        <div class="section-title">Admin <span>Dashboard</span></div>
+        <div class="section-meta">All players, round activity, and platform health — visible to admin only</div>
+      </div>
+      <div class="stats-grid" id="admin-kpis" style="margin-bottom:24px"></div>
+      <div class="card" style="margin-bottom:24px">
+        <div class="card-header">
+          <div class="card-title">Registered Players</div>
+          <button class="roll-btn" onclick="buildAdminDashboard()">↻ Refresh</button>
+        </div>
+        <div style="overflow-x:auto">
+          <table>
+            <thead><tr><th>Player</th><th>Rounds</th><th>Last Round</th><th>Joined</th><th>Admin</th><th>Action</th></tr></thead>
+            <tbody id="admin-players-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div id="admin-player-detail" style="display:none">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:16px">
+          <div class="section-title" id="admin-detail-name" style="font-size:24px"></div>
+          <button class="roll-btn" onclick="document.getElementById('admin-player-detail').style.display='none'">← Back</button>
+        </div>
+        <div class="stats-grid" id="admin-detail-stats"></div>
       </div>
     </div>
 
@@ -1114,7 +1152,7 @@ tr:hover td{background:var(--surface2)}
           </div>
         </div>
         <div style="position:relative">
-          <canvas id="chart-dispersion" height="300"></canvas>
+          <canvas id="chart-dispersion" height="240"></canvas>
         </div>
       </div>
       <div class="stats-grid" id="disp-stats"></div>
@@ -1290,21 +1328,151 @@ const charts={};
 const drillState={};
 
 // ===== AUTH =====
-function handleLogin(){
-  const pid=document.getElementById('login-player').value;
-  const pin=document.getElementById('login-pin').value;
+// ── Supabase Auth + Login ─────────────────────────────────────────
+function nameToEmail(name){ return name.toLowerCase().replace(/[^a-z0-9]/g,'.').replace(/\.+/g,'.')+'@tour-intelligence.app'; }
+
+async function handleLogin(){
+  const sel=document.getElementById('login-player');
+  const pin=document.getElementById('login-pin').value.trim();
   const err=document.getElementById('login-error');
-  if(!pid||!PLAYERS[pid]){err.style.display='block';err.textContent='Please select a player.';return}
-  if(pid!=='demo_player'&&PLAYERS[pid].pin!==pin){err.style.display='block';err.textContent='Incorrect PIN. Please try again.';return}
+  const loading=document.getElementById('login-loading');
+  const name=sel.options[sel.selectedIndex]?.text||'';
   err.style.display='none';
-  currentPlayer=PLAYERS[pid];
+  if(!sel.value){err.style.display='block';err.textContent='Please select a player.';return}
+  if(!pin){err.style.display='block';err.textContent='Please enter your PIN.';return}
+  loading.style.display='block';
+  try{
+    // 1. Verify PIN against database
+    const {data:players,error:verr}=await sb.rpc('verify_player_pin',{p_name:name,p_pin:pin});
+    if(verr||!players||!players.length){
+      loading.style.display='none';
+      // Fallback: check hardcoded players (demo, offline)
+      const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
+      if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
+        currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:false};
+        launchApp();return;
+      }
+      err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
+    }
+    const playerRecord=players[0];
+    // 2. Sign in with Supabase auth
+    const email=nameToEmail(name);
+    let {data:authData,error:authErr}=await sb.auth.signInWithPassword({email,password:pin});
+    if(authErr){
+      // First login — create auth account
+      const {error:signUpErr}=await sb.auth.signUp({email,password:pin});
+      if(!signUpErr){
+        const res=await sb.auth.signInWithPassword({email,password:pin});
+        authData=res.data;
+        // Link auth user to player record
+        if(authData?.user){
+          await sb.rpc('link_user_to_player',{p_name:name,p_pin:pin,p_user_id:authData.user.id});
+        }
+      }
+    }
+    // 3. Load player data from Supabase
+    await loadPlayerFromSupabase(playerRecord);
+  }catch(e){
+    loading.style.display='none';
+    // Network error — fallback to local
+    const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
+    if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
+      currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:false};
+      launchApp();return;
+    }
+    err.style.display='block';err.textContent='Connection error. Please try again.';
+  }
+}
+
+async function loadPlayerFromSupabase(playerRecord){
+  const loading=document.getElementById('login-loading');
+  const err=document.getElementById('login-error');
+  try{
+    // Fetch rounds
+    const {data:rounds,error:re}=await sb.from('rounds')
+      .select('*').eq('player_id',playerRecord.player_id).order('date');
+    // Fetch approach shots
+    const {data:apprShots}=await sb.from('approach_shots')
+      .select('*').eq('player_id',playerRecord.player_id);
+    // Fetch tee shots
+    const {data:teeShots}=await sb.from('tee_shots')
+      .select('*').eq('player_id',playerRecord.player_id);
+
+    const stats=playerRecord.stats||{};
+    const formattedRounds=(rounds||[]).map(r=>({
+      date:r.date,course:r.course,score:r.score,par:r.par,plus_minus:r.plus_minus,
+      birdies:r.birdies,bogeys:r.bogeys,doubles_plus:r.doubles_plus,
+      putts:r.putts,gir_pct:r.gir_pct,penalties:r.penalties,fw_pct:r.fw_pct,
+      driver_dist:r.driver_dist,scrambling:r.scrambling,
+      one_putts:r.one_putts,three_putts:r.three_putts,holes:r.holes||18
+    }));
+    const formattedAppr=(apprShots||[]).map(s=>({x:s.x,y:s.y,cat:s.cat,club:s.club,gir:s.gir}));
+    const formattedTee=(teeShots||[]).map(s=>({x:s.x,y:s.y,club:s.club,fairway:s.fairway,date:s.date}));
+
+    let rounds_final=formattedRounds;
+    let appr_final=formattedAppr;
+    let tee_final=formattedTee;
+
+    // Fallback to hardcoded if Supabase returned nothing
+    if(!rounds_final.length){
+      const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===playerRecord.player_name);
+      if(fallbackKey&&PLAYERS[fallbackKey]){
+        const fb=PLAYERS[fallbackKey];
+        rounds_final=fb.rounds||[];
+        appr_final=fb.approach_shots||[];
+        tee_final=fb.tee_shots||[];
+        Object.assign(stats,{
+          approach_cats:stats.approach_cats||fb.approach_cats,
+          make_pct:stats.make_pct||fb.make_pct,
+          par_scoring:stats.par_scoring||fb.par_scoring,
+          bad_reasons:stats.bad_reasons||fb.bad_reasons,
+          bad_clubs:stats.bad_clubs||fb.bad_clubs,
+          proximity:stats.proximity||fb.proximity,
+        });
+      }
+    }
+
+    currentPlayer={
+      name:playerRecord.player_name,
+      pin:playerRecord.stats?.pin||'',
+      player_id:playerRecord.player_id,
+      is_admin:playerRecord.is_admin,
+      rounds:rounds_final,
+      approach_shots:appr_final,
+      tee_shots:tee_final,
+      approach_cats:stats.approach_cats||{},
+      make_pct:stats.make_pct||{},
+      par_scoring:stats.par_scoring||{},
+      bad_reasons:stats.bad_reasons||{},
+      bad_clubs:stats.bad_clubs||{},
+      proximity:stats.proximity||null,
+      tee_shots:tee_final,
+      course_data:[],
+    };
+    launchApp();
+  }catch(e){
+    loading.style.display='none';
+    err.style.display='block';
+    err.textContent='Failed to load player data. Please try again.';
+    console.error(e);
+  }
+}
+
+function launchApp(){
+  document.getElementById('login-loading').style.display='none';
   document.getElementById('player-name-badge').textContent=currentPlayer.name;
   document.getElementById('login-screen').style.display='none';
   document.getElementById('app').style.display='block';
+  // Show/hide admin nav button
+  const adminBtn=document.getElementById('nav-admin-btn');
+  if(adminBtn) adminBtn.style.display=currentPlayer.is_admin?'':'none';
   initApp();
 }
+
 document.getElementById('login-pin').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
-function handleLogout(){
+
+async function handleLogout(){
+  await sb.auth.signOut().catch(()=>{});
   currentPlayer=null;
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
   for(let k in charts)delete charts[k];
@@ -1383,6 +1551,7 @@ function initApp(){
   buildShotDispersion();buildPutting();
   buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
   initDataEntry();buildAlerts();
+  if(currentPlayer?.is_admin)buildAdminDashboard();
 }
 
 // ===== DASHBOARD =====
@@ -1439,13 +1608,20 @@ function buildDashboard(){
   const allRnds=[...r].sort((a,b)=>b.date.localeCompare(a.date));
   document.getElementById('rounds-tbody').innerHTML=allRnds.map(rnd=>{
     const pc=rnd.plus_minus<=4?'val-green':rnd.plus_minus>=10?'val-red':'val-amber';
+    const gcls=rnd.gir_pct>=67?'val-green':rnd.gir_pct>0&&rnd.gir_pct<50?'val-red':'';
+    const fwcls=rnd.fw_pct!=null?(rnd.fw_pct>=70?'val-green':rnd.fw_pct<50?'val-red':''):'';
+    const drcls=''; const scrcls=rnd.scrambling!=null?(rnd.scrambling>=50?'val-green':rnd.scrambling<25?'val-red':''):'';
+    const puttcls=rnd.putts!=null?(rnd.putts<=30?'val-green':rnd.putts>=36?'val-red':''):'';
     return`<tr>
       <td>${rnd.date.slice(5)} — ${rnd.course}</td>
       <td class="${pc}">${rnd.score}</td><td class="${pc}">${fmtPM(rnd.plus_minus)}</td>
       <td class="val-green">${rnd.birdies}</td><td class="val-red">${rnd.bogeys+rnd.doubles_plus}</td>
-      <td>${rnd.gir_pct>0?rnd.gir_pct+'%':'—'}</td><td>${rnd.fw_pct!=null?rnd.fw_pct+'%':'—'}</td>
-      <td>${rnd.driver_dist||'—'}</td><td>${rnd.scrambling!=null?rnd.scrambling+'%':'—'}</td>
-      <td>${rnd.putts||'—'}</td><td>${rnd.penalties>0?'<span class="val-red">'+rnd.penalties+'</span>':'—'}</td>
+      <td class="${gcls}" style="color:${gcls?'':'var(--text)'}">${rnd.gir_pct>0?rnd.gir_pct+'%':'—'}</td>
+      <td class="${fwcls}" style="color:${fwcls?'':'var(--text)'}">${rnd.fw_pct!=null?rnd.fw_pct+'%':'—'}</td>
+      <td style="color:var(--text)">${rnd.driver_dist||'—'}</td>
+      <td class="${scrcls}" style="color:${scrcls?'':'var(--text)'}">${rnd.scrambling!=null?rnd.scrambling+'%':'—'}</td>
+      <td class="${puttcls}" style="color:${puttcls?'':'var(--text)'}">${rnd.putts||'—'}</td>
+      <td>${rnd.penalties>0?'<span class="val-red">'+rnd.penalties+'</span>':'—'}</td>
     </tr>`;
   }).join('');
 
@@ -1794,15 +1970,25 @@ function setDrClub(club,btn){
 // ===== APPROACH =====
 function buildApproach(){
   const cats=currentPlayer.approach_cats;
-  const cn=Object.keys(cats);
+  const CAT_ORDER_APPROACH=['Wood','Hybrid','Long Iron','Mid Iron','Short Iron','Wedge'];
+  const cn=CAT_ORDER_APPROACH.filter(c=>cats[c]);
   buildGirRollingChart(sorted().filter(x=>x.gir_pct>0),girRollingWindow);
 
+  const girLabelPlugin={id:'girLabels',afterDatasetsDraw(chart){
+    const ctx=chart.ctx,ds=chart.data.datasets[0];
+    chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+      const v=ds.data[i];if(v==null)return;
+      ctx.save();ctx.fillStyle='#0a0f0a';ctx.font='bold 11px DM Mono';
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(v+'%',bar.x,bar.y+4);ctx.restore();
+    });
+  }};
   mkChart('chart-gir-club','bar',{
     labels:cn,
     datasets:[{label:'GIR %',data:cn.map(c=>cats[c].gir_pct),
       backgroundColor:cn.map(c=>cats[c].gir_pct>=55?'rgba(74,222,128,0.6)':'rgba(248,113,113,0.5)'),
       borderColor:cn.map(c=>cats[c].gir_pct>=55?C.green:C.red),borderWidth:1}]
-  },{...bOpts('GIR %')});
+  },{...bOpts('GIR %')},[girLabelPlugin]);
 
   // L/R miss — DIVERGING HORIZONTAL
   const lrVals=cn.map(c=>cats[c].lr_miss);
@@ -1891,8 +2077,10 @@ function setGirRolling(w,btn){
 
 function buildApproachTable(){
   const cats=currentPlayer.approach_cats;
+  const CAT_ORDER_TBL=['Wood','Hybrid','Long Iron','Mid Iron','Short Iron','Wedge'];
+  const orderedCats=CAT_ORDER_TBL.filter(c=>cats[c]).map(c=>[c,cats[c]]);
   const rows=[];
-  Object.entries(cats).forEach(([cat,d])=>{
+  orderedCats.forEach(([cat,d])=>{
     const lrc=Math.abs(d.lr_miss)>15?'val-red':'val-amber';
     const slc=d.sl_miss<-20?'val-red':'val-amber';
     const gc=d.gir_pct>=55?'val-green':d.gir_pct<=35?'val-red':'val-amber';
@@ -1972,7 +2160,6 @@ function buildPutting(){
     <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">avg per round</div></div>
     <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
     <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">avg per round</div></div>
-    <div class="stat-card"><div class="stat-label">Total 3-Putts</div><div class="stat-value ${total3p<=10?'stat-good':'stat-bad'}">${total3p}</div><div class="stat-sub">across all rounds</div></div>
     <div class="stat-card"><div class="stat-label">3-Putt Free Streak</div><div class="stat-value stat-good">${maxStreak}</div><div class="stat-sub">consec. rounds no 3-putt</div></div>
     <div class="stat-card"><div class="stat-label">Overall Make %</div><div class="stat-value ${(overallMake||0)>=45?'stat-good':'stat-neutral'}">${overallMake!=null?overallMake+'%':'—'}</div><div class="stat-sub">weighted all distances</div></div>
     <div class="stat-card"><div class="stat-label">High Side Miss %<span class="tooltip-icon" style="margin-left:5px">?<span class="tooltip-box">Percentage of missed putts where the ball finished on the high side of the hole (above the break). Missing high = aggressive read. Missing low = underread or not enough speed.</span></span></div><div class="stat-value stat-neutral">${highSidePct}%</div><div class="stat-sub">of missed putts</div></div>
@@ -2522,21 +2709,62 @@ async function processFile(){
       rounds,approach_cats,make_pct,bad_reasons,bad_clubs,course_data,par_scoring
     };
 
-    // Store in localStorage for persistence
-    try{
-      const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
-      stored[uploadProfile.id]=playerData;
-      localStorage.setItem('ti_players',JSON.stringify(stored));
-      addLog('✓ Player data saved to browser storage','ok');
-    }catch(e){addLog('⚠ Could not save to localStorage — data will persist for this session only','warn')}
-
-    // Also add to in-memory PLAYERS
+        // Save to Supabase
+    setProgress(96,'Saving to database…');
     playerData.approach_shots=approach_shots;
-    PLAYERS[uploadProfile.id]=playerData;
-    // Rebuild login dropdown
-    rebuildLoginDropdown();
+    let savedPlayerId=null;
+    try{
+      const email=nameToEmail(uploadProfile.name);
+      // Create auth account
+      const {data:signUpData,error:signUpErr}=await sb.auth.signUp({email,password:uploadProfile.pin});
+      if(signUpErr&&!signUpErr.message.includes('already registered')){
+        throw new Error('Auth signup failed: '+signUpErr.message);
+      }
+      // Sign in to get user ID
+      const {data:signInData}=await sb.auth.signInWithPassword({email,password:uploadProfile.pin});
+      const userId=signInData?.user?.id;
+      // Create player record
+      const statsPayload={
+        approach_cats,make_pct,par_scoring,
+        bad_reasons:playerData.bad_reasons,bad_clubs:playerData.bad_clubs
+      };
+      const {data:newPlayer,error:playerErr}=await sb.from('players')
+        .insert({name:uploadProfile.name,pin:uploadProfile.pin,user_id:userId,stats:statsPayload})
+        .select().single();
+      if(playerErr)throw new Error('Player insert failed: '+playerErr.message);
+      savedPlayerId=newPlayer.id;
+      addLog('✓ Player account created in database','ok');
+      // Insert rounds in batches
+      const roundRows=rounds.map(r=>({
+        player_id:savedPlayerId,date:r.date,course:r.course,score:r.score,par:r.par,
+        plus_minus:r.plus_minus,birdies:r.birdies,bogeys:r.bogeys,doubles_plus:r.doubles_plus,
+        putts:r.putts,gir_pct:r.gir_pct,penalties:r.penalties,fw_pct:r.fw_pct,
+        driver_dist:r.driver_dist,scrambling:r.scrambling,
+        one_putts:r.one_putts,three_putts:r.three_putts,holes:r.holes||18
+      }));
+      const BATCH=50;
+      for(let i=0;i<roundRows.length;i+=BATCH){
+        const {error:rErr}=await sb.from('rounds').insert(roundRows.slice(i,i+BATCH));
+        if(rErr)addLog('⚠ Some rounds failed to save: '+rErr.message,'warn');
+      }
+      addLog(`✓ ${rounds.length} rounds saved to database`,'ok');
+      // Insert approach shots
+      if(approach_shots.length){
+        const apprRows=approach_shots.map(s=>({player_id:savedPlayerId,x:s.x,y:s.y,cat:s.cat,club:s.club,gir:s.gir||false}));
+        await sb.from('approach_shots').insert(apprRows);
+        addLog(`✓ ${approach_shots.length} approach shots saved`,'ok');
+      }
+      // Sign out so they log in properly
+      await sb.auth.signOut();
+      addLog('✓ All data saved. Please log in to access your account.','ok');
+    }catch(e){
+      addLog('⚠ Database save failed: '+e.message+' — data will work this session only','warn');
+      addLog('Please contact the admin to retry your upload.','warn');
+    }
 
-    uploadedPlayerData={id:uploadProfile.id,data:playerData};
+    // Keep in-memory as fallback for this session
+    PLAYERS[uploadProfile.id]=playerData;
+    uploadedPlayerData={id:uploadProfile.id,data:playerData,supabaseId:savedPlayerId};
     setProgress(100,'Complete!');
     addLog('✓ Done! '+rounds.length+' rounds loaded.','ok');
 
@@ -2563,39 +2791,37 @@ function enterAppFromUpload(){
   initApp();
 }
 
-function rebuildLoginDropdown(){
+// Load players from Supabase into login dropdown on page load
+(async function loadPlayersDropdown(){
   const sel=document.getElementById('login-player');
-  // Preserve built-in options
-  const builtIn=['pat_west','demo_player'];
-  // Remove any dynamically added options
-  Array.from(sel.options).forEach(opt=>{
-    if(opt.value&&!builtIn.includes(opt.value)&&opt.value!==''){
-      sel.remove(sel.options[opt.index]);
-    }
-  });
-  // Add stored players
   try{
-    const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
-    Object.entries(stored).forEach(([id,data])=>{
-      if(!builtIn.includes(id)){
+    // First add hardcoded players as fallback
+    ['Pat West','Demo Player'].forEach(name=>{
+      const opt=document.createElement('option');
+      opt.value=name;opt.textContent=name;
+      sel.appendChild(opt);
+    });
+    // Then fetch all players from Supabase
+    const {data:players}=await sb.from('players').select('name').order('name');
+    if(players&&players.length){
+      // Clear and rebuild from DB
+      while(sel.options.length>1)sel.remove(1);
+      players.forEach(p=>{
         const opt=document.createElement('option');
-        opt.value=id;opt.textContent=data.name;
+        opt.value=p.name;opt.textContent=p.name;
         sel.appendChild(opt);
-      }
-    });
-  }catch(e){}
-}
-
-// Load stored players on startup
-(function loadStoredPlayers(){
-  try{
-    const stored=JSON.parse(localStorage.getItem('ti_players')||'{}');
-    Object.entries(stored).forEach(([id,data])=>{
-      if(!PLAYERS[id])PLAYERS[id]=data;
-    });
-    rebuildLoginDropdown();
-  }catch(e){}
+      });
+    }
+  }catch(e){
+    // Fallback already added above - silently continue
+    console.log('Supabase dropdown load failed, using fallback');
+  }
 })();
+
+function rebuildLoginDropdown(){
+  // Re-run dropdown load after new player registers
+  loadPlayersDropdown && loadPlayersDropdown();
+}
 
 // ===== UTIL FUNCTIONS FOR PARSER =====
 function toNum(v){if(v==null||v==='')return null;const n=Number(v);return isNaN(n)?null:n}
@@ -2622,7 +2848,7 @@ function formatDate(d){
 
 
 // ===== SHOT DISPERSION =====
-let dispCat='Wood', dispCI=0.50;
+let dispCat='Mid Iron', dispCI=0.50; // overridden at buildShotDispersion time
 const CAT_COL={
   'Mid Iron':{pt:'rgba(96,165,250,0.75)',el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'},
   'Short Iron':{pt:'rgba(74,222,128,0.75)',el:'rgba(74,222,128,0.8)',fill:'rgba(74,222,128,0.12)'},
@@ -2673,6 +2899,17 @@ function buildShotDispersion(){
   const shots=currentPlayer.approach_shots||[];
   const el=document.getElementById('chart-dispersion');
   if(!el)return;
+  // Default to category with most shots on first load
+  if(dispCat==='Mid Iron'){
+    const catCounts={};
+    shots.forEach(s=>{catCounts[s.cat]=(catCounts[s.cat]||0)+1;});
+    const mostCat=Object.entries(catCounts).sort((a,b)=>b[1]-a[1])[0];
+    if(mostCat) dispCat=mostCat[0];
+    // Sync the button
+    document.querySelectorAll('#disp-cat-btns .roll-btn').forEach(b=>{
+      b.classList.toggle('active', b.textContent.trim()===dispCat);
+    });
+  }
   if(shots.length===0){
     el.parentElement.innerHTML=`<div class="empty-state">No individual approach shot data available.<br>Upload data from the Hole Level Data sheet to see shot dispersion.</div>`;
     document.getElementById('disp-stats').innerHTML='';
@@ -2916,7 +3153,7 @@ async function sendCaddieMessage(){
     const ctx = buildPlayerContext();
     const response = await fetch("https://api.anthropic.com/v1/messages", {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({
         model: "claude-sonnet-4-20250514",
         max_tokens: 1000,
@@ -3681,7 +3918,7 @@ function deRenderScorecard(){
 }
 
 // ── Save & Integrate ─────────────────────────────────────────────
-function deSaveRound(){
+async function deSaveRound(){
   const holes=deHoles.filter(h=>h!=null);
   if(holes.length<9){alert('Need at least 9 holes to save a round.');return}
 
@@ -3825,6 +4062,69 @@ function deSaveRound(){
   buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();
 
+  // Save to Supabase if player has an account
+  if(currentPlayer.player_id){
+    try{
+      const {data:savedRound,error:rErr}=await sb.from('rounds').insert({
+        player_id:currentPlayer.player_id,
+        date:deRoundMeta.date,course:deRoundMeta.course,
+        score:newRound.score,par:newRound.par,plus_minus:newRound.plus_minus,
+        birdies:newRound.birdies,bogeys:newRound.bogeys,doubles_plus:newRound.doubles_plus,
+        putts:newRound.putts,gir_pct:newRound.gir_pct,penalties:newRound.penalties,
+        fw_pct:newRound.fw_pct,driver_dist:newRound.driver_dist,scrambling:newRound.scrambling,
+        one_putts:newRound.one_putts,three_putts:newRound.three_putts,holes:holes.length
+      }).select().single();
+      if(!rErr&&savedRound){
+        // Save hole data
+        const holeRows=holes.map(h=>({
+          round_id:savedRound.id,player_id:currentPlayer.player_id,
+          hole_number:h.hole,par:h.par,score:h.score,
+          tee_club:h.teeClub,shape_ott:h.shapeOTT,tee_dist:h.teeDist,
+          fairway:h.fairway,tee_miss_lr:h.teeMissLR,
+          appr_club:h.apprClub,appr_dist:h.apprDist,appr_lr:h.apprLR,appr_sl:h.apprSL,
+          pin_loc:h.pinLoc,green:h.green,short_sided:h.shortSided,
+          num_putts:h.numPutts,putt1_len:h.putt1Len,putt1_break:h.putt1Break,
+          putt1_break_amt:h.putt1BreakAmt,putt1_slope:h.putt1Slope,
+          putt1_hl:h.putt1HL,putt1_miss:h.putt1Miss,putt2_len:h.putt2Len,
+          penalty:h.penalty||0,bad_reason:h.badReason,bad_club:h.badClub,
+          good_reason:h.goodReason,putt_notes:h.puttNotes
+        }));
+        await sb.from('hole_data').insert(holeRows);
+        // Save approach shots
+        if(newApprShots.length){
+          await sb.from('approach_shots').insert(newApprShots.map(h=>{
+            const rawC=(h.apprClub||'').toLowerCase();
+            const cat=CAT_MAP_DE[rawC]||'Other';
+            return{player_id:currentPlayer.player_id,round_id:savedRound.id,
+              x:h.apprLR,y:h.apprSL||0,cat,club:h.apprClub,gir:h.green?.toLowerCase()==='hit'};
+          }));
+        }
+        // Save tee shots
+        if(newTeeShots.length){
+          await sb.from('tee_shots').insert(newTeeShots.map(s=>({
+            player_id:currentPlayer.player_id,round_id:savedRound.id,
+            x:s.x||0,y:s.y,club:s.club,fairway:s.fairway,date:deRoundMeta.date
+          })));
+        }
+        // Update player stats in Supabase
+        await sb.from('players').update({
+          stats:{
+            approach_cats:currentPlayer.approach_cats,
+            make_pct:currentPlayer.make_pct,
+            par_scoring:currentPlayer.par_scoring,
+            bad_reasons:currentPlayer.bad_reasons,
+            bad_clubs:currentPlayer.bad_clubs,
+            proximity:currentPlayer.proximity,
+          },
+          updated_at:new Date().toISOString()
+        }).eq('id',currentPlayer.player_id);
+      }
+    }catch(e){
+      console.error('Supabase save error:',e);
+      // Data still saved locally — not lost
+    }
+  }
+
   // Clear saved progress and reset
   deClearProgress();
   deHoles=[];deCurrentHole=0;deEditingHole=-1;
@@ -3929,9 +4229,27 @@ function alertsDelta(a, b, dir){
 function buildAlerts(){
   const picker = document.getElementById('alerts-stat-picker');
   if(!picker) return;
-  picker.innerHTML = ALERT_STATS.map(s=>
-    `<button class="alerts-stat-btn${s.key===alertsStatKey?' active':''}" onclick="setAlertsStat('${s.key}',this)">${s.label}</button>`
-  ).join('');
+  const r = currentPlayer.rounds;
+  const s_sorted = [...r].sort((a,b)=>a.date.localeCompare(b.date));
+  // Pre-compute 4 vs 10 avg for each stat to color buttons
+  function quickAvg(vals){ const v=vals.filter(x=>x!=null); return v.length?v.reduce((a,b)=>a+b,0)/v.length:null; }
+  const orig_key = alertsStatKey;
+  picker.innerHTML = ALERT_STATS.map(stat=>{
+    alertsStatKey = stat.key;
+    const last4 = s_sorted.slice(-4).map(r2=>alertGetVal(r2)).filter(v=>v!=null);
+    const last10 = s_sorted.slice(-10).map(r2=>alertGetVal(r2)).filter(v=>v!=null);
+    const avg4 = last4.length?last4.reduce((a,b)=>a+b,0)/last4.length:null;
+    const avg10 = last10.length?last10.reduce((a,b)=>a+b,0)/last10.length:null;
+    let trendCls = '';
+    if(avg4!=null&&avg10!=null){
+      const improving = stat.dir==='high'?avg4>avg10:avg4<avg10;
+      const regressing = stat.dir==='high'?avg4<avg10:avg4>avg10;
+      if(improving) trendCls=' btn-trend-good';
+      else if(regressing) trendCls=' btn-trend-bad';
+    }
+    alertsStatKey = orig_key;
+    return `<button class="alerts-stat-btn${stat.key===alertsStatKey?' active':''}${trendCls}" onclick="setAlertsStat('${stat.key}',this)">${stat.label}</button>`;
+  }).join('');
   renderAlertsContent();
 }
 
@@ -3961,7 +4279,7 @@ function renderAlertsContent(){
   const d1 = alertsDelta(valLast, avg4, stat.dir);
   const d2 = alertsDelta(avg4, avg10, stat.dir);
 
-  function kpiCard(label, val, delta, cls, note){
+  function kpiCard(label, val, delta, cls, note, sub){
     const formatted = stat.fmt(val);
     const color = val==null?'var(--text-dim)':stat.dir==='high'?
       (val>=avg10*1.05?'var(--green)':val<=avg10*0.95?'var(--red)':'var(--text)'):
@@ -3970,7 +4288,7 @@ function renderAlertsContent(){
     return `<div class="alert-kpi ${cls}">
       <div class="alert-kpi-label">${label}</div>
       <div class="alert-kpi-val" style="color:${color}">${formatted}</div>
-      <div class="alert-kpi-sub">${lastRnd.date.slice(5)} — ${lastRnd.course}</div>
+      <div class="alert-kpi-sub">${sub||''}</div>
       ${deltaHtml}
     </div>`;
   }
@@ -3979,10 +4297,14 @@ function renderAlertsContent(){
   if(kpiEl){
     const d1_vs4 = alertsDelta(valLast, avg4, stat.dir);
     const d2_vs10 = alertsDelta(avg4, avg10, stat.dir);
+    const last4dates = last4.map(r2=>r2.date).sort();
+    const last10dates = last10.map(r2=>r2.date).sort();
+    const last4sub = last4dates.length?`${last4dates[0].slice(5)} – ${last4dates[last4dates.length-1].slice(5)}`:'';
+    const last10sub = last10dates.length?`${last10dates[0].slice(5)} – ${last10dates[last10dates.length-1].slice(5)}`:'';
     kpiEl.innerHTML =
-      kpiCard('Last Round', valLast, d1_vs4, 'kpi-last', '4-rnd avg') +
-      kpiCard('4-Round Avg', avg4, d2_vs10, 'kpi-4', '10-rnd avg') +
-      kpiCard('10-Round Avg', avg10, null, 'kpi-10', '');
+      kpiCard('Last Round', valLast, d1_vs4, 'kpi-last', '4-rnd avg', `${lastRnd.date.slice(5)} — ${lastRnd.course}`) +
+      kpiCard('4-Round Avg', avg4, d2_vs10, 'kpi-4', '10-rnd avg', last4sub) +
+      kpiCard('10-Round Avg', avg10, null, 'kpi-10', '', last10sub);
   }
 
   // Chart title
@@ -4044,6 +4366,83 @@ function renderAlertsContent(){
       }
     }
   });
+}
+
+
+// ═══════════════════════════════════════════════════════════════════
+// ADMIN DASHBOARD
+// ═══════════════════════════════════════════════════════════════════
+async function buildAdminDashboard(){
+  if(!currentPlayer?.is_admin)return;
+  const kpiEl=document.getElementById('admin-kpis');
+  const tbodyEl=document.getElementById('admin-players-tbody');
+  if(!kpiEl||!tbodyEl)return;
+  kpiEl.innerHTML='<div class="stat-card"><div class="stat-label">Loading…</div></div>';
+  tbodyEl.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">Loading players…</td></tr>';
+  try{
+    const {data:players,error}=await sb.rpc('get_all_players');
+    if(error)throw error;
+    const totalRounds=players.reduce((s,p)=>s+(parseInt(p.round_count)||0),0);
+    const totalPlayers=players.length;
+    const activeToday=players.filter(p=>{
+      if(!p.last_round)return false;
+      const d=new Date(p.last_round);const n=new Date();
+      return(n-d)/(1000*60*60*24)<=30;
+    }).length;
+    kpiEl.innerHTML=`
+      <div class="stat-card"><div class="stat-label">Total Players</div><div class="stat-value">${totalPlayers}</div></div>
+      <div class="stat-card"><div class="stat-label">Total Rounds</div><div class="stat-value">${totalRounds}</div></div>
+      <div class="stat-card"><div class="stat-label">Active (30 days)</div><div class="stat-value stat-good">${activeToday}</div></div>
+    `;
+    tbodyEl.innerHTML=players.map(p=>`
+      <tr>
+        <td><strong>${p.name}</strong></td>
+        <td>${p.round_count||0}</td>
+        <td>${p.last_round||'—'}</td>
+        <td>${p.created_at?new Date(p.created_at).toLocaleDateString():'—'}</td>
+        <td>${p.is_admin?'<span style="color:var(--amber)">★ Admin</span>':'—'}</td>
+        <td><button class="roll-btn" onclick="adminViewPlayer('${p.id}','${p.name.replace(/'/g,"\\'")}')" style="font-size:10px">View Data</button></td>
+      </tr>
+    `).join('');
+  }catch(e){
+    kpiEl.innerHTML='<div class="stat-card"><div class="stat-label" style="color:var(--red)">Error loading admin data</div></div>';
+    tbodyEl.innerHTML=`<tr><td colspan="6" style="color:var(--red);padding:12px">${e.message}</td></tr>`;
+  }
+}
+
+async function adminViewPlayer(playerId, playerName){
+  const detail=document.getElementById('admin-player-detail');
+  const nameEl=document.getElementById('admin-detail-name');
+  const statsEl=document.getElementById('admin-detail-stats');
+  if(!detail||!nameEl||!statsEl)return;
+  nameEl.innerHTML=`<span style="color:var(--blue)">${playerName}</span>`;
+  statsEl.innerHTML='<div class="stat-card"><div class="stat-label">Loading…</div></div>';
+  detail.style.display='block';
+  detail.scrollIntoView({behavior:'smooth'});
+  try{
+    const {data:rounds}=await sb.from('rounds').select('*').eq('player_id',playerId).order('date');
+    if(!rounds||!rounds.length){
+      statsEl.innerHTML='<div class="stat-card"><div class="stat-label">No rounds yet</div></div>';
+      return;
+    }
+    const scores=rounds.map(r=>r.plus_minus).filter(v=>v!=null);
+    const avgPM=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:null;
+    const avgGIR=rounds.filter(r=>r.gir_pct).map(r=>r.gir_pct);
+    const avgGIRVal=avgGIR.length?avgGIR.reduce((a,b)=>a+b,0)/avgGIR.length:null;
+    const avgScram=rounds.filter(r=>r.scrambling!=null).map(r=>r.scrambling);
+    const avgScramVal=avgScram.length?avgScram.reduce((a,b)=>a+b,0)/avgScram.length:null;
+    const lastRound=rounds[rounds.length-1];
+    statsEl.innerHTML=`
+      <div class="stat-card"><div class="stat-label">Total Rounds</div><div class="stat-value">${rounds.length}</div></div>
+      <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${avgPM!=null?(avgPM>=0?'+':'')+avgPM.toFixed(1):'—'}</div><div class="stat-sub">avg +/- to par</div></div>
+      <div class="stat-card"><div class="stat-label">GIR %</div><div class="stat-value">${avgGIRVal!=null?avgGIRVal.toFixed(1)+'%':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Scrambling</div><div class="stat-value">${avgScramVal!=null?avgScramVal.toFixed(1)+'%':'—'}</div></div>
+      <div class="stat-card"><div class="stat-label">Last Round</div><div class="stat-value" style="font-size:18px">${lastRound.date}</div><div class="stat-sub">${lastRound.course}</div></div>
+      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</div></div>
+    `;
+  }catch(e){
+    statsEl.innerHTML=`<div class="stat-card"><div class="stat-label" style="color:var(--red)">${e.message}</div></div>`;
+  }
 }
 
 </script>
