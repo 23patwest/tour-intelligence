@@ -587,7 +587,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
   <main>
 
     <!-- OVERVIEW / DASHBOARD -->
-    <div class="section active" id="section-dashboard">
+    <div class="section" id="section-dashboard">
       <div class="section-header">
         <div class="section-title">Career <span>Overview</span></div>
         <div class="section-meta" id="dash-meta"></div>
@@ -845,6 +845,15 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="section-meta" id="mygame-meta">Your performance snapshot — focus areas and where to dig deeper</div>
       </div>
 
+      <!-- Round window toggle -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim)">Focus window:</span>
+        <div style="display:flex;gap:4px" id="mg-window-btns">
+          <button class="roll-btn" onclick="setMgWindow(2,this)" style="font-size:11px;padding:5px 12px">Last 2</button>
+          <button class="roll-btn active" onclick="setMgWindow(4,this)" style="font-size:11px;padding:5px 12px">Last 4</button>
+          <button class="roll-btn" onclick="setMgWindow(10,this)" style="font-size:11px;padding:5px 12px">Last 10</button>
+        </div>
+      </div>
       <!-- Welcome / player intro -->
       <div id="mygame-welcome" style="background:linear-gradient(135deg,rgba(96,165,250,0.08) 0%,transparent 60%);border:1px solid rgba(96,165,250,0.2);padding:20px 24px;margin-bottom:28px">
         <div id="mygame-greeting" style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--blue);margin-bottom:6px"></div>
@@ -1077,33 +1086,47 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     <div class="section" id="section-putting">
       <div class="section-header">
         <div class="section-title">Putting <span>Analytics</span></div>
-        <div class="section-meta">Make percentages, 1-putt &amp; 3-putt tracking vs PGA Tour benchmark</div>
+        <div class="section-meta">Putt make rates, miss tendencies and break analysis — vs PGA Tour benchmarks</div>
+      </div>
+      <!-- Make / Miss toggle -->
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;flex-wrap:wrap">
+        <span style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim)">View:</span>
+        <div style="display:flex;gap:4px" id="putt-view-btns">
+          <button class="roll-btn active" onclick="setPuttView('make',this)" style="font-size:11px;padding:5px 14px">Make %</button>
+          <button class="roll-btn" onclick="setPuttView('miss',this)" style="font-size:11px;padding:5px 14px">Miss %</button>
+        </div>
+        <span style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)">applies to all charts</span>
       </div>
       <div class="stats-grid" id="putt-stats"></div>
-      <div class="chart-grid">
+      <!-- Make/Miss by Distance (compact) -->
+      <div class="chart-grid" style="margin-bottom:20px">
         <div class="chart-card chart-full">
-          <div class="chart-title">Make % by Distance vs PGA Tour Average</div>
-          <canvas id="chart-make-pct" height="180"></canvas>
+          <div class="chart-title" id="putt-dist-title">Make % by Distance vs PGA Tour Average</div>
+          <canvas id="chart-make-pct" height="130"></canvas>
         </div>
       </div>
-      <div class="chart-grid">
+      <!-- High/Low + Break Type -->
+      <div class="chart-grid" style="margin-bottom:20px">
         <div class="chart-card">
-          <div class="chart-title">Putts per Round — Rolling Average</div>
-          <div class="rolling-controls">
-            <button class="roll-btn active" onclick="setPuttRolling(4,this)">4 Rounds</button>
-            <button class="roll-btn" onclick="setPuttRolling(6,this)">6 Rounds</button>
-            <button class="roll-btn" onclick="setPuttRolling(8,this)">8 Rounds</button>
-          </div>
-          <canvas id="chart-putts-round" height="190"></canvas>
+          <div class="chart-title" id="putt-hl-title">Miss % — High vs Low Side</div>
+          <div id="putt-hl-note" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Goal: equal split (50/50) — missing high = aggressive, missing low = under-reading</div>
+          <canvas id="chart-putt-hl" height="160"></canvas>
+          <div id="putt-hl-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
         </div>
         <div class="chart-card">
-          <div class="chart-title">
-            Putting Quality Score
-            <span class="tooltip-icon" style="margin-left:6px;display:inline-flex">?
-              <span class="tooltip-box">Score from 0-100 per round.<br><br><strong>Formula:</strong> 100 − ((Putts − 27) × 5)<br><br>27 putts = 100 (elite), 36 putts = 55 (average), 40+ putts = poor.<br><br>Color: Green ≥ 70, Amber 50-69, Red &lt; 50.</span>
-            </span>
-          </div>
-          <canvas id="chart-putt-quality" height="190"></canvas>
+          <div class="chart-title" id="putt-break-title">Miss % by Break Type</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">See if you struggle more on left-to-right or right-to-left breaking putts</div>
+          <canvas id="chart-putt-break" height="160"></canvas>
+          <div id="putt-break-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
+        </div>
+      </div>
+      <!-- Slope analysis -->
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title" id="putt-slope-title">Miss % by Slope (Uphill vs Downhill)</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Uphill putts should have higher make rates — larger miss % on downhill indicates speed control issues</div>
+          <canvas id="chart-putt-slope" height="130"></canvas>
+          <div id="putt-slope-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
         </div>
       </div>
     </div>
@@ -1664,8 +1687,20 @@ function buildDashboard(){
     <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value ${a_scram>=50?'stat-good':a_scram<30?'stat-bad':'stat-neutral'}">${fmt(a_scram,1)}%</div><div class="stat-sub">Goal: 50%</div></div>
     <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr only)</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Proximity ${proxTT}</div><div class="stat-value ${prox&&prox<=25?'stat-good':'stat-neutral'}">${prox?prox.toFixed(1)+'ft':'—'}</div><div class="stat-sub">avg on GIR holes</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">Avg L/R Miss ${lrTT}</div><div class="stat-value ${lrCls}" style="font-size:22px;padding-top:8px">${lrDir}</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">Avg S/L Miss ${slTT}</div><div class="stat-value ${slCls}" style="font-size:22px;padding-top:8px">${slDir}</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Avg L/R Miss ${lrTT}</div>
+      <div class="${lrCls}" style="font-size:13px;margin-top:10px;line-height:1.5">
+        <div style="font-size:36px;line-height:1">${Math.abs(a_lr).toFixed(1)} ft</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px">
+          ${a_lr<0?'<span style="font-size:22px">←</span> Left':'<span style="font-size:22px">→</span> Right'}
+        </div>
+      </div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Avg S/L Miss ${slTT}</div>
+      <div class="${slCls}" style="font-size:13px;margin-top:10px;line-height:1.5">
+        <div style="font-size:36px;line-height:1">${Math.abs(a_sl).toFixed(1)} ft</div>
+        <div style="font-family:'DM Mono',monospace;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px">
+          ${a_sl<0?'<span style="font-size:22px">↓</span> Short':'<span style="font-size:22px">↑</span> Long'}
+        </div>
+      </div></div>
   `;
 
   const allRnds=[...r].sort((a,b)=>b.date.localeCompare(a.date));
@@ -2182,27 +2217,35 @@ function toggleDrill(cat){
 }
 
 // ===== PUTTING =====
-function buildPutting(){
-  const r=currentPlayer.rounds;
-  const mp=currentPlayer.make_pct||{};
-  const pr=sorted().filter(x=>x.putts);
-  // GIR 1-Putt % per round: one_putts / estimated GIR count
+
+let puttViewMode = 'make'; // 'make' or 'miss'
+let puttHoleData = null;   // cached hole_data from Supabase
+
+function setPuttView(mode, btn){
+  puttViewMode = mode;
+  document.querySelectorAll('#putt-view-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildPutting();
+}
+
+async function buildPutting(){
+  const r = currentPlayer.rounds;
+  const mp = currentPlayer.make_pct || {};
+
+  // GIR 1-Putt % per round
   const girOnePuttPct = r.filter(x=>x.gir_pct>0&&x.one_putts!=null).map(x=>{
     const gc=Math.max(1,Math.round(x.gir_pct/100*(x.holes||18)));
     return Math.round((x.one_putts/gc)*1000)/10;
   });
   const a_gir1p = girOnePuttPct.length?girOnePuttPct.reduce((a,b)=>a+b,0)/girOnePuttPct.length:null;
-  const one_pr=r.filter(x=>x.one_putts!=null);
-  const three_pr=r.filter(x=>x.three_putts!=null);
-  const a_1p=avg(one_pr.map(x=>x.one_putts));
-  const a_3p=avg(three_pr.map(x=>x.three_putts));
-  const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
-  const a_1p_scram=a_scram;
+  const one_pr  = r.filter(x=>x.one_putts!=null);
+  const three_pr= r.filter(x=>x.three_putts!=null);
+  const a_1p    = avg(one_pr.map(x=>x.one_putts));
+  const a_3p    = avg(three_pr.map(x=>x.three_putts));
+  const a_scram = avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  const a_1p_scram = a_scram;
 
-  // Total 3-putt holes
-  const total3p=three_pr.reduce((s,x)=>s+(x.three_putts||0),0);
-
-  // Longest streak without a 3-putt
+  // 3-putt free streak
   const s_rounds=[...r].sort((a,b)=>a.date.localeCompare(b.date)).filter(x=>x.three_putts!=null);
   let maxStreak=0,curStreak=0;
   for(const rnd of s_rounds){
@@ -2210,92 +2253,255 @@ function buildPutting(){
     else curStreak=0;
   }
 
-  // High/Low side miss % from 1st putt miss data — use proxy from make_pct breakdown
-  // High side = 8-20ft range make %, Low side miss higher at shorter range
-  // Using available data: estimate high side as % of misses > midpoint (conservative approach)
-  // Without actual H/L data we derive from break patterns in the data
-  const highSidePct=Math.round(35+Math.random()*0); // static approx until hole data tracked
-  const lowSidePct=100-highSidePct;
-
-  // Overall make % across all distances (weighted by estimated attempt distribution)
+  // Overall make %
   const distWeights={'0-3':0.25,'3-5':0.18,'5-8':0.20,'8-12':0.15,'12-20':0.10,'20-35':0.07,'35-50':0.03,'50+':0.02};
   let totalMake=0,totalW=0;
-  for(const[d,w] of Object.entries(distWeights)){if(mp[d]!=null){totalMake+=mp[d]*w;totalW+=w;}}
+  for(const[d,w]of Object.entries(distWeights)){if(mp[d]!=null){totalMake+=mp[d]*w;totalW+=w;}}
   const overallMake=totalW>0?Math.round(totalMake/totalW*10)/10:null;
 
   document.getElementById('putt-stats').innerHTML=`
-    
-     <div class="stat-card"><div class="stat-label">GIR 1-Putt %</div><div class="stat-value ${a_gir1p>=30?'stat-good':a_gir1p!=null&&a_gir1p<20?'stat-bad':''}">${a_gir1p!=null?a_gir1p.toFixed(1)+'%':'—'}</div><div class="stat-sub">Goal: ≥30% · Tour avg ~30%</div></div>
-     <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
-    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">avg per round</div></div>
-    <div class="stat-card"><div class="stat-label">3-Putt Free Streak</div><div class="stat-value stat-good">${maxStreak}</div><div class="stat-sub">consec. rounds no 3-putt</div></div>
-    <div class="stat-card"><div class="stat-label">Overall Make %</div><div class="stat-value ${(overallMake||0)>=45?'stat-good':'stat-neutral'}">${overallMake!=null?overallMake+'%':'—'}</div><div class="stat-sub">weighted all distances</div></div>
-    <div class="stat-card"><div class="stat-label">High Side Miss %<span class="tooltip-icon" style="margin-left:5px">?<span class="tooltip-box">Percentage of missed putts where the ball finished on the high side of the hole (above the break). Missing high = aggressive read. Missing low = underread or not enough speed.</span></span></div><div class="stat-value stat-neutral">${highSidePct}%</div><div class="stat-sub">of missed putts</div></div>
-    <div class="stat-card"><div class="stat-label">Low Side Miss %</div><div class="stat-value stat-neutral">${lowSidePct}%</div><div class="stat-sub">of missed putts</div></div>
+    <div class="stat-card"><div class="stat-label">GIR 1-Putt %</div>
+      <div class="stat-value ${a_gir1p>=30?'stat-good':a_gir1p!=null&&a_gir1p<20?'stat-bad':''}">${a_gir1p!=null?a_gir1p.toFixed(1)+'%':'—'}</div>
+      <div class="stat-sub">Goal: ≥30% · Tour avg ~30%</div></div>
+    <div class="stat-card"><div class="stat-label">1-Putt Scramble</div>
+      <div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div>
+      <div class="stat-sub">1-putt after missed GIR</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div>
+      <div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div>
+      <div class="stat-sub">avg per round</div></div>
+    <div class="stat-card"><div class="stat-label">3-Putt Free Streak</div>
+      <div class="stat-value stat-good">${maxStreak}</div>
+      <div class="stat-sub">consec. rounds no 3-putt</div></div>
+    <div class="stat-card"><div class="stat-label">Overall ${puttViewMode==='make'?'Make':'Miss'} %</div>
+      <div class="stat-value ${(overallMake||0)>=45?'stat-good':'stat-neutral'}">
+        ${overallMake!=null?(puttViewMode==='make'?overallMake:(100-overallMake).toFixed(1))+'%':'—'}</div>
+      <div class="stat-sub">weighted all distances</div></div>
   `;
 
-  const PGA={
-    "0-3":99,"3-5":88,"5-8":68,"8-12":50,"12-20":29,"20-35":13,"35-50":8,"50+":5
-  };
+  // ── Make / Miss % by Distance ──────────────────────────────────
+  const PGA={'0-3':99,'3-5':88,'5-8':68,'8-12':50,'12-20':29,'20-35':13,'35-50':8,'50+':5};
   const dists=['0-3','3-5','5-8','8-12','12-20','20-35','35-50','50+'];
+  const isM = puttViewMode==='make';
+  const yourVals = dists.map(d=>mp[d]!=null?(isM?mp[d]:100-mp[d]):null);
+  const pgaVals  = dists.map(d=>isM?PGA[d]:100-PGA[d]);
+  const titleEl = document.getElementById('putt-dist-title');
+  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % by Distance vs PGA Tour Average`;
+
   mkChart('chart-make-pct','bar',{
     labels:dists.map(d=>d+' ft'),
     datasets:[
-      {label:'Your Make %',data:dists.map(d=>mp[d]||0),
+      {label:`Your ${isM?'Make':'Miss'} %`,data:yourVals,
         backgroundColor:dists.map((_,i)=>i<=1?'rgba(74,222,128,0.65)':i<=3?C.ad:'rgba(96,165,250,0.5)'),
         borderColor:dists.map((_,i)=>i<=1?C.green:i<=3?C.amber:C.blue),borderWidth:1,order:2},
-      {label:'PGA Tour Avg',data:dists.map(d=>PGA[d]),
+      {label:`PGA Tour ${isM?'Make':'Miss'} %`,data:pgaVals,
         backgroundColor:'transparent',borderColor:'rgba(248,113,113,0.8)',
         borderWidth:2,type:'line',pointRadius:4,pointBackgroundColor:'rgba(248,113,113,0.8)',tension:0.3,order:1}
     ]
   },{
-    ...bOpts('Make %'),
+    ...bOpts(`${isM?'Make':'Miss'} %`),
     plugins:{
       legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
       tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}
     }
   });
 
-  buildPuttRollingChart(pr,puttRollingWindow);
-
-  const pq=pr.map(x=>Math.max(0,Math.min(100,100-(x.putts-27)*5)));
-  mkChart('chart-putt-quality','line',{
-    labels:pr.map(x=>x.date.slice(5,10)),
-    datasets:[{data:pq,borderColor:C.green,backgroundColor:C.gfill,
-      pointBackgroundColor:pq.map(v=>v>=70?C.green:v<50?C.red:C.amber),
-      pointRadius:4,tension:0.3,fill:true}]
-  },{...bOpts('Quality (0-100)')});
+  // ── Fetch hole data for HL / Break / Slope charts ─────────────
+  if(!puttHoleData && currentPlayer.player_id){
+    try{
+      const {data:hd} = await sb.from('hole_data')
+        .select('putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
+        .eq('player_id', currentPlayer.player_id);
+      puttHoleData = hd || [];
+    }catch(e){ puttHoleData = []; }
+  }
+  const hd = puttHoleData || [];
+  buildPuttHLChart(hd);
+  buildPuttBreakChart(hd);
+  buildPuttSlopeChart(hd);
 }
-function buildPuttRollingChart(pr,w){
-  const vals=pr.map(x=>x.putts),ra=rollingAvg(vals,w);
-  if(charts['chart-putts-round']){try{charts['chart-putts-round'].destroy()}catch(e){}}
-  const el=document.getElementById('chart-putts-round');if(!el)return;
-  charts['chart-putts-round']=new Chart(el.getContext('2d'),{
+
+function puttMissOrMake(attempts, made){
+  // returns value to show based on puttViewMode
+  if(attempts===0)return null;
+  const makePct = made/attempts*100;
+  return puttViewMode==='make'?makePct:100-makePct;
+}
+
+function buildPuttHLChart(hd){
+  const hlEl = document.getElementById('chart-putt-hl');
+  const emptyEl = document.getElementById('putt-hl-empty');
+  const titleEl = document.getElementById('putt-hl-title');
+  if(!hlEl)return;
+
+  // Combine putt1 and putt2 high/low data
+  const hlCounts={High:{made:0,total:0},Low:{made:0,total:0}};
+  for(const h of hd){
+    // putt1
+    if(h.putt1_hl&&['High','Low'].includes(h.putt1_hl)){
+      const made = h.num_putts===1?1:0;
+      hlCounts[h.putt1_hl].total++;
+      hlCounts[h.putt1_hl].made+=made;
+    }
+    // putt2
+    if(h.putt2_hl&&['High','Low'].includes(h.putt2_hl)){
+      const made = h.num_putts===2?1:0;
+      hlCounts[h.putt2_hl].total++;
+      hlCounts[h.putt2_hl].made+=made;
+    }
+  }
+  const hasData = hlCounts.High.total+hlCounts.Low.total > 3;
+  if(!hasData){
+    hlEl.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    return;
+  }
+  hlEl.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+
+  const isM = puttViewMode==='make';
+  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % — High vs Low Side`;
+
+  const labels=['High Side','Low Side'];
+  const vals=[
+    puttMissOrMake(hlCounts.High.total,hlCounts.High.made),
+    puttMissOrMake(hlCounts.Low.total,hlCounts.Low.made),
+  ];
+  const goal50=[50,50];
+
+  if(charts['chart-putt-hl']){try{charts['chart-putt-hl'].destroy();}catch(e){}}
+  charts['chart-putt-hl']=new Chart(hlEl.getContext('2d'),{
     type:'bar',
-    data:{labels:pr.map(x=>x.date.slice(5,10)),datasets:[
-      {type:'bar',label:'Putts',data:vals,
-        backgroundColor:vals.map(v=>v<=30?C.gd:v>=36?C.rd:C.ad),
-        borderColor:vals.map(v=>v<=30?C.green:v>=36?C.red:C.amber),borderWidth:1,order:2},
-      {type:'line',label:`${w}-Rnd Avg`,data:ra,borderColor:C.blue,backgroundColor:'transparent',
-        borderWidth:2.5,pointRadius:0,tension:0.4,order:1}
+    data:{labels,datasets:[
+      {label:`${isM?'Make':'Miss'} %`,data:vals,
+        backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)'],
+        borderColor:[C.blue,C.amber],borderWidth:1.5,order:2},
+      {label:'50% goal',data:goal50,type:'line',
+        borderColor:'rgba(74,222,128,0.6)',borderWidth:2,borderDash:[5,4],
+        pointRadius:0,tension:0,order:1,backgroundColor:'transparent'}
     ]},
-    options:{
-      responsive:true,
-      plugins:{...bOpts().plugins,legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}}},
-      scales:{
-        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
-        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
-           min:Math.min(...vals)-3,max:Math.max(...vals)+3}
-      }
+    options:{...bOpts(`${isM?'Make':'Miss'} %`),
+      plugins:{...bOpts().plugins,
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:16}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){
+            const i=ctx.dataIndex;
+            const side=labels[i];
+            const tot=i===0?hlCounts.High.total:hlCounts.Low.total;
+            return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${tot} putts)`;
+          }}}},
+      scales:{...bOpts(`${isM?'Make':'Miss'} %`).scales,y:{...bOpts().scales?.y,min:0,max:100,
+        grid:{color:C.grid},ticks:{color:C.txt,font:FONT}}}
     }
   });
 }
-function setPuttRolling(w,btn){
-  puttRollingWindow=w;
-  document.querySelectorAll('#section-putting .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
-  btn.classList.add('active');
-  buildPuttRollingChart(sorted().filter(x=>x.putts),w);
+
+function buildPuttBreakChart(hd){
+  const brEl = document.getElementById('chart-putt-break');
+  const emptyEl = document.getElementById('putt-break-empty');
+  const titleEl = document.getElementById('putt-break-title');
+  if(!brEl)return;
+
+  const brCounts={LR:{made:0,total:0},RL:{made:0,total:0},'No Break':{made:0,total:0}};
+  for(const h of hd){
+    for(const [brk,isFirst] of [[h.putt1_break,true],[h.putt2_break,false]]){
+      const key=['LR','RL','No Break'].find(k=>brk===k||brk===k);
+      if(!key)continue;
+      const made = isFirst?(h.num_putts===1?1:0):(h.num_putts===2?1:0);
+      brCounts[key].total++;
+      brCounts[key].made+=made;
+    }
+  }
+  const hasData = Object.values(brCounts).some(v=>v.total>2);
+  if(!hasData){
+    brEl.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    return;
+  }
+  brEl.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+
+  const isM = puttViewMode==='make';
+  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % by Break Type`;
+
+  const labels=['Left to Right (LR)','Right to Left (RL)','No Break'];
+  const keys=['LR','RL','No Break'];
+  const vals=keys.map(k=>puttMissOrMake(brCounts[k].total,brCounts[k].made));
+
+  if(charts['chart-putt-break']){try{charts['chart-putt-break'].destroy();}catch(e){}}
+  charts['chart-putt-break']=new Chart(brEl.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:`${isM?'Make':'Miss'} %`,data:vals,
+      backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)','rgba(74,222,128,0.6)'],
+      borderColor:[C.blue,C.amber,C.green],borderWidth:1.5
+    }]},
+    options:{...bOpts(`${isM?'Make':'Miss'} %`),
+      plugins:{...bOpts().plugins,legend:{display:false},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){
+            const k=keys[ctx.dataIndex];
+            const tot=brCounts[k].total;
+            return `${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${tot} putts)`;
+          }}}},
+      scales:{...bOpts().scales,y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,max:100}}
+    }
+  });
 }
+
+function buildPuttSlopeChart(hd){
+  const slEl = document.getElementById('chart-putt-slope');
+  const emptyEl = document.getElementById('putt-slope-empty');
+  const titleEl = document.getElementById('putt-slope-title');
+  if(!slEl)return;
+
+  const slCounts={Uphill:{made:0,total:0},Downhill:{made:0,total:0},Flat:{made:0,total:0}};
+  for(const h of hd){
+    for(const [slope,isFirst] of [[h.putt1_slope,true],[h.putt2_slope,false]]){
+      const key=['Uphill','Downhill','Flat'].find(k=>slope&&slope.toLowerCase().includes(k.toLowerCase()));
+      if(!key)continue;
+      const made = isFirst?(h.num_putts===1?1:0):(h.num_putts===2?1:0);
+      slCounts[key].total++;
+      slCounts[key].made+=made;
+    }
+  }
+  const hasData = Object.values(slCounts).some(v=>v.total>2);
+  if(!hasData){
+    slEl.style.display='none';
+    if(emptyEl) emptyEl.style.display='block';
+    return;
+  }
+  slEl.style.display='block';
+  if(emptyEl) emptyEl.style.display='none';
+
+  const isM = puttViewMode==='make';
+  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % by Slope (Uphill vs Downhill)`;
+
+  const labels=['Uphill','Flat','Downhill'];
+  const keys=['Uphill','Flat','Downhill'];
+  const vals=keys.map(k=>puttMissOrMake(slCounts[k].total,slCounts[k].made));
+
+  if(charts['chart-putt-slope']){try{charts['chart-putt-slope'].destroy();}catch(e){}}
+  charts['chart-putt-slope']=new Chart(slEl.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[{
+      label:`${isM?'Make':'Miss'} %`,data:vals,
+      backgroundColor:['rgba(74,222,128,0.6)','rgba(148,163,184,0.5)','rgba(248,113,113,0.6)'],
+      borderColor:[C.green,'rgba(148,163,184,0.8)',C.red],borderWidth:1.5
+    }]},
+    options:{...bOpts(`${isM?'Make':'Miss'} %`),
+      plugins:{...bOpts().plugins,legend:{display:false},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){
+            const k=keys[ctx.dataIndex];
+            const tot=slCounts[k].total;
+            return `${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${tot} putts)`;
+          }}}},
+      scales:{...bOpts().scales,y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,max:100,
+        title:{display:true,text:`${isM?'Make':'Miss'} %`,color:C.txt,font:FONT}}}
+    }
+  });
+}
+
 
 // ===== BIRDIES & BOGEYS =====
 function buildBirdiesBogeys(){
@@ -4253,6 +4459,17 @@ const ALERT_STATS = [
   {key:'short_sided', label:'Short-Sided Count',    unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
 ];
 
+let mgWindow = 4; // Welcome tab round window
+
+function setMgWindow(n, btn){
+  mgWindow = n;
+  const lbl=document.getElementById('mg-window-label');
+  if(lbl) lbl.textContent=n;
+  document.querySelectorAll('#mg-window-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildMyGame();
+}
+
 let alertsStatKey = 'gir_pct';
 
 // Extract value per round for a given stat key
@@ -4468,7 +4685,7 @@ document.addEventListener('click',function(e){
 function buildMyGame(){
   const r = currentPlayer.rounds;
   const sorted = [...r].sort((a,b)=>a.date.localeCompare(b.date));
-  const last4  = sorted.slice(-4);
+  const last4  = sorted.slice(-mgWindow);
   const last4v = last4.filter(x=>x.score!=null);
   const lastRound = sorted[sorted.length-1];
   if(!last4v.length) return;
@@ -4498,10 +4715,10 @@ function buildMyGame(){
     const pmStr = a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —';
     const trend = a_pm!=null?(a_pm<=4?'You\'re in good form.':a_pm<=8?'There\'s work to do.':'Your scoring needs serious attention.'):'';
     summEl.innerHTML =
-      `Last 4 rounds you\'ve averaged <strong style="color:var(--text)">${pmStr} to par</strong>. ${trend} ` +
+      `Last ${mgWindow} rounds you\'ve averaged <strong style="color:var(--text)">${pmStr} to par</strong>. ${trend} ` +
       `Last out: <strong style="color:var(--text)">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</strong> at ${lastRound.course}.`;
   }
-  if(metaEl) metaEl.textContent = `${r.length} round${r.length!==1?'s':''} tracked · focus window: last 4 rounds`;
+  if(metaEl) metaEl.textContent = `${r.length} round${r.length!==1?'s':''} tracked · focus window: last ${mgWindow} rounds`;
 
   // ── Normalised shot dispersion by category ────────────────────
   // Formula: for each approach shot with x (L/R ft), y (S/L ft), dist (yds):
@@ -4632,7 +4849,7 @@ function buildMyGame(){
   const qEl = document.getElementById('mygame-quickstats');
   if(qEl){
     const stats=[
-      {label:'Scoring Avg',  val:a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —',  sub:'last 4 rounds', cls:a_pm<=4?'stat-good':a_pm>=10?'stat-bad':''},
+      {label:'Scoring Avg',  val:a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —',  sub:`last ${mgWindow} rounds`, cls:a_pm<=4?'stat-good':a_pm>=10?'stat-bad':''},
       {label:'GIR %',        val:a_gir!=null?a_gir.toFixed(1)+'%':' —',             cls:a_gir>=67?'stat-good':a_gir<50?'stat-bad':''},
       {label:'Fairways %',   val:a_fw!=null?a_fw.toFixed(1)+'%':' —',              cls:a_fw>=70?'stat-good':a_fw<50?'stat-bad':''},
       {label:'Scrambling',   val:a_scr!=null?a_scr.toFixed(1)+'%':' —',            cls:a_scr>=50?'stat-good':a_scr<30?'stat-bad':''},
@@ -4668,7 +4885,7 @@ function buildMyGame(){
     });
   }
 
-  const lbl4b=last4.map(x=>x.date.slice(5,10));
+  const lbl4b=last4.map(x=>x.date.slice(5,10)); // last4 already uses mgWindow
   if(charts['chart-mg-stats']){try{charts['chart-mg-stats'].destroy();}catch(e){}}
   const mgSt=document.getElementById('chart-mg-stats');
   if(mgSt){
