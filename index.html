@@ -150,7 +150,8 @@ tr:hover td{background:var(--surface2)}
     width:100%;padding:0 16px;height:54px;background:var(--surface);
     border-bottom:1px solid var(--border)}
   .app-logo{font-size:18px;letter-spacing:2px}
-  .header-right{gap:8px}
+  .header-right{gap:6px}
+  #header-de-btn{font-size:11px!important;padding:4px 8px!important;letter-spacing:0.5px!important}
   .player-badge{padding:4px 10px;font-size:12px}
   .player-badge .dot{width:6px;height:6px}
   .btn-logout{padding:4px 8px;font-size:10px}
@@ -296,7 +297,8 @@ tr:hover td{background:var(--surface2)}
 .template-note strong{color:var(--blue)}
 
 
-.rounds-scroll{max-height:460px;overflow-y:auto}
+.rounds-scroll{max-height:310px;overflow-y:auto}
+.rounds-scroll thead th{position:sticky;top:0;background:var(--surface);z-index:2;box-shadow:0 1px 0 var(--border)}
 .rounds-scroll::-webkit-scrollbar{width:5px}
 .rounds-scroll::-webkit-scrollbar-track{background:var(--surface2)}
 .rounds-scroll::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
@@ -371,6 +373,9 @@ tr:hover td{background:var(--surface2)}
 .de-hole-nav{display:flex;gap:8px;margin-top:16px}
 @media(max-width:600px){
   .de-pin-grid{max-width:150px}
+  #de-sc-table th, #de-sc-table td{padding:6px 4px;font-size:11px}
+  #de-sc-table th:last-child, #de-sc-table td:last-child{display:none}
+  #de-sc-table .de-sc-edit{display:none}
   #de-entry>div[style*="grid-template-columns:1fr 320px"]{grid-template-columns:1fr!important}
 }
 
@@ -403,6 +408,19 @@ tr:hover td{background:var(--surface2)}
   .alerts-stat-btn{font-size:10px;padding:6px 10px}
 }
 
+
+.mg-weakness{background:var(--surface);border:1px solid var(--border);padding:22px;position:relative;cursor:pointer;transition:all 0.2s}
+.mg-weakness:hover{border-color:var(--red);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.mg-weakness-rank{font-family:'Bebas Neue',sans-serif;font-size:48px;line-height:1;color:rgba(248,113,113,0.15);position:absolute;top:12px;right:16px}
+.mg-weakness-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
+.mg-weakness-stat{font-family:'Bebas Neue',sans-serif;font-size:36px;letter-spacing:1px;color:var(--red);line-height:1;margin-bottom:4px}
+.mg-weakness-goal{font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);margin-bottom:12px}
+.mg-weakness-desc{font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text);line-height:1.6;margin-bottom:14px}
+.mg-weakness-link{display:inline-flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--blue);border:1px solid rgba(96,165,250,0.3);padding:5px 12px;transition:all 0.15s}
+.mg-weakness-link:hover{background:rgba(96,165,250,0.1);border-color:var(--blue)}
+@media(max-width:900px){#mygame-weaknesses{grid-template-columns:1fr}}
+@media(max-width:600px){#mygame-weaknesses{grid-template-columns:1fr}#mygame-quickstats{grid-template-columns:repeat(2,1fr)}}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
 <script>
@@ -430,9 +448,10 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <option value="">— Choose your profile —</option>
       </select>
     </div>
-    <div class="login-field">
-      <label>PIN</label>
+    <div class="login-field" id="login-pin-field">
+      <label id="login-pin-label">PIN</label>
       <input type="password" id="login-pin" placeholder="Enter your PIN" maxlength="6">
+      <div id="login-demo-hint" style="display:none;font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);margin-top:6px;padding:6px 10px;background:rgba(96,165,250,0.08);border-left:2px solid var(--blue)">Demo account — no PIN needed. Just click Sign In.</div>
     </div>
     <button class="btn-login" onclick="handleLogin()">Sign In &rarr;</button>
     <div id="login-loading" style="display:none;text-align:center;padding:10px;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue)">Signing in…</div>
@@ -465,14 +484,10 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     <div id="upload-step-1">
       <div class="upload-section">
         <div class="upload-section-title">Player Profile</div>
-        <div class="upload-row">
+        <div class="upload-row full">
           <div class="upload-field">
             <label>Full Name</label>
-            <input type="text" id="up-name" placeholder="e.g. Pat West">
-          </div>
-          <div class="upload-field">
-            <label>Display ID (no spaces)</label>
-            <input type="text" id="up-id" placeholder="e.g. pat_west" oninput="this.value=this.value.toLowerCase().replace(/[^a-z0-9_]/g,'_')">
+            <input type="text" id="up-name" placeholder="e.g. John Smith">
           </div>
         </div>
         <div class="upload-row">
@@ -534,13 +549,16 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
 <div id="app">
   <header>
     <!-- Desktop top bar / Mobile top bar -->
-    <div class="header-top" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 32px;height:60px">
+    <div class="header-top" style="display:flex;align-items:center;justify-content:space-between;width:100%;padding:0 32px;height:60px;position:relative">
       <div><div class="app-logo">Tour Intelligence</div><div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-top:1px">Outsmart your competition</div></div>
       <div style="display:flex;align-items:center;gap:16px">
         <div class="header-right">
-          <button id="header-de-btn" onclick="showDataEntryFromHeader()" style="background:var(--blue);color:#0a0f1a;border:none;padding:6px 14px;font-family:'Bebas Neue',sans-serif;font-size:15px;letter-spacing:1.5px;cursor:pointer;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">+ Log Round</button>
-          <div class="player-badge"><div class="dot"></div><span id="player-name-badge">—</span></div>
-          <button class="btn-logout" onclick="handleLogout()">Sign Out</button>
+          <button id="header-de-btn" onclick="showDataEntryFromHeader()" style="background:var(--blue);color:#0a0f1a;border:none;padding:5px 10px;font-family:'Bebas Neue',sans-serif;font-size:13px;letter-spacing:1px;cursor:pointer;transition:all 0.2s;white-space:nowrap" onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">+ Round</button>
+          <div class="player-badge" id="player-badge-btn" onclick="toggleSignOut()" style="cursor:pointer;user-select:none" title="Click to sign out"><div class="dot"></div><span id="player-name-badge">—</span><span style="font-size:9px;margin-left:4px;opacity:0.6">▼</span></div>
+          <div id="signout-popup" style="display:none;position:absolute;top:54px;right:16px;background:var(--surface);border:1px solid var(--border);padding:8px 0;z-index:300;min-width:140px;box-shadow:0 8px 24px rgba(0,0,0,0.4)">
+            <div style="padding:8px 16px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;border-bottom:1px solid var(--border);margin-bottom:4px" id="signout-name"></div>
+            <button onclick="handleLogout()" style="width:100%;background:none;border:none;color:var(--red);padding:8px 16px;text-align:left;font-family:'DM Mono',monospace;font-size:12px;cursor:pointer" onmouseover="this.style.background='rgba(248,113,113,0.1)'" onmouseout="this.style.background='none'">Sign Out</button>
+          </div>
         </div>
         <!-- Hamburger — hidden on desktop via inline style, shown by mobile CSS -->
         <button class="hamburger" id="hamburger-btn" onclick="toggleMobileNav()" aria-label="Menu">
@@ -550,7 +568,8 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     </div>
     <!-- Desktop nav (horizontal) — hidden on mobile, shown inline -->
     <nav id="main-nav">
-      <button class="nav-btn active" onclick="showSection('dashboard',this)">Latest Rounds</button>
+      <button class="nav-btn active" onclick="showSection('mygame',this)">Welcome!</button>
+      <button class="nav-btn" onclick="showSection('dashboard',this)">Latest Rounds</button>
       <button class="nav-btn" onclick="showSection('alerts',this)">Alerts</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
       <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
@@ -580,7 +599,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
           <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)" id="rounds-count"></div>
         </div>
         <div class="rounds-scroll" style="overflow-x:auto;overflow-y:auto">
-          <table>
+          <table style="border-collapse:separate;border-spacing:0">
             <thead><tr>
               <th>Date &amp; Course</th><th>Score</th><th>+/-</th><th>Birdie+</th><th>Bogey+</th>
               <th>GIR%</th><th>FW%</th><th>Driver</th><th>Scramble</th><th>Putts</th><th>Pen</th>
@@ -804,8 +823,8 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
             <div class="card">
               <div class="card-header"><div class="card-title">Scorecard</div></div>
               <div style="overflow-x:auto">
-                <table style="min-width:260px">
-                  <thead><tr><th>Hole</th><th>Par</th><th>Score</th><th>+/-</th><th></th></tr></thead>
+                <table id="de-sc-table" style="width:100%">
+                  <thead><tr><th>#</th><th>Par</th><th>Score</th><th>+/-</th></tr></thead>
                   <tbody id="de-sc-body"></tbody>
                   <tfoot id="de-sc-foot"></tfoot>
                 </table>
@@ -817,6 +836,45 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       </div>
     </div>
 
+
+
+    <!-- MY GAME -->
+    <div class="section active" id="section-mygame">
+      <div class="section-header">
+        <div class="section-title">Welcome<span>!</span></div>
+        <div class="section-meta" id="mygame-meta">Your performance snapshot — focus areas and where to dig deeper</div>
+      </div>
+
+      <!-- Welcome / player intro -->
+      <div id="mygame-welcome" style="background:linear-gradient(135deg,rgba(96,165,250,0.08) 0%,transparent 60%);border:1px solid rgba(96,165,250,0.2);padding:20px 24px;margin-bottom:28px">
+        <div id="mygame-greeting" style="font-family:'Bebas Neue',sans-serif;font-size:26px;letter-spacing:2px;color:var(--blue);margin-bottom:6px"></div>
+        <div id="mygame-summary" style="font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.7"></div>
+      </div>
+
+      <!-- 3 Weakness cards -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
+        Top Focus Areas — based on your last 10 rounds
+      </div>
+      <div id="mygame-weaknesses" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:32px"></div>
+
+      <!-- Quick stats row -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
+        Last 10 Rounds — Snapshot
+      </div>
+      <div id="mygame-quickstats" class="stats-grid" style="margin-bottom:32px"></div>
+
+      <!-- Trend sparkline charts -->
+      <div class="chart-grid" style="margin-bottom:0">
+        <div class="chart-card">
+          <div class="chart-title">Scoring — Last 10 Rounds</div>
+          <canvas id="chart-mg-score" height="140"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">Key Stats — Last 10 Rounds</div>
+          <canvas id="chart-mg-stats" height="140"></canvas>
+        </div>
+      </div>
+    </div>
 
     <!-- ALERTS -->
     <div class="section" id="section-alerts">
@@ -1406,7 +1464,7 @@ async function loadPlayerFromSupabase(playerRecord){
       driver_dist:r.driver_dist,scrambling:r.scrambling,
       one_putts:r.one_putts,three_putts:r.three_putts,holes:r.holes||18
     }));
-    const formattedAppr=(apprShots||[]).map(s=>({x:s.x,y:s.y,cat:s.cat,club:s.club,gir:s.gir}));
+    const formattedAppr=(apprShots||[]).map(s=>({x:s.x,y:s.y,cat:s.cat,club:s.club,gir:s.gir,dist:s.dist||null}));
     const formattedTee=(teeShots||[]).map(s=>({x:s.x,y:s.y,club:s.club,fairway:s.fairway,date:s.date}));
 
     let rounds_final=formattedRounds;
@@ -1470,6 +1528,15 @@ function launchApp(){
 }
 
 document.getElementById('login-pin').addEventListener('keydown',e=>{if(e.key==='Enter')handleLogin()});
+document.getElementById('login-player').addEventListener('change',function(){
+  const isDemo = this.value==='Demo Player'||this.options[this.selectedIndex]?.text==='Demo Player';
+  const hint=document.getElementById('login-demo-hint');
+  const pinInput=document.getElementById('login-pin');
+  const pinLabel=document.getElementById('login-pin-label');
+  if(hint){ hint.style.display=isDemo?'block':'none'; }
+  if(pinInput){ pinInput.placeholder=isDemo?'No PIN needed':'Enter your PIN'; if(isDemo)pinInput.value=''; }
+  if(pinLabel){ pinLabel.style.color=isDemo?'var(--text-dim)':''; }
+});
 
 async function handleLogout(){
   await sb.auth.signOut().catch(()=>{});
@@ -1547,7 +1614,7 @@ function mkChart(id,type,data,opts,plugins){
 
 // ===== INIT =====
 function initApp(){
-  buildDashboard();buildScoring();buildTee();buildApproach();
+  buildMyGame();buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();
   buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
   initDataEntry();buildAlerts();
@@ -1592,13 +1659,9 @@ function buildDashboard(){
 
   document.getElementById('career-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${fmt(a_score,1)}</div><div class="stat-sub">${fmtPM(+(a_pm||0).toFixed(1))} avg to par</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value">${fmt(a_gir,1)}%</div><div class="stat-sub">Goal: 67%</div></div>
-    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
-    <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value">${fmt(a_scram,1)}%</div><div class="stat-sub">Goal: 50%</div></div>
-    <div class="stat-card"><div class="stat-label">Birdies+ / Rnd</div><div class="stat-value stat-good">${fmt(a_birds,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">Bogeys+ / Rnd</div><div class="stat-value stat-bad">${fmt(a_bogs,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value ${a_gir>=67?'stat-good':a_gir<50?'stat-bad':'stat-neutral'}">${fmt(a_gir,1)}%</div><div class="stat-sub">Goal: 67%</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value ${a_fw>=70?'stat-good':a_fw<50?'stat-bad':'stat-neutral'}">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
+    <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value ${a_scram>=50?'stat-good':a_scram<30?'stat-bad':'stat-neutral'}">${fmt(a_scram,1)}%</div><div class="stat-sub">Goal: 50%</div></div>
     <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr only)</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Proximity ${proxTT}</div><div class="stat-value ${prox&&prox<=25?'stat-good':'stat-neutral'}">${prox?prox.toFixed(1)+'ft':'—'}</div><div class="stat-sub">avg on GIR holes</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Avg L/R Miss ${lrTT}</div><div class="stat-value ${lrCls}" style="font-size:22px;padding-top:8px">${lrDir}</div></div>
@@ -2123,7 +2186,12 @@ function buildPutting(){
   const r=currentPlayer.rounds;
   const mp=currentPlayer.make_pct||{};
   const pr=sorted().filter(x=>x.putts);
-  const a_putts=avg(pr.map(x=>x.putts));
+  // GIR 1-Putt % per round: one_putts / estimated GIR count
+  const girOnePuttPct = r.filter(x=>x.gir_pct>0&&x.one_putts!=null).map(x=>{
+    const gc=Math.max(1,Math.round(x.gir_pct/100*(x.holes||18)));
+    return Math.round((x.one_putts/gc)*1000)/10;
+  });
+  const a_gir1p = girOnePuttPct.length?girOnePuttPct.reduce((a,b)=>a+b,0)/girOnePuttPct.length:null;
   const one_pr=r.filter(x=>x.one_putts!=null);
   const three_pr=r.filter(x=>x.three_putts!=null);
   const a_1p=avg(one_pr.map(x=>x.one_putts));
@@ -2156,9 +2224,9 @@ function buildPutting(){
   const overallMake=totalW>0?Math.round(totalMake/totalW*10)/10:null;
 
   document.getElementById('putt-stats').innerHTML=`
-    <div class="stat-card"><div class="stat-label">Avg Putts/Rnd</div><div class="stat-value">${fmt(a_putts,1)}</div></div>
-    <div class="stat-card"><div class="stat-label">1-Putts / Rnd</div><div class="stat-value stat-good">${fmt(a_1p,1)}</div><div class="stat-sub">avg per round</div></div>
-    <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
+    
+     <div class="stat-card"><div class="stat-label">GIR 1-Putt %</div><div class="stat-value ${a_gir1p>=30?'stat-good':a_gir1p!=null&&a_gir1p<20?'stat-bad':''}">${a_gir1p!=null?a_gir1p.toFixed(1)+'%':'—'}</div><div class="stat-sub">Goal: ≥30% · Tour avg ~30%</div></div>
+     <div class="stat-card"><div class="stat-label">1-Putt Scramble</div><div class="stat-value ${(a_1p_scram||0)>=35?'stat-good':'stat-bad'}">${fmt(a_1p_scram,1)}%</div><div class="stat-sub">1-putt after missed GIR</div></div>
     <div class="stat-card"><div class="stat-label">3-Putts / Rnd</div><div class="stat-value ${(a_3p||0)<=1?'stat-good':'stat-bad'}">${fmt(a_3p,1)}</div><div class="stat-sub">avg per round</div></div>
     <div class="stat-card"><div class="stat-label">3-Putt Free Streak</div><div class="stat-value stat-good">${maxStreak}</div><div class="stat-sub">consec. rounds no 3-putt</div></div>
     <div class="stat-card"><div class="stat-label">Overall Make %</div><div class="stat-value ${(overallMake||0)>=45?'stat-good':'stat-neutral'}">${overallMake!=null?overallMake+'%':'—'}</div><div class="stat-sub">weighted all distances</div></div>
@@ -2387,15 +2455,14 @@ function setStep(n){
 
 function uploadStep1Next(){
   const name=document.getElementById('up-name').value.trim();
-  const id=document.getElementById('up-id').value.trim();
   const pin=document.getElementById('up-pin').value;
   const pin2=document.getElementById('up-pin2').value;
   const err=document.getElementById('step1-error');
   if(!name){err.style.display='block';err.textContent='Please enter your full name.';return}
-  if(!id||id.length<2){err.style.display='block';err.textContent='Please enter a display ID (2+ chars, letters/numbers/underscores).';return}
   if(pin.length<4){err.style.display='block';err.textContent='PIN must be at least 4 digits.';return}
   if(pin!==pin2){err.style.display='block';err.textContent='PINs do not match.';return}
   err.style.display='none';
+  const id=name.toLowerCase().replace(/[^a-z0-9]/g,'_').replace(/_+/g,'_').replace(/^_|_$/g,'');
   uploadProfile={name,id,pin};
   setStep(2);
 }
@@ -3109,7 +3176,7 @@ CAREER AVERAGES:
   GIR %: ${a_gir!=null?a_gir.toFixed(1):'n/a'}% (Goal: 67%)
   Fairways %: ${a_fw!=null?a_fw.toFixed(1):'n/a'}% (Goal: 70%)
   Scrambling %: ${a_scram!=null?a_scram.toFixed(1):'n/a'}% (Goal: 50%)
-  Putts/Round: ${a_putts!=null?a_putts.toFixed(1):'n/a'}
+  GIR 1-Putt %: ${(()=>{const v=r.filter(x=>x.gir_pct>0&&x.one_putts!=null);if(!v.length)return 'n/a';const avg=v.map(x=>Math.round((x.one_putts/Math.max(1,Math.round(x.gir_pct/100*(x.holes||18))))*1000)/10);return (avg.reduce((a,b)=>a+b,0)/avg.length).toFixed(1)+'%';})()} (Tour avg: ~30%)
   Birdies/Round: ${a_birds!=null?a_birds.toFixed(1):'n/a'}
   Bogeys+/Round: ${a_bogs!=null?a_bogs.toFixed(1):'n/a'}
   Driver Distance: ${a_dr!=null?a_dr.toFixed(0):'n/a'} yds
@@ -3238,7 +3305,7 @@ const DEFINITIONS = [
   {
     section: "Putting",
     terms: [
-      {name:"Putts per Round", body:"Total number of strokes taken on the putting surface in a round. Tour average is ~29 putts. Under 30 is excellent for an amateur."},
+      {name:"GIR 1-Putt %", body:"The percentage of greens hit in regulation where you hole out in one putt. Calculated as (1-putts ÷ estimated GIR count). Tour average is ~28-32%. A higher rate means you're converting scoring opportunities into birdies and minimising bogeys from regulation."},
       {name:"1-Putt", body:"Holing the ball on the very first putt. A 1-putt saves a stroke compared to the average of 2 putts per green."},
       {name:"3-Putt", body:"Taking three or more strokes to hole out from the putting surface. Costly — each 3-putt costs at least one shot relative to expectations.", formula:"Goal: fewer than 5% of greens result in 3-putts"},
       {name:"Make % by Distance", body:"The percentage of putts holed from a given distance range. Compared against PGA Tour averages as a benchmark."},
@@ -3296,6 +3363,8 @@ const DE_FIELDS = {
   tee_dist:       {label:'Drive Distance (yds)',  group:'Tee Shot',   def:true},
   fairway:        {label:'Fairway Result',        group:'Tee Shot',   def:true},
   tee_miss_lr:    {label:'Tee Target Miss L/R (ft)',group:'Tee Shot', def:false},
+  wind_strength:  {label:'Wind Strength',             group:'Tee Shot',   def:true},
+  wind_dir:       {label:'Wind Direction',            group:'Tee Shot',   def:true},
   // APPROACH
   appr_club:      {label:'Approach Club',         group:'Approach',   def:true},
   appr_dist:      {label:'Target Distance (yds)', group:'Approach',   def:true},
@@ -3311,8 +3380,7 @@ const DE_FIELDS = {
   putt1_break:    {label:'Putt 1 Break Direction',group:'Putting',    def:false},
   putt1_break_amt:{label:'Putt 1 Break Amount',   group:'Putting',    def:false},
   putt1_slope:    {label:'Putt 1 Slope',          group:'Putting',    def:false},
-  putt1_hl:       {label:'Putt 1 High/Low Side',  group:'Putting',    def:false},
-  putt1_miss:     {label:'Putt 1 Miss Direction', group:'Putting',    def:false},
+  putt1_hl:       {label:'Putt 1 High/Low Side',  group:'Putting',    def:true},
   putt2_len:      {label:'Putt 2 Length (ft)',    group:'Putting',    def:false},
   putt2_break:    {label:'Putt 2 Break Direction',group:'Putting',    def:false},
   // NOTES
@@ -3321,8 +3389,7 @@ const DE_FIELDS = {
   pressure:       {label:'Under Pressure?',       group:'Notes',      def:false},
   bad_reason:     {label:'Reason for Bad Score',  group:'Notes',      def:true},
   bad_club:       {label:'Bad Score – Club',      group:'Notes',      def:true},
-  good_reason:    {label:'Reason for Good Score', group:'Notes',      def:false},
-  good_club:      {label:'Good Score – Club',     group:'Notes',      def:false},
+
   putt_notes:     {label:'Putting Notes',         group:'Notes',      def:false},
 };
 
@@ -3621,8 +3688,10 @@ function deRenderForm(holeNum, existing){
     if(deEnabled['tee_club']) html+=deSelectHTML('form-tee-club','Club',CLUBS_LIST,existing?.teeClub||'Dr');
     if(deEnabled['shape_ott']) html+=deBtnGroupHTML('form-shape-ott','Shot Shape',['Draw','Straight','Fade'],existing?.shapeOTT||'Straight');
     if(deEnabled['tee_dist']) html+=`<div class="de-field"><label class="de-label">Drive Distance (yds)</label><input type="number" id="form-tee-dist" class="de-input" placeholder="e.g. 265" value="${existing?.teeDist||''}"></div>`;
-    if(deEnabled['fairway']) html+=deBtnGroupHTML('form-fairway','Fairway Result',['Hit','Left','Right','Short','Long'],existing?.fairway||'');
+    if(deEnabled['fairway']) html+=deBtnGroupHTML('form-fairway','Fairway Result',['Hit','Left','Right','Short','Long','Hazard','OB'],existing?.fairway||'');
     if(deEnabled['tee_miss_lr']) html+=`<div class="de-field"><label class="de-label">Target Miss L/R (ft) <span style="color:var(--text-dim);font-weight:400">neg=left, pos=right</span></label><input type="number" id="form-tee-miss" class="de-input" placeholder="0" value="${existing?.teeMissLR||''}"></div>`;
+    if(deEnabled['wind_strength']) html+=deBtnGroupHTML('form-wind-strength','Wind Strength',['None','Calm','Moderate','Strong'],existing?.windStrength||'');
+    if(deEnabled['wind_dir']) html+=deBtnGroupHTML('form-wind-dir','Wind Direction',['L→R','R→L','Downwind','Into Wind'],existing?.windDir||'');
     html+=`</div>`;
   }
 
@@ -3643,7 +3712,7 @@ function deRenderForm(holeNum, existing){
   }
 
   // ── PUTTING ──────────────────────────────────────────────────
-  const puttFields=['num_putts','putt1_len','putt1_break','putt1_break_amt','putt1_slope','putt1_hl','putt1_miss','putt2_len','putt2_break'];
+  const puttFields=['num_putts','putt1_len','putt1_break','putt1_break_amt','putt1_slope','putt1_hl','putt2_len','putt2_break'];
   if(puttFields.some(f=>deEnabled[f])){
     html+=`<div class="de-section">
       <div class="de-section-title">Putting</div>`;
@@ -3661,17 +3730,17 @@ function deRenderForm(holeNum, existing){
     }
     if(deEnabled['putt1_len']) html+=`<div class="de-field"><label class="de-label">Putt 1 Length (ft)</label><input type="number" id="form-putt1-len" class="de-input" placeholder="e.g. 18" value="${existing?.putt1Len||''}"></div>`;
     if(deEnabled['putt1_break']) html+=deBtnGroupHTML('form-putt1-break','Putt 1 Break',['LR','RL','No Break','Double'],existing?.putt1Break||'');
-    if(deEnabled['putt1_break_amt']) html+=`<div class="de-field"><label class="de-label">Break Amount (in)</label><input type="number" id="form-putt1-amt" class="de-input" placeholder="e.g. 3" value="${existing?.putt1BreakAmt||''}"></div>`;
+    if(deEnabled['putt1_break_amt']) html+=deBtnGroupHTML('form-putt1-amt','Break Amount',['Shallow','Medium','Large'],existing?.putt1BreakAmt||'');
     if(deEnabled['putt1_slope']) html+=deBtnGroupHTML('form-putt1-slope','Slope',['Uphill','Downhill','Flat','Uphill then Downhill','Downhill then Uphill'],existing?.putt1Slope||'');
     if(deEnabled['putt1_hl']) html+=deBtnGroupHTML('form-putt1-hl','High / Low',['High','Low'],existing?.putt1HL||'');
-    if(deEnabled['putt1_miss']) html+=deBtnGroupHTML('form-putt1-miss','1st Putt Miss',['Left','Right','Short','Long','Made'],existing?.putt1Miss||'Made');
+
     if(deEnabled['putt2_len']) html+=`<div class="de-field"><label class="de-label">Putt 2 Length (ft)</label><input type="number" id="form-putt2-len" class="de-input" placeholder="" value="${existing?.putt2Len||''}"></div>`;
     if(deEnabled['putt2_break']) html+=deBtnGroupHTML('form-putt2-break','Putt 2 Break',['LR','RL','No Break'],existing?.putt2Break||'');
     html+=`</div>`;
   }
 
   // ── NOTES ────────────────────────────────────────────────────
-  const noteFields=['penalty','swing_thought','pressure','bad_reason','bad_club','good_reason','good_club','putt_notes'];
+  const noteFields=['penalty','swing_thought','pressure','bad_reason','bad_club','putt_notes'];
   if(noteFields.some(f=>deEnabled[f])){
     html+=`<div class="de-section">
       <div class="de-section-title">Notes</div>`;
@@ -3688,8 +3757,8 @@ function deRenderForm(holeNum, existing){
     if(deEnabled['pressure']) html+=deBtnGroupHTML('form-pressure','Under Pressure?',['Yes','No'],existing?.pressure||'No');
     if(deEnabled['bad_reason']) html+=`<div class="de-field"><label class="de-label">Reason for Bad Score</label><input type="text" id="form-bad-reason" class="de-input" placeholder="e.g. Pulled tee shot" value="${existing?.badReason||''}"></div>`;
     if(deEnabled['bad_club']) html+=deSelectHTML('form-bad-club','Bad Score Club',['','Dr','3w','5i','6i','7i','8i','9i','PW','54 Deg','Putter'],existing?.badClub||'');
-    if(deEnabled['good_reason']) html+=`<div class="de-field"><label class="de-label">Reason for Good Score</label><input type="text" id="form-good-reason" class="de-input" placeholder="e.g. Great lag putt" value="${existing?.goodReason||''}"></div>`;
-    if(deEnabled['good_club']) html+=deSelectHTML('form-good-club','Good Score Club',['','Dr','3w','5i','6i','7i','8i','9i','PW','54 Deg','Putter'],existing?.goodClub||'');
+
+
     if(deEnabled['putt_notes']) html+=`<div class="de-field"><label class="de-label">Putting Notes</label><textarea id="form-putt-notes" class="de-input" rows="2" placeholder="Anything notable about your putting…" style="resize:vertical">${existing?.puttNotes||''}</textarea></div>`;
     html+=`</div>`;
   }
@@ -3721,8 +3790,8 @@ function deBtnGroupHTML(id, label, options, selected){
     </div></div>`;
 }
 function dePinLocHTML(selected){
-  const positions=['FL','FM','FR','ML','MM','MR','BL','BM','BR'];
-  const labels={FL:'F-Left',FM:'F-Mid',FR:'F-Right',ML:'M-Left',MM:'M-Mid',MR:'M-Right',BL:'B-Left',BM:'B-Mid',BR:'B-Right'};
+  const positions=['BL','BM','BR','ML','MM','MR','FL','FM','FR'];
+  const labels={FL:'Front-L',FM:'Front-M',FR:'Front-R',ML:'Mid-L',MM:'Mid-M',MR:'Mid-R',BL:'Back-L',BM:'Back-M',BR:'Back-R'};
   return `<div class="de-field"><div class="de-label">Pin Location</div>
     <div class="de-pin-grid" id="form-pin-loc-grp">
       ${positions.map(p=>`<button class="de-pin-btn${p===selected?' active':''}" onclick="dePinSelect(this,'${p}')">${labels[p]}</button>`).join('')}
@@ -3815,6 +3884,8 @@ function deCollectHole(){
     teeDist: deEnabled.tee_dist?parseFloat(deGetField('form-tee-dist'))||null:null,
     fairway: deEnabled.fairway?deGetBtn('form-fairway'):null,
     teeMissLR: deEnabled.tee_miss_lr?parseFloat(deGetField('form-tee-miss'))||null:null,
+    windStrength: deEnabled.wind_strength?deGetBtn('form-wind-strength'):null,
+    windDir: deEnabled.wind_dir?deGetBtn('form-wind-dir'):null,
     apprClub: deEnabled.appr_club?deGetField('form-appr-club'):null,
     apprDist: deEnabled.appr_dist?parseFloat(deGetField('form-appr-dist'))||null:null,
     shapeAppr: deEnabled.shape_appr?deGetBtn('form-shape-appr'):null,
@@ -3826,10 +3897,10 @@ function deCollectHole(){
     numPutts: deEnabled.num_putts?parseInt(deGetField('form-num-putts',2)):null,
     putt1Len: deEnabled.putt1_len?parseFloat(deGetField('form-putt1-len'))||null:null,
     putt1Break: deEnabled.putt1_break?deGetBtn('form-putt1-break'):null,
-    putt1BreakAmt: deEnabled.putt1_break_amt?parseFloat(deGetField('form-putt1-amt'))||null:null,
+    putt1BreakAmt: deEnabled.putt1_break_amt?deGetBtn('form-putt1-amt'):null,
     putt1Slope: deEnabled.putt1_slope?deGetBtn('form-putt1-slope'):null,
     putt1HL: deEnabled.putt1_hl?deGetBtn('form-putt1-hl'):null,
-    putt1Miss: deEnabled.putt1_miss?deGetBtn('form-putt1-miss'):null,
+
     putt2Len: deEnabled.putt2_len?parseFloat(deGetField('form-putt2-len'))||null:null,
     putt2Break: deEnabled.putt2_break?deGetBtn('form-putt2-break'):null,
     penalty: deEnabled.penalty?parseInt(deGetOpt('form-penalty-grp','0'))||0:0,
@@ -3837,8 +3908,7 @@ function deCollectHole(){
     pressure: deEnabled.pressure?deGetBtn('form-pressure'):null,
     badReason: deEnabled.bad_reason?deGetField('form-bad-reason'):null,
     badClub: deEnabled.bad_club?deGetField('form-bad-club'):null,
-    goodReason: deEnabled.good_reason?deGetField('form-good-reason'):null,
-    goodClub: deEnabled.good_club?deGetField('form-good-club'):null,
+
     puttNotes: deEnabled.putt_notes?deGetField('form-putt-notes'):null,
   };
 }
@@ -3892,14 +3962,13 @@ function deRenderScorecard(){
       const pm=h.score-h.par;
       const pmStr=pm>0?'+'+pm:pm===0?'E':String(pm);
       const pmCls=pm<0?'val-green':pm===0?'':pm===1?'val-amber':'val-red';
-      rowsHtml+=`<tr class="de-sc-row" onclick="deEditHole(${i})">
+      rowsHtml+=`<tr class="de-sc-row" onclick="deEditHole(${i})" title="Tap to edit hole ${i+1}">
         <td>${i+1}</td><td>${h.par}</td>
-        <td class="${pmCls}">${h.score}</td>
+        <td class="${pmCls}" style="font-weight:600">${h.score}</td>
         <td class="${pmCls}">${pmStr}</td>
-        <td class="de-sc-edit">✏</td>
       </tr>`;
     } else {
-      rowsHtml+=`<tr style="opacity:0.3"><td>${i+1}</td><td>—</td><td>—</td><td>—</td><td></td></tr>`;
+      rowsHtml+=`<tr style="opacity:0.3"><td>${i+1}</td><td>—</td><td>—</td><td>—</td></tr>`;
     }
   }
   tbody.innerHTML=rowsHtml;
@@ -3910,7 +3979,6 @@ function deRenderScorecard(){
       <td colspan="2" style="font-weight:700;color:var(--text)">Total</td>
       <td style="font-weight:700;color:var(--text)">${totalScore}</td>
       <td style="font-weight:700;color:${pm<0?'var(--green)':pm>0?'var(--red)':'var(--text)'}">${pmStr}</td>
-      <td></td>
     </tr>`;
     const pmCls=pm<=4?'val-green':pm>=10?'val-red':'val-amber';
     document.getElementById('de-running-total').innerHTML=`<span class="${pmCls}">${totalScore} (${pmStr})</span>`;
@@ -4015,7 +4083,7 @@ async function deSaveRound(){
     const newScatterShots=newApprShots.map(h=>{
       const rawC=h.apprClub.toLowerCase();
       const cat=CAT_MAP_DE[rawC]||'Other';
-      return{x:h.apprLR,y:h.apprSL||0,cat,club:h.apprClub,gir:h.green?.toLowerCase()==='hit'};
+      return{x:h.apprLR,y:h.apprSL||0,cat,club:h.apprClub,gir:h.green?.toLowerCase()==='hit',dist:h.apprDist||null};
     });
     currentPlayer.approach_shots=[...(currentPlayer.approach_shots||[]),...newScatterShots];
   }
@@ -4080,14 +4148,14 @@ async function deSaveRound(){
           round_id:savedRound.id,player_id:currentPlayer.player_id,
           hole_number:h.hole,par:h.par,score:h.score,
           tee_club:h.teeClub,shape_ott:h.shapeOTT,tee_dist:h.teeDist,
-          fairway:h.fairway,tee_miss_lr:h.teeMissLR,
+          fairway:h.fairway,tee_miss_lr:h.teeMissLR,wind_strength:h.windStrength,wind_dir:h.windDir,
           appr_club:h.apprClub,appr_dist:h.apprDist,appr_lr:h.apprLR,appr_sl:h.apprSL,
           pin_loc:h.pinLoc,green:h.green,short_sided:h.shortSided,
           num_putts:h.numPutts,putt1_len:h.putt1Len,putt1_break:h.putt1Break,
           putt1_break_amt:h.putt1BreakAmt,putt1_slope:h.putt1Slope,
-          putt1_hl:h.putt1HL,putt1_miss:h.putt1Miss,putt2_len:h.putt2Len,
+          putt1_hl:h.putt1HL,putt2_len:h.putt2Len,
           penalty:h.penalty||0,bad_reason:h.badReason,bad_club:h.badClub,
-          good_reason:h.goodReason,putt_notes:h.puttNotes
+          putt_notes:h.puttNotes
         }));
         await sb.from('hole_data').insert(holeRows);
         // Save approach shots
@@ -4178,7 +4246,7 @@ const ALERT_STATS = [
   {key:'one_putts',   label:'1-Putts (GIR)',        unit:'',     dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)},
   {key:'one_putt_scram',label:'1-Putts Scrambling', unit:'%',   dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
   {key:'proximity',   label:'Approach Proximity',   unit:'ft',   dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)+' ft'},
-  {key:'putts',       label:'Putts per Round',      unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
+  {key:'gir1putt',    label:'GIR 1-Putt %',         unit:'%',    dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(1)+'%'},
   {key:'three_putts', label:'3-Putts',              unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
   {key:'longest_putt',label:'Longest Putt Made',    unit:'ft',   dir:'high',  fmt:(v)=>v==null?'—':v.toFixed(0)+' ft'},
   {key:'penalties',   label:'Penalty Strokes',      unit:'',     dir:'low',   fmt:(v)=>v==null?'—':v.toFixed(1)},
@@ -4203,6 +4271,13 @@ function alertGetVal(rnd){
     case 'one_putt_scram':  return r.scrambling!=null?r.scrambling:null;
     case 'proximity':       return null; // not stored per round — falls back gracefully
     case 'putts':           return r.putts!=null?r.putts:null;
+    case 'gir1putt':       {
+      const g=r.gir_pct>0?r.gir_pct:null;
+      const op=r.one_putts!=null?r.one_putts:null;
+      if(g==null||op==null)return null;
+      const girCount=Math.max(1,Math.round(g/100*((r.holes||18))));
+      return Math.round((op/girCount)*1000)/10; // % with 1dp
+    }
     case 'three_putts':     return r.three_putts!=null?r.three_putts:null;
     case 'longest_putt':    return null; // not stored per round
     case 'penalties':       return r.penalties!=null?r.penalties:null;
@@ -4368,6 +4443,257 @@ function renderAlertsContent(){
   });
 }
 
+
+function toggleSignOut(){
+  const pop=document.getElementById('signout-popup');
+  if(!pop)return;
+  const open=pop.style.display!=='none';
+  pop.style.display=open?'none':'block';
+  const nameEl=document.getElementById('signout-name');
+  if(nameEl&&currentPlayer) nameEl.textContent=currentPlayer.name;
+}
+// Close popup when clicking outside
+document.addEventListener('click',function(e){
+  const pop=document.getElementById('signout-popup');
+  const badge=document.getElementById('player-badge-btn');
+  if(pop&&badge&&!badge.contains(e.target)&&!pop.contains(e.target)){
+    pop.style.display='none';
+  }
+});
+
+
+// ═══════════════════════════════════════════════════════════════════
+// MY GAME — Landing Tab
+// ═══════════════════════════════════════════════════════════════════
+function buildMyGame(){
+  const r = currentPlayer.rounds;
+  const sorted = [...r].sort((a,b)=>a.date.localeCompare(b.date));
+  const last4  = sorted.slice(-4);
+  const last4v = last4.filter(x=>x.score!=null);
+  const lastRound = sorted[sorted.length-1];
+  if(!last4v.length) return;
+
+  const avgN = arr => {const v=arr.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
+  const medN = arr => {const v=[...arr].filter(x=>x!=null&&!isNaN(x)).sort((a,b)=>a-b);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2;};
+
+  const a_pm  = avgN(last4v.map(x=>x.plus_minus));
+  const a_gir = avgN(last4.filter(x=>x.gir_pct>0).map(x=>x.gir_pct));
+  const a_fw  = avgN(last4.filter(x=>x.fw_pct!=null).map(x=>x.fw_pct));
+  const a_scr = avgN(last4.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  const a_dr  = avgN(last4.filter(x=>x.driver_dist).map(x=>x.driver_dist));
+  // GIR 1-Putt %: one_putts / estimated_gir_count
+  const gir1puttVals = last4.filter(x=>x.gir_pct>0&&x.one_putts!=null).map(x=>{
+    const girCount=Math.max(1,Math.round(x.gir_pct/100*(x.holes||18)));
+    return Math.round((x.one_putts/girCount)*1000)/10;
+  });
+  const a_gir1putt = gir1puttVals.length?gir1puttVals.reduce((a,b)=>a+b,0)/gir1puttVals.length:null;
+
+  // Greeting
+  const firstName = currentPlayer.name.split(' ')[0];
+  const greetEl = document.getElementById('mygame-greeting');
+  const summEl  = document.getElementById('mygame-summary');
+  const metaEl  = document.getElementById('mygame-meta');
+  if(greetEl) greetEl.textContent = `Welcome back, ${firstName}.`;
+  if(summEl){
+    const pmStr = a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —';
+    const trend = a_pm!=null?(a_pm<=4?'You\'re in good form.':a_pm<=8?'There\'s work to do.':'Your scoring needs serious attention.'):'';
+    summEl.innerHTML =
+      `Last 4 rounds you\'ve averaged <strong style="color:var(--text)">${pmStr} to par</strong>. ${trend} ` +
+      `Last out: <strong style="color:var(--text)">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</strong> at ${lastRound.course}.`;
+  }
+  if(metaEl) metaEl.textContent = `${r.length} round${r.length!==1?'s':''} tracked · focus window: last 4 rounds`;
+
+  // ── Normalised shot dispersion by category ────────────────────
+  // Formula: for each approach shot with x (L/R ft), y (S/L ft), dist (yds):
+  //   radial_error = sqrt(x²+y²)  [ft]
+  //   target_ft    = dist × 3     [ft]
+  //   norm         = radial_error / target_ft  [dimensionless]
+  // Category score = median(norm) × 100 (lower = tighter dispersion per yard)
+  const CAT_ORDER_DISP = ['Wood','Hybrid','Long Iron','Mid Iron','Short Iron','Wedge'];
+  const shots = currentPlayer.approach_shots||[];
+  let dispWeakness = null;
+  const dispScores = {};
+  const distShots = shots.filter(s=>s.x!=null&&s.y!=null&&s.dist&&s.dist>0);
+  if(distShots.length>=6){
+    CAT_ORDER_DISP.forEach(cat=>{
+      const cs = distShots.filter(s=>s.cat===cat);
+      if(cs.length<3) return;
+      const norms = cs.map(s=>{
+        const rad = Math.sqrt(s.x*s.x+s.y*s.y);
+        const tft = s.dist*3;
+        return rad/tft;
+      });
+      dispScores[cat] = {score: (medN(norms)*100), n: cs.length};
+    });
+    const catsSorted = Object.entries(dispScores).sort((a,b)=>b[1].score-a[1].score);
+    if(catsSorted.length){
+      const [worstCat, worstData] = catsSorted[0];
+      dispWeakness = {
+        key:'disp', label:`Approach — ${worstCat}`, dir:'low',
+        val: worstData.score, goal: 5, fmt: v=>`${v.toFixed(1)}%`,
+        tab:'dispersion', tabLabel:'Shot Dispersion Tab',
+        desc: `Your ${worstCat} dispersion is ${worstData.score.toFixed(1)}% of target distance — ` +
+              `that\'s your loosest club category. ` +
+              (worstData.score>10
+                ? `Misses of that magnitude are costing you strokes every round.`
+                : worstData.score>7
+                ? `There\'s meaningful tightening to do here.`
+                : `Getting close to the 5% goal — stay sharp.`),
+        n: worstData.n
+      };
+    }
+  }
+
+  // ── Build metric list (last 4 rounds) ────────────────────────
+  const scoreDesc = a_pm!=null
+    ? (a_pm<=4?`Solid scoring. Keep the bogeys off the card.`
+              :a_pm<=7?`${a_pm.toFixed(1)} over par per round. You\'re losing shots somewhere specific — find it.`
+              :`${a_pm.toFixed(1)} over par is too high. Your game has a hole. Figure out where.`)
+    : 'No scoring data yet.';
+
+  const girDesc = a_gir!=null
+    ? (a_gir>=67?`${a_gir.toFixed(1)}% GIR — above the 67% goal. Stay consistent.`
+               :a_gir>=55?`${a_gir.toFixed(1)}% GIR. Below goal. Every missed green adds difficulty.`
+               :`${a_gir.toFixed(1)}% GIR is a problem. You\'re scrambling too often — fix your approach game.`)
+    : 'No GIR data tracked yet.';
+
+  const fwDesc = a_fw!=null
+    ? (a_fw>=70?`${a_fw.toFixed(1)}% fairways. On target. Keep the driver under control.`
+              :a_fw>=55?`${a_fw.toFixed(1)}% fairways — below the 70% goal. Errant drives make every hole harder.`
+              :`${a_fw.toFixed(1)}% fairways is well below goal. Your tee game is hurting you.`)
+    : 'No fairway data tracked yet.';
+
+  const scrDesc = a_scr!=null
+    ? (a_scr>=50?`${a_scr.toFixed(1)}% scrambling. Above goal — solid short game.`
+               :a_scr>=35?`${a_scr.toFixed(1)}% scrambling. You\'re saving less than half your scramble situations.`
+               :`${a_scr.toFixed(1)}% is well below the 50% goal. Your short game is giving away shots.`)
+    : 'No scrambling data tracked yet.';
+
+  const gir1puttDesc = a_gir1putt!=null
+    ? (a_gir1putt>=35?`${a_gir1putt.toFixed(1)}% GIR 1-putt rate. Solid. Tour average is ~28-32%.`
+                     :a_gir1putt>=25?`${a_gir1putt.toFixed(1)}% GIR 1-putt rate. Below 30% means you\'re leaving shots out there. Improve your proximity and read quality.`
+                     :`${a_gir1putt.toFixed(1)}% GIR 1-putt rate is well below tour average. Your putting from regulation distance is costing you strokes every round.`)
+    : 'Insufficient data — needs GIR and 1-putt data per round.';
+
+  const drDesc = a_dr!=null
+    ? (a_dr>=270?`${a_dr.toFixed(0)} yds average. Strong. Distance is not the issue.`
+               :a_dr>=255?`${a_dr.toFixed(0)} yds. Decent, but more distance means shorter irons into greens.`
+               :`${a_dr.toFixed(0)} yds off the tee. Limited distance means longer approach shots and harder scoring.`)
+    : 'No driver distance data tracked yet.';
+
+  const allMetrics = [
+    {key:'pm',    label:'+/- to Par',    val:a_pm,  goal:6,  dir:'low',  fmt:v=>v!=null?(v>=0?'+':'')+v.toFixed(1):' —',  tab:'scoring',  tabLabel:'Trends Tab',       desc:scoreDesc},
+    {key:'gir',   label:'GIR %',         val:a_gir, goal:67, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'approach', tabLabel:'Approach Tab',     desc:girDesc},
+    {key:'fw',    label:'Fairways Hit',  val:a_fw,  goal:70, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'tee',      tabLabel:'Off the Tee Tab',  desc:fwDesc},
+    {key:'scram', label:'Scrambling',    val:a_scr, goal:50, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'approach', tabLabel:'Approach Tab',     desc:scrDesc},
+
+    {key:'dr',    label:'Driver Avg',    val:a_dr,  goal:260,dir:'high', fmt:v=>v!=null?v.toFixed(0)+' yds':' —',           tab:'tee',      tabLabel:'Off the Tee Tab',  desc:drDesc},
+    {key:'gir1putt',label:'GIR 1-Putt %',  val:a_gir1putt,goal:30,dir:'high',fmt:v=>v!=null?v.toFixed(1)+'%':' —',             tab:'putting',  tabLabel:'Putting Tab',      desc:gir1puttDesc},
+  ];
+
+  if(dispWeakness) allMetrics.push(dispWeakness);
+
+  // Score each metric by how far from goal (0 = at/past goal, higher = worse)
+  const scored = allMetrics.map(m=>{
+    if(m.val==null) return {...m, gap:-1};
+    const gap = m.dir==='high'
+      ? Math.max(0, m.goal - m.val) / m.goal
+      : Math.max(0, m.val - m.goal) / m.goal;
+    return {...m, gap};
+  }).filter(m=>m.gap>=0).sort((a,b)=>b.gap-a.gap);
+
+  const top3 = scored.slice(0,3);
+
+  // ── Render weakness cards ─────────────────────────────────────
+  const wEl = document.getElementById('mygame-weaknesses');
+  if(wEl){
+    wEl.innerHTML = top3.map((m,i)=>{
+      const isGood = m.gap<0.03;
+      const statColor = isGood?'var(--green)':i===0?'var(--red)':i===1?'var(--amber)':'rgba(96,165,250,0.9)';
+      let goalStr;
+      if(m.key==='putts') goalStr=`Goal ≤ ${m.goal}`;
+      else if(m.key==='pm') goalStr=`Goal ≤ +${m.goal}`;
+      else if(m.key==='dr') goalStr=`Goal ≥ ${m.goal} yds`;
+      else if(m.key==='disp') goalStr=`Goal ≤ ${m.goal}% of distance`;
+      else if(m.key==='gir1putt') goalStr=`Goal ≥ ${m.goal}% 1-putt on GIR`;
+      else goalStr=`Goal ${m.dir==='high'?'≥':'≤'} ${m.goal}%`;
+      return `<div class="mg-weakness" onclick="navToSection('${m.tab}')">
+        <div class="mg-weakness-rank">${i+1}</div>
+        <div class="mg-weakness-label">${m.label}${m.key==='disp'&&m.n?` <span style="font-size:9px;opacity:0.6">(${m.n} shots)</span>`:''}</div>
+        <div class="mg-weakness-stat" style="color:${statColor}">${m.fmt(m.val)}</div>
+        <div class="mg-weakness-goal">${goalStr}</div>
+        <div class="mg-weakness-desc">${m.desc}</div>
+        <div class="mg-weakness-link">Analyse in ${m.tabLabel} →</div>
+      </div>`;
+    }).join('');
+  }
+
+  // ── Quick stats ───────────────────────────────────────────────
+  const qEl = document.getElementById('mygame-quickstats');
+  if(qEl){
+    const stats=[
+      {label:'Scoring Avg',  val:a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —',  sub:'last 4 rounds', cls:a_pm<=4?'stat-good':a_pm>=10?'stat-bad':''},
+      {label:'GIR %',        val:a_gir!=null?a_gir.toFixed(1)+'%':' —',             cls:a_gir>=67?'stat-good':a_gir<50?'stat-bad':''},
+      {label:'Fairways %',   val:a_fw!=null?a_fw.toFixed(1)+'%':' —',              cls:a_fw>=70?'stat-good':a_fw<50?'stat-bad':''},
+      {label:'Scrambling',   val:a_scr!=null?a_scr.toFixed(1)+'%':' —',            cls:a_scr>=50?'stat-good':a_scr<30?'stat-bad':''},
+      {label:'GIR 1-Putt %', val:a_gir1putt!=null?a_gir1putt.toFixed(1)+'%':' —', cls:a_gir1putt>=30?'stat-good':a_gir1putt<20?'stat-bad':''},
+      {label:'Driver Avg',   val:a_dr!=null?a_dr.toFixed(0)+' yds':' —'},
+    ];
+    qEl.innerHTML=stats.map(st=>
+      `<div class="stat-card"><div class="stat-label">${st.label}</div>
+       <div class="stat-value ${st.cls||''}">${st.val}</div>
+       ${st.sub?`<div class="stat-sub">${st.sub}</div>`:''}</div>`
+    ).join('');
+  }
+
+  // ── Sparklines ────────────────────────────────────────────────
+  const lbl4=last4v.map(x=>x.date.slice(5,10));
+  const sc4 =last4v.map(x=>x.plus_minus);
+
+  if(charts['chart-mg-score']){try{charts['chart-mg-score'].destroy();}catch(e){}}
+  const mgSc=document.getElementById('chart-mg-score');
+  if(mgSc){
+    charts['chart-mg-score']=new Chart(mgSc.getContext('2d'),{
+      type:'line',
+      data:{labels:lbl4,datasets:[{data:sc4,
+        borderColor:'rgba(96,165,250,0.8)',backgroundColor:'rgba(96,165,250,0.06)',
+        pointBackgroundColor:sc4.map(v=>v<=4?C.green:v>=10?C.red:C.amber),
+        pointRadius:6,tension:0.3,fill:true}]},
+      options:{responsive:true,plugins:{legend:{display:false},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label:ctx=>(ctx.raw>=0?'+':'')+ctx.raw+' to par'}}},
+        scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+          y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+             title:{display:true,text:'+/- to Par',color:C.txt,font:FONT}}}}
+    });
+  }
+
+  const lbl4b=last4.map(x=>x.date.slice(5,10));
+  if(charts['chart-mg-stats']){try{charts['chart-mg-stats'].destroy();}catch(e){}}
+  const mgSt=document.getElementById('chart-mg-stats');
+  if(mgSt){
+    charts['chart-mg-stats']=new Chart(mgSt.getContext('2d'),{
+      type:'line',
+      data:{labels:lbl4b,datasets:[
+        {label:'GIR %',      data:last4.map(x=>x.gir_pct>0?x.gir_pct:null),borderColor:C.green,backgroundColor:'transparent',pointRadius:4,tension:0.3},
+        {label:'Scramble %', data:last4.map(x=>x.scrambling),              borderColor:C.amber,backgroundColor:'transparent',pointRadius:4,tension:0.3},
+        {label:'FW %',       data:last4.map(x=>x.fw_pct),                  borderColor:C.blue, backgroundColor:'transparent',pointRadius:4,tension:0.3},
+      ]},
+      options:{responsive:true,
+        plugins:{legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:16}},
+          tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}},
+        scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+          y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,max:100,
+             title:{display:true,text:'%',color:C.txt,font:FONT}}}}
+    });
+  }
+}
+
+function navToSection(id){
+  const btn = Array.from(document.querySelectorAll('.nav-btn'))
+    .find(b=>b.getAttribute('onclick')&&b.getAttribute('onclick').includes("'"+id+"'"));
+  if(btn) btn.click();
+}
 
 // ═══════════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD
