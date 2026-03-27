@@ -909,6 +909,12 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="section-title">Admin <span>Dashboard</span></div>
         <div class="section-meta">All players, round activity, and platform health — visible to admin only</div>
       </div>
+      <!-- Session Debug Panel -->
+      <div id="admin-debug-panel" style="background:rgba(96,165,250,0.05);border:1px solid rgba(96,165,250,0.2);border-left:3px solid var(--blue);padding:16px 20px;margin-bottom:20px">
+        <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:12px">Session Diagnostics — Your Account</div>
+        <div id="admin-debug-rows" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
+        <button class="roll-btn" onclick="buildAdminDebug()" style="margin-top:12px;font-size:10px">↻ Refresh diagnostics</button>
+      </div>
       <div class="stats-grid" id="admin-kpis" style="margin-bottom:24px"></div>
       <div class="card" style="margin-bottom:24px">
         <div class="card-header">
@@ -1261,7 +1267,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
 // ===== DATA =====
 const PLAYERS = {
   pat_west: {
-    name:'Pat West', pin:'1234',
+    name:'Pat West', pin:'1234', is_admin:true,
     rounds: [
       {date:"2022-08-12",course:"Granite Links (G to Q)",score:81,par:71,plus_minus:10,birdies:1,bogeys:10,doubles_plus:1,putts:34,gir_pct:50,penalties:0,fw_pct:69.2,driver_dist:252,scrambling:22.2,one_putts:4,three_putts:1},
       {date:"2022-08-14",course:"Granite Links (G to Q)",score:73,par:71,plus_minus:2,birdies:3,bogeys:4,doubles_plus:1,putts:33,gir_pct:72.2,penalties:0,fw_pct:100,driver_dist:253,scrambling:40,one_putts:5,three_putts:0},
@@ -1425,7 +1431,12 @@ const drillState={};
 
 // ===== AUTH =====
 // ── Supabase Auth + Login ─────────────────────────────────────────
-function nameToEmail(name){ return name.toLowerCase().replace(/[^a-z0-9]/g,'.').replace(/\.+/g,'.')+'@tour-intelligence.app'; }
+function nameToEmail(name){
+  // Real email overrides for specific players
+  const EMAIL_MAP = { 'Pat West': 'tourintelligence@gmail.com' };
+  if(EMAIL_MAP[name]) return EMAIL_MAP[name];
+  return name.toLowerCase().replace(/[^a-z0-9]/g,'.').replace(/\.+/g,'.')+'@tour-intelligence.app';
+}
 
 async function handleLogin(){
   const sel=document.getElementById('login-player');
@@ -1445,7 +1456,7 @@ async function handleLogin(){
       // Fallback: check hardcoded players (demo, offline)
       const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
       if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
-        currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:false};
+        currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:PLAYERS[fallbackKey].is_admin||false};
         launchApp();return;
       }
       err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
@@ -1669,7 +1680,7 @@ function initApp(){
   safe(buildBadGood,'BadGood');
   safe(initDataEntry,'DataEntry');
   safe(buildAlerts,'Alerts');
-  if(currentPlayer?.is_admin)safe(buildAdminDashboard,'Admin');
+  if(currentPlayer?.is_admin){ safe(buildAdminDashboard,'Admin'); buildAdminDebug().catch(()=>{}); }
 }
 
 // ===== DASHBOARD =====
@@ -2435,6 +2446,13 @@ async function buildPutting(){
   });
 
   // ── Fetch hole data for HL / Break / Slope charts ─────────────
+  // If player_id is null, try to look it up by name
+  if(!currentPlayer.player_id && currentPlayer.name){
+    try{
+      const {data:pl}=await sb.from('players').select('id').eq('name',currentPlayer.name).single();
+      if(pl?.id) currentPlayer.player_id=pl.id;
+    }catch(e){}
+  }
   if(puttHoleData===null && currentPlayer.player_id){
     try{
       const {data:hd} = await sb.from('hole_data')
@@ -2679,109 +2697,144 @@ function setBBRolling(w,btn){
 }
 
 // ===== TIGER FIVE =====
-let tigerHoleData = null; // cached for par5/SI calcs
+let tigerHoleData = null; // null=unfetched, []=fetched
 
 async function buildTigerFive(){
-  const r=currentPlayer.rounds;
-  const s=sorted();
-  const ps=currentPlayer.par_scoring;
+  const r = currentPlayer.rounds;
+  const s = sorted();
 
-  // Fetch hole_data from Supabase for par5/SI metrics if not already loaded
-  if(tigerHoleData===null && currentPlayer.player_id){
+  // ── Fetch hole_data with dates via Supabase join ──────────────
+  if(tigerHoleData === null && currentPlayer.player_id){
     try{
+      // Single query: hole_data joined to rounds for the date field
       const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id')
+        .select('par,score,appr_club,green,short_sided,round_id,rounds!inner(date)')
         .eq('player_id', currentPlayer.player_id);
-      tigerHoleData = hd || [];
-    }catch(e){ tigerHoleData = []; }
-  }
-  const totalH=r.length*18;
-  const totalD=r.reduce((a,x)=>a+(x.doubles_plus||0),0);
-  const doublePct=totalH>0?totalD/totalH*100:0;
-  const cats=currentPlayer.approach_cats;
-  const shortGIR=cats['Short Iron']?cats['Short Iron'].gir_pct:50;
-  const shortBogPct=100-shortGIR;
-  const pr=r.filter(x=>x.three_putts!=null);
-  const totalHPutt=pr.reduce((a,x)=>a+x.holes,0);
-  const est3=pr.reduce((a,x)=>a+(x.three_putts||0),0);
-  const t3Pct=totalHPutt>0?est3/totalHPutt*100:8;
-  const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
-  // For career failUD: use easy_ud_attempts where available, else fall back to scrambling
-  const roundsWithUD=r.filter(x=>x.easy_ud_attempts>0);
-  const failUD = roundsWithUD.length>=3
-    ? Math.round((roundsWithUD.reduce((a,x)=>a+x.failed_ud,0)/roundsWithUD.reduce((a,x)=>a+x.easy_ud_attempts,0))*1000)/10
-    : 100-(a_scram||50);
-  const par5Pct=Math.max(5,Math.min(45,(ps['5']||0)*15+20));
-
-  const metrics=[
-    {name:'Bogey+ on Par 5s',pct:Math.round(par5Pct*10)/10,goal:20,pass:par5Pct<=20},
-    {name:'Double Bogeys+',pct:Math.round(doublePct*10)/10,goal:10,pass:doublePct<=10},
-    {name:'Bogeys ≤ 9i',pct:Math.round(shortBogPct*10)/10,goal:20,pass:shortBogPct<=20},
-    {name:'3-Putts',pct:Math.round(t3Pct*10)/10,goal:5,pass:t3Pct<=5},
-    {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,goal:33,pass:failUD<=33}
-  ];
-  // Build per-round series for rolling chart
-  // For par5/SI: use round-level fields if available, else aggregate from hole_data
-  const hd = tigerHoleData || [];
-
-  // Build round-id lookup from sorted rounds
-  const roundById = {};
-  // We match holes to rounds by date+course since hole_data may use UUIDs
-  // Use hole_data grouped by round_id to compute per-round par5/SI stats
-  const par5ByRound = {}, siByRound = {};
-  if(hd.length){
-    for(const h of hd){
-      if(!h.round_id) continue;
-      if(!par5ByRound[h.round_id]) par5ByRound[h.round_id]={bog:0,total:0};
-      if(!siByRound[h.round_id])   siByRound[h.round_id]={bog:0,total:0};
-      if(h.par===5||h.par==='5'){
-        par5ByRound[h.round_id].total++;
-        if(parseInt(h.score)>parseInt(h.par)) par5ByRound[h.round_id].bog++;
-      }
-      const club=(h.appr_club||'').toLowerCase().replace(/\s+/g,'');
-      if(club==='9i'||club==='pw'||club==='10i'||club.includes('deg')){
-        siByRound[h.round_id].total++;
-        if(parseInt(h.score)>parseInt(h.par)) siByRound[h.round_id].bog++;
-      }
+      tigerHoleData = (hd||[]).map(h=>({
+        par:       h.par,
+        score:     h.score,
+        appr_club: h.appr_club,
+        green:     h.green,
+        short_sided: h.short_sided,
+        round_id:  h.round_id,
+        date:      h.rounds?.date || null
+      }));
+    }catch(e){
+      // Fallback: separate fetches
+      try{
+        const {data:roundRows} = await sb.from('rounds')
+          .select('id,date').eq('player_id', currentPlayer.player_id);
+        const rdm = {};
+        (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
+        const {data:hd2} = await sb.from('hole_data')
+          .select('par,score,appr_club,green,short_sided,round_id')
+          .eq('player_id', currentPlayer.player_id);
+        tigerHoleData = (hd2||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
+      }catch(e2){ tigerHoleData = []; }
     }
   }
 
-  // Build par5 series: prefer Supabase hole_data, else round-level fields
-  const par5Series = Object.keys(par5ByRound).length>=2
-    ? Object.entries(par5ByRound)
-        .filter(([,d])=>d.total>0)
-        .map(([rid,d])=>({rid, val:Math.round(d.bog/d.total*1000)/10}))
-    : s.filter(x=>x.par5_holes>0).map(x=>({date:x.date, val:Math.round(x.par5_bogeys/x.par5_holes*1000)/10}));
-  const siSeries = Object.keys(siByRound).length>=2
-    ? Object.entries(siByRound)
-        .filter(([,d])=>d.total>0)
-        .map(([rid,d])=>({rid, val:Math.round(d.bog/d.total*1000)/10}))
-    : s.filter(x=>x.si_holes>0).map(x=>({date:x.date, val:Math.round(x.si_bogeys/x.si_holes*1000)/10}));
+  const hd = tigerHoleData || [];
 
-  // For hole_data series, we need dates — join with rounds
-  // Supabase round UUIDs match holes via round_id
-  // We'll build a map from round UUID to date using loadPlayerFromSupabase data
-  // Since we don't have that mapping cached easily, use index order
-  const par5SeriesFinal = par5Series.map((x,i)=>x.date?x:{date:s[Math.min(i,s.length-1)]?.date||'',val:x.val});
-  const siSeriesFinal = siSeries.map((x,i)=>x.date?x:{date:s[Math.min(i,s.length-1)]?.date||'',val:x.val});
+  // ── Career stat calculations ──────────────────────────────────
+  const totalH = r.length * 18;
+  const totalD = r.reduce((a,x)=>a+(x.doubles_plus||0), 0);
+  const doublePct = totalH>0 ? totalD/totalH*100 : 0;
 
-  const tigerPerRound = {
-    'Bogey+ on Par 5s': par5SeriesFinal.filter(x=>x.date),
-    'Double Bogeys+': s.filter(x=>x.doubles_plus!=null&&x.holes).map(x=>({date:x.date,
-      val: Math.round(x.doubles_plus/(x.holes||18)*1000)/10})),
-    'Bogeys ≤ 9i': siSeriesFinal.filter(x=>x.date),
-    '3-Putts': s.filter(x=>x.three_putts!=null).map(x=>({date:x.date,
-      val: Math.round(x.three_putts/(x.holes||18)*1000)/10})),
-    'Failed Easy Up/Down': s.filter(x=>x.easy_ud_attempts>0).map(x=>({date:x.date,
-      val: Math.round(x.failed_ud/x.easy_ud_attempts*1000)/10})),
-  };
-  // Fall back to scrambling for old rounds without easy_ud_attempts
-  if(tigerPerRound['Failed Easy Up/Down'].length<2){
-    tigerPerRound['Failed Easy Up/Down']=s.filter(x=>x.scrambling!=null).map(x=>({date:x.date,
-      val: Math.round((100-x.scrambling)*10)/10}));
+  // Par 5 bogey% — from hole_data if available, else par_scoring proxy
+  let par5Pct;
+  if(hd.length){
+    const p5 = hd.filter(h=>parseInt(h.par)===5);
+    const p5bog = p5.filter(h=>parseInt(h.score)>parseInt(h.par)).length;
+    par5Pct = p5.length>0 ? p5bog/p5.length*100 : 20;
+  } else {
+    const ps = currentPlayer.par_scoring;
+    par5Pct = Math.max(5, Math.min(45, (ps['5']||0)*15+20));
   }
 
-  document.getElementById('tiger-cards').innerHTML=metrics.map((m,idx)=>`
+  // SI bogey% — from hole_data if available, else approach_cats proxy
+  let shortBogPct;
+  if(hd.length){
+    const siH = hd.filter(h=>isScoringClub(h.appr_club));
+    const siBog = siH.filter(h=>parseInt(h.score)>parseInt(h.par)).length;
+    shortBogPct = siH.length>0 ? siBog/siH.length*100 : 25;
+  } else {
+    const cats = currentPlayer.approach_cats;
+    const shortGIR = cats['Short Iron']?cats['Short Iron'].gir_pct:50;
+    shortBogPct = 100-shortGIR;
+  }
+
+  const threePr = r.filter(x=>x.three_putts!=null);
+  const totalHPutt = threePr.reduce((a,x)=>a+x.holes,0);
+  const est3 = threePr.reduce((a,x)=>a+(x.three_putts||0),0);
+  const t3Pct = totalHPutt>0 ? est3/totalHPutt*100 : 8;
+
+  const roundsWithUD = r.filter(x=>x.easy_ud_attempts>0);
+  const a_scram = avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
+  const failUD = roundsWithUD.length>=3
+    ? Math.round((roundsWithUD.reduce((a,x)=>a+x.failed_ud,0) /
+                  roundsWithUD.reduce((a,x)=>a+x.easy_ud_attempts,0))*1000)/10
+    : 100-(a_scram||50);
+
+  const metrics = [
+    {name:'Bogey+ on Par 5s',  pct:Math.round(par5Pct*10)/10,     goal:20, pass:par5Pct<=20},
+    {name:'Double Bogeys+',    pct:Math.round(doublePct*10)/10,    goal:10, pass:doublePct<=10},
+    {name:'Bogeys ≤ 9i',       pct:Math.round(shortBogPct*10)/10,  goal:20, pass:shortBogPct<=20},
+    {name:'3-Putts',           pct:Math.round(t3Pct*10)/10,        goal:5,  pass:t3Pct<=5},
+    {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,      goal:33, pass:failUD<=33},
+  ];
+
+  // ── Per-round series for rolling chart ────────────────────────
+  // Group hole_data by round_id for par5/SI per-round calcs
+  const par5ByRound = {}, siByRound = {};
+  for(const h of hd){
+    const rid = h.round_id; if(!rid||!h.date) continue;
+    if(!par5ByRound[rid]) par5ByRound[rid]={bog:0,total:0,date:h.date};
+    if(!siByRound[rid])   siByRound[rid]  ={bog:0,total:0,date:h.date};
+    if(parseInt(h.par)===5){
+      par5ByRound[rid].total++;
+      if(parseInt(h.score)>parseInt(h.par)) par5ByRound[rid].bog++;
+    }
+    if(isScoringClub(h.appr_club)){
+      siByRound[rid].total++;
+      if(parseInt(h.score)>parseInt(h.par)) siByRound[rid].bog++;
+    }
+  }
+
+  function buildHDSeries(byRound, fallbackFn){
+    const hdSeries = Object.values(byRound)
+      .filter(d=>d.total>0 && d.date)
+      .map(d=>({date:d.date, val:Math.round(d.bog/d.total*1000)/10}))
+      .sort((a,b)=>a.date.localeCompare(b.date));
+    return hdSeries.length>=2 ? hdSeries : fallbackFn();
+  }
+
+  const tigerPerRound = {
+    'Bogey+ on Par 5s': buildHDSeries(par5ByRound,
+      ()=>s.filter(x=>x.par5_holes>0).map(x=>({date:x.date,
+        val:Math.round(x.par5_bogeys/x.par5_holes*1000)/10}))),
+
+    'Double Bogeys+': s.filter(x=>x.doubles_plus!=null&&x.holes).map(x=>({date:x.date,
+      val:Math.round(x.doubles_plus/(x.holes||18)*1000)/10})),
+
+    'Bogeys ≤ 9i': buildHDSeries(siByRound,
+      ()=>s.filter(x=>x.si_holes>0).map(x=>({date:x.date,
+        val:Math.round(x.si_bogeys/x.si_holes*1000)/10}))),
+
+    '3-Putts': s.filter(x=>x.three_putts!=null).map(x=>({date:x.date,
+      val:Math.round(x.three_putts/(x.holes||18)*1000)/10})),
+
+    'Failed Easy Up/Down': (()=>{
+      const udSeries = s.filter(x=>x.easy_ud_attempts>0).map(x=>({date:x.date,
+        val:Math.round(x.failed_ud/x.easy_ud_attempts*1000)/10}));
+      return udSeries.length>=2 ? udSeries
+        : s.filter(x=>x.scrambling!=null).map(x=>({date:x.date,
+            val:Math.round((100-x.scrambling)*10)/10}));
+    })(),
+  };
+
+  // ── Render cards ──────────────────────────────────────────────
+  document.getElementById('tiger-cards').innerHTML = metrics.map(m=>`
     <div class="tiger-card ${m.pass?'tiger-pass':'tiger-fail'}"
          onclick="showTigerRolling('${m.name.replace(/'/g,"\\'")}')"
          style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s"
@@ -2792,89 +2845,106 @@ async function buildTigerFive(){
       <div class="tiger-goal">Goal: ≤${m.goal}%</div>
       <div class="tiger-diff ${m.pass?'val-green':'val-red'}">${m.pass?'✓ On Track':'✗ Needs Work'}</div>
       <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">click for trend →</div>
-    </div>
-  `).join('');
+    </div>`).join('');
 
-  // Store series on window for access in showTigerRolling
   window._tigerPerRound = tigerPerRound;
   window._tigerMetrics  = metrics;
 }
 
+function isScoringClub(c){
+  if(!c) return false;
+  const cl = c.toLowerCase().replace(/\s+/g,'');
+  return cl==='9i'||cl==='pw'||cl==='10i'||cl.includes('deg');
+}
+
 function showTigerRolling(metricName){
-  const wrap = document.getElementById('tiger-rolling-wrap');
+  const wrap    = document.getElementById('tiger-rolling-wrap');
   const titleEl = document.getElementById('tiger-rolling-title');
   const subEl   = document.getElementById('tiger-rolling-sub');
-  if(!wrap)return;
+  const canvasEl= document.getElementById('chart-tiger-rolling');
+  if(!wrap) return;
+
+  // Always destroy old chart and clear canvas first
+  if(charts['chart-tiger-rolling']){
+    try{charts['chart-tiger-rolling'].destroy();}catch(e){}
+    delete charts['chart-tiger-rolling'];
+  }
+  if(canvasEl){
+    canvasEl.style.display = 'block';
+    // Clear canvas
+    const ctx = canvasEl.getContext('2d');
+    ctx.clearRect(0, 0, canvasEl.width, canvasEl.height);
+  }
+
+  // Highlight selected card, remove highlight from others
+  document.querySelectorAll('.tiger-card').forEach(c=>{
+    const t = c.querySelector('.tiger-title');
+    c.style.outline = t&&t.textContent.trim()===metricName ? '2px solid var(--blue)' : '';
+  });
+
+  // Show wrap and scroll
+  wrap.style.display = 'block';
+  wrap.scrollIntoView({behavior:'smooth', block:'nearest'});
 
   const series = window._tigerPerRound?.[metricName];
   const metric = window._tigerMetrics?.find(m=>m.name===metricName);
 
-  // Highlight selected card
-  document.querySelectorAll('.tiger-card').forEach(c=>{
-    const t=c.querySelector('.tiger-title');
-    c.style.outline = t&&t.textContent.trim()===metricName ? '2px solid var(--blue)' : '';
-  });
-
-  if(!series){
-    titleEl.textContent = metricName + ' — Trend';
-    subEl.textContent   = 'This metric requires hole-level data (log rounds via Data Entry to unlock)';
-    wrap.style.display  = 'block';
-    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
-    if(charts['chart-tiger-rolling']){try{charts['chart-tiger-rolling'].destroy();}catch(e){}}
-    const el=document.getElementById('chart-tiger-rolling');
-    if(el)el.parentElement.querySelector('canvas').style.display='none';
+  // No series at all
+  if(!series || series.length === 0){
+    titleEl.textContent = metricName + ' — No Data Yet';
+    subEl.textContent   = 'No round-level data available for this metric. Log rounds via Data Entry to build this trend.';
+    if(canvasEl) canvasEl.style.display = 'none';
     return;
   }
-
-  // Show canvas
-  const el = document.getElementById('chart-tiger-rolling');
-  if(el) el.style.display='block';
 
   const filteredSeries = series.filter(x=>x.val!=null);
-  if(filteredSeries.length<2){
-    subEl.textContent='Not enough data yet — log more rounds to see the trend.';
-    wrap.style.display='block';
+
+  // Not enough data points
+  if(filteredSeries.length < 2){
+    titleEl.textContent = metricName + ' — Insufficient Data';
+    subEl.textContent   = `Only ${filteredSeries.length} data point${filteredSeries.length===1?'':'s'} — need at least 2 rounds to show a trend.`;
+    if(canvasEl) canvasEl.style.display = 'none';
     return;
   }
 
+  // Build chart
   titleEl.textContent = metricName + ' — 4-Round Rolling Average';
   const goalVal = metric?.goal;
-  subEl.textContent   = `Goal: ≤${goalVal}% · ${filteredSeries.length} rounds with data`;
-  wrap.style.display  = 'block';
-  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+  subEl.textContent   = `Goal: ≤${goalVal}% · ${filteredSeries.length} rounds`;
 
-  const labels = filteredSeries.map(x=>x.date.slice(5,10));
-  const vals   = filteredSeries.map(x=>x.val);
-  const ra4    = rollingAvg(vals,4);
-  const passColor='rgba(74,222,128,0.7)', failColor='rgba(248,113,113,0.7)';
-  const barColors = vals.map(v=>v<=goalVal?passColor:failColor);
+  const labels    = filteredSeries.map(x=>x.date.slice(5,10));
+  const vals      = filteredSeries.map(x=>x.val);
+  const ra4       = rollingAvg(vals, 4);
+  const barColors = vals.map(v=>v<=goalVal?'rgba(74,222,128,0.7)':'rgba(248,113,113,0.7)');
 
-  if(charts['chart-tiger-rolling']){try{charts['chart-tiger-rolling'].destroy();}catch(e){}}
-  charts['chart-tiger-rolling']=new Chart(el.getContext('2d'),{
+  charts['chart-tiger-rolling'] = new Chart(canvasEl.getContext('2d'),{
     type:'bar',
-    data:{labels,datasets:[
-      {type:'bar',label:metricName,data:vals,
+    data:{labels, datasets:[
+      {type:'bar',  label:metricName, data:vals,
         backgroundColor:barColors,
         borderColor:vals.map(v=>v<=goalVal?C.green:C.red),
-        borderWidth:1,order:2},
-      {type:'line',label:'4-Rnd Avg',data:ra4,
-        borderColor:C.blue,backgroundColor:'transparent',
-        borderWidth:2.5,pointRadius:0,tension:0.4,order:1},
-      {type:'line',label:'Goal',data:vals.map(()=>goalVal),
-        borderColor:'rgba(251,191,36,0.7)',backgroundColor:'transparent',
-        borderWidth:1.5,borderDash:[6,4],pointRadius:0,order:0}
+        borderWidth:1, order:2},
+      {type:'line', label:'4-Rnd Avg', data:ra4,
+        borderColor:C.blue, backgroundColor:'transparent',
+        borderWidth:2.5, pointRadius:0, tension:0.4, order:1},
+      {type:'line', label:`Goal ≤${goalVal}%`, data:vals.map(()=>goalVal),
+        borderColor:'rgba(251,191,36,0.8)', backgroundColor:'transparent',
+        borderWidth:1.5, borderDash:[6,4], pointRadius:0, order:0}
     ]},
     options:{
       responsive:true,
       plugins:{
-        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
-        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
-          callbacks:{label(ctx){return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'}`}}}
+        legend:{display:true, labels:{color:C.txt, font:FONT, boxWidth:20}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',
+          borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){
+            return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'}`;
+          }}}
       },
       scales:{
-        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
-        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,
-           title:{display:true,text:'%',color:C.txt,font:FONT}}
+        x:{grid:{color:C.grid}, ticks:{color:C.txt, font:FONT}},
+        y:{grid:{color:C.grid}, ticks:{color:C.txt, font:FONT}, min:0,
+           title:{display:true, text:'%', color:C.txt, font:FONT}}
       }
     }
   });
@@ -5243,6 +5313,78 @@ function navToSection(id){
 // ═══════════════════════════════════════════════════════════════════
 // ADMIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════
+
+async function buildAdminDebug(){
+  const el = document.getElementById('admin-debug-rows');
+  if(!el) return;
+
+  const row = (label, val, ok) => `
+    <div style="background:var(--surface);border:1px solid var(--border);padding:12px 14px">
+      <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:4px">${label}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:12px;color:${ok===true?'var(--green)':ok===false?'var(--red)':'var(--text)'}">${val}</div>
+    </div>`;
+
+  // 1. player_id
+  const pid = currentPlayer?.player_id;
+  const pidOk = pid && pid.length > 10;
+
+  // 2. hole_data fetch status
+  let hdStatus = 'Not fetched yet';
+  let hdOk = null;
+  if(puttHoleData === null && tigerHoleData === null){
+    hdStatus = 'Not fetched — navigate to Putting or Tiger Five tab first';
+    hdOk = false;
+  } else {
+    const count = (puttHoleData||tigerHoleData||[]).length;
+    if(count > 0){ hdStatus = `✓ ${count} rows loaded`; hdOk = true; }
+    else { hdStatus = '0 rows — migration may not have run, or player_id not linked'; hdOk = false; }
+  }
+
+  // 3. Try live count from Supabase
+  let liveCount = '—';
+  let liveOk = null;
+  if(pidOk){
+    try{
+      const {count, error} = await sb.from('hole_data')
+        .select('*', {count:'exact', head:true})
+        .eq('player_id', pid);
+      if(error) throw error;
+      liveCount = `${count} rows in Supabase`;
+      liveOk = count > 0;
+    }catch(e){ liveCount = 'Error: '+e.message; liveOk = false; }
+  }
+
+  // 4. Auth session
+  let authStatus = '—';
+  let authOk = null;
+  try{
+    const {data:{session}} = await sb.auth.getSession();
+    if(session){ authStatus = '✓ Active (' + session.user.email + ')'; authOk = true; }
+    else { authStatus = 'No active session'; authOk = false; }
+  }catch(e){ authStatus = 'Error: '+e.message; authOk = false; }
+
+  // 5. Supabase rounds count
+  let roundsCount = '—';
+  if(pidOk){
+    try{
+      const {count, error} = await sb.from('rounds')
+        .select('*', {count:'exact', head:true})
+        .eq('player_id', pid);
+      roundsCount = error ? ('Error: '+error.message) : `${count} rounds in Supabase`;
+    }catch(e){ roundsCount = 'Error: '+e.message; }
+  }
+
+  el.innerHTML =
+    row('Logged-in Player', currentPlayer?.name || '—', null) +
+    row('player_id', pidOk ? pid.slice(0,8)+'…' : 'null — not linked to Supabase', pidOk) +
+    row('Auth Session', authStatus, authOk) +
+    row('Rounds in Supabase', roundsCount, null) +
+    row('hole_data in Supabase', liveCount, liveOk) +
+    row('hole_data in Memory', hdStatus, hdOk) +
+    row('Putting charts ready', (liveOk&&puttHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Putting tab to load' : '✗ Need hole_data in Supabase', liveOk&&puttHoleData?.length>0) +
+    row('Tiger Five charts ready', (liveOk&&tigerHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Tiger Five tab to load' : '✗ Need hole_data in Supabase', liveOk&&tigerHoleData?.length>0);
+}
+
 async function buildAdminDashboard(){
   if(!currentPlayer?.is_admin)return;
   const kpiEl=document.getElementById('admin-kpis');
