@@ -102,7 +102,7 @@ tr:hover td{background:var(--surface2)}
 /* TIGER */
 .tiger-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:16px;margin-bottom:24px}
 .tiger-card{background:var(--surface);border:1px solid var(--border);padding:24px 16px;text-align:center}
-.tiger-title{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px;min-height:32px;display:flex;align-items:center;justify-content:center;line-height:1.3}
+.tiger-title{font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;min-height:40px;display:flex;align-items:center;justify-content:center;line-height:1.3;text-align:center;text-transform:none;letter-spacing:0}
 .tiger-pct{font-family:'Bebas Neue',sans-serif;font-size:38px;line-height:1;margin-bottom:4px}
 .tiger-goal{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)}
 .tiger-diff{font-family:'DM Mono',monospace;font-size:12px;margin-top:6px;font-weight:600}
@@ -204,7 +204,7 @@ tr:hover td{background:var(--surface2)}
   /* Tiger five */
   .tiger-card{padding:14px 10px}
   .tiger-pct{font-size:28px}
-  .tiger-title{font-size:9px}
+  .tiger-title{font-size:11px}
 
   /* Upload */
   .upload-card{padding:24px 20px}
@@ -868,7 +868,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
 
       <!-- Quick stats row -->
       <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
-        Last 10 Rounds — Snapshot
+        <span id="mg-snapshot-title">Last 4 Rounds</span> — Snapshot
       </div>
       <div id="mygame-quickstats" class="stats-grid" style="margin-bottom:32px"></div>
 
@@ -976,6 +976,16 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="chart-card">
           <div class="chart-title">Fairway Accuracy % by Round</div>
           <canvas id="chart-fw-pct" height="220"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Drive L/R Distribution — Fairway Width Buckets</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:10px">
+            Centre bucket = ±45 ft (≈ ±15 yards, typical fairway half-width) · green = in play · outer buckets = 45 ft wide each
+          </div>
+          <canvas id="chart-tee-lr-dist" height="150"></canvas>
+          <div id="chart-tee-lr-empty" style="display:none;text-align:center;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">No individual tee shot data available — upload from Hole Level Data sheet to unlock</div>
         </div>
       </div>
       <div class="chart-grid">
@@ -1168,10 +1178,15 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="section-meta">Five key metrics that define elite scoring — track your goals</div>
       </div>
       <div class="tiger-grid" id="tiger-cards"></div>
-      <div class="chart-grid">
+      <!-- Tiger rolling chart — appears when a card is clicked -->
+      <div id="tiger-rolling-wrap" style="display:none;margin-top:20px">
         <div class="chart-card chart-full">
-          <div class="chart-title">Key Metrics Trend (Last 15 Rounds)</div>
-          <canvas id="chart-tiger-trend" height="150"></canvas>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:8px">
+            <div class="chart-title" id="tiger-rolling-title" style="margin-bottom:0">Select a metric above to see its trend</div>
+            <button class="roll-btn" onclick="document.getElementById('tiger-rolling-wrap').style.display='none'" style="font-size:10px;padding:4px 10px">✕ Close</button>
+          </div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:10px" id="tiger-rolling-sub"></div>
+          <canvas id="chart-tiger-rolling" height="140"></canvas>
         </div>
       </div>
     </div>
@@ -1562,6 +1577,8 @@ document.getElementById('login-player').addEventListener('change',function(){
 });
 
 async function handleLogout(){
+  puttHoleData = null;
+  tigerHoleData = null; // reset tiger hole cache
   await sb.auth.signOut().catch(()=>{});
   currentPlayer=null;
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
@@ -1637,11 +1654,22 @@ function mkChart(id,type,data,opts,plugins){
 
 // ===== INIT =====
 function initApp(){
-  buildMyGame();buildDashboard();buildScoring();buildTee();buildApproach();
-  buildShotDispersion();buildPutting();
-  buildAICaddie();buildDefinitions();buildBirdiesBogeys();buildTigerFive();buildBadGood();
-  initDataEntry();buildAlerts();
-  if(currentPlayer?.is_admin)buildAdminDashboard();
+  const safe=(fn,name)=>{try{fn();}catch(e){console.error('Tab build error ['+name+']:',e);}};
+  safe(buildMyGame,'MyGame');
+  safe(buildDashboard,'Dashboard');
+  safe(buildScoring,'Scoring');
+  safe(buildTee,'Tee');
+  safe(buildApproach,'Approach');
+  safe(buildShotDispersion,'Dispersion');
+  buildPutting(); // async, errors handled internally
+  safe(buildAICaddie,'AICaddie');
+  safe(buildDefinitions,'Definitions');
+  safe(buildBirdiesBogeys,'BirdiesBogeys');
+  buildTigerFive().catch(e=>console.error('Tab build error [TigerFive]:',e));
+  safe(buildBadGood,'BadGood');
+  safe(initDataEntry,'DataEntry');
+  safe(buildAlerts,'Alerts');
+  if(currentPlayer?.is_admin)safe(buildAdminDashboard,'Admin');
 }
 
 // ===== DASHBOARD =====
@@ -1688,19 +1716,17 @@ function buildDashboard(){
     <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr only)</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Proximity ${proxTT}</div><div class="stat-value ${prox&&prox<=25?'stat-good':'stat-neutral'}">${prox?prox.toFixed(1)+'ft':'—'}</div><div class="stat-sub">avg on GIR holes</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Avg L/R Miss ${lrTT}</div>
-      <div class="${lrCls}" style="font-size:13px;margin-top:10px;line-height:1.5">
-        <div style="font-size:36px;line-height:1">${Math.abs(a_lr).toFixed(1)} ft</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px">
-          ${a_lr<0?'<span style="font-size:22px">←</span> Left':'<span style="font-size:22px">→</span> Right'}
-        </div>
-      </div></div>
+      <div class="stat-value ${lrCls}">
+        ${avgLR!=null?(avgLR<0?avgLR.toFixed(1):'+'+avgLR.toFixed(1))+' ft':'—'}
+      </div>
+      <div class="stat-sub">${avgLR==null?'':avgLR<0?'← Left':'→ Right'}</div>
+    </div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Avg S/L Miss ${slTT}</div>
-      <div class="${slCls}" style="font-size:13px;margin-top:10px;line-height:1.5">
-        <div style="font-size:36px;line-height:1">${Math.abs(a_sl).toFixed(1)} ft</div>
-        <div style="font-family:'DM Mono',monospace;font-size:11px;margin-top:4px;display:flex;align-items:center;gap:6px">
-          ${a_sl<0?'<span style="font-size:22px">↓</span> Short':'<span style="font-size:22px">↑</span> Long'}
-        </div>
-      </div></div>
+      <div class="stat-value ${slCls}">
+        ${avgSL!=null?(avgSL<0?avgSL.toFixed(1):'+'+avgSL.toFixed(1))+' ft':'—'}
+      </div>
+      <div class="stat-sub">${avgSL==null?'':avgSL<0?'↓ Short':'↑ Long'}</div>
+    </div>
   `;
 
   const allRnds=[...r].sort((a,b)=>b.date.localeCompare(a.date));
@@ -1884,7 +1910,110 @@ function buildTee(){
     datasets:[{data:dbVals,backgroundColor:C.gd,borderColor:C.green,borderWidth:1}]
   },{...bOpts('# Rounds')}, [distPctPlugin]);
   buildDrRollingChart(sdr,drRollingWindow,teeDrClub);
+  buildTeeLRDist();
   buildTeeScatter('Dr');
+}
+
+function buildTeeLRDist(){
+  const allShots = currentPlayer.tee_shots||[];
+  const drShots  = allShots.filter(s=>s.club==='Dr'&&s.x!=null);
+  const el   = document.getElementById('chart-tee-lr-dist');
+  const emEl = document.getElementById('chart-tee-lr-empty');
+  if(!el)return;
+
+  if(drShots.length<3){
+    el.style.display='none';
+    if(emEl) emEl.style.display='block';
+    return;
+  }
+  el.style.display='block';
+  if(emEl) emEl.style.display='none';
+
+  // Centre bucket = typical fairway half-width = ±45 ft (≈ ±15 yards)
+  // Outer buckets = 30 ft wide (≈ 10 yards) each
+  // Layout: >135L | 90-135L | 45-90L | FAIRWAY (±45) | 45-90R | 90-135R | >135R
+  const FW = 45; // half-fairway in feet
+  const BW = 45; // outer bucket width in feet
+  const buckets = [
+    {label:'>135L',       min:-Infinity, max:-(FW+2*BW), zone:'wide'},
+    {label:'90-135L',     min:-(FW+2*BW), max:-(FW+BW),  zone:'mid'},
+    {label:'45-90L',      min:-(FW+BW),   max:-FW,        zone:'close'},
+    {label:'Fairway \u00b145ft', min:-FW,     max:FW,         zone:'fairway'},
+    {label:'45-90R',      min:FW,         max:FW+BW,      zone:'close'},
+    {label:'90-135R',     min:FW+BW,      max:FW+2*BW,    zone:'mid'},
+    {label:'>135R',       min:FW+2*BW,    max:Infinity,   zone:'wide'},
+  ];
+
+  const counts = buckets.map(b=>({
+    label: b.label,
+    count: drShots.filter(s=>s.x > b.min && s.x <= b.max).length,
+    zone: b.zone,
+  }));
+
+  const total = drShots.length;
+  const zoneColors = {
+    fairway: 'rgba(74,222,128,0.75)',
+    close:   'rgba(251,191,36,0.65)',
+    mid:     'rgba(248,113,113,0.55)',
+    wide:    'rgba(248,113,113,0.35)',
+  };
+  const colors = counts.map(b=>zoneColors[b.zone]);
+  const borders = counts.map(b=>zoneColors[b.zone].replace(/[\d.]+\)$/, '1)'));
+
+  const pctPlugin={id:'lrPct',afterDatasetsDraw(chart){
+    const ctx=chart.ctx, ds=chart.data.datasets[0];
+    chart.getDatasetMeta(0).data.forEach((bar,i)=>{
+      const v=ds.data[i]; if(!v)return;
+      const pct=Math.round(v/total*100);
+      ctx.save();ctx.fillStyle='rgba(255,255,255,0.9)';ctx.font='bold 11px DM Mono';
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(pct+'%',bar.x,bar.y+4);ctx.restore();
+    });
+  }};
+
+  if(charts['chart-tee-lr-dist']){try{charts['chart-tee-lr-dist'].destroy();}catch(e){}}
+  charts['chart-tee-lr-dist']=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{
+      labels:counts.map(b=>b.label),
+      datasets:[{
+        label:'# of Drives',
+        data:counts.map(b=>b.count),
+        backgroundColor:colors,
+        borderColor:borders,
+        borderWidth:1
+      }]
+    },
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:false},
+        tooltip:{
+          backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{
+            title(ctx){
+              const b=buckets[ctx[0].dataIndex];
+              return b.zone==='fairway'?'Fairway (±45 ft of centre)':ctx[0].label+' of centre';
+            },
+            label(ctx){
+              const n=ctx.raw, pct=Math.round(n/total*100);
+              return [`${n} drive${n!==1?'s':''} (${pct}%)`,`of ${total} total`];
+            }
+          }
+        }
+      },
+      scales:{
+        x:{
+          grid:{color:C.grid},
+          ticks:{color:C.txt,font:FONT},
+          title:{display:true,text:'← Left miss                    Fairway                    Right miss →',color:C.txt,font:FONT}
+        },
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+           title:{display:true,text:'# of Drives',color:C.txt,font:FONT}}
+      }
+    },
+    plugins:[pctPlugin]
+  });
 }
 
 let teeScatterClub='Dr', teeScatterCI=0.50;
@@ -2219,7 +2348,7 @@ function toggleDrill(cat){
 // ===== PUTTING =====
 
 let puttViewMode = 'make'; // 'make' or 'miss'
-let puttHoleData = null;   // cached hole_data from Supabase
+let puttHoleData = null;   // cached hole_data — null=unfetched, []=fetched but empty
 
 function setPuttView(mode, btn){
   puttViewMode = mode;
@@ -2306,7 +2435,7 @@ async function buildPutting(){
   });
 
   // ── Fetch hole data for HL / Break / Slope charts ─────────────
-  if(!puttHoleData && currentPlayer.player_id){
+  if(puttHoleData===null && currentPlayer.player_id){
     try{
       const {data:hd} = await sb.from('hole_data')
         .select('putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
@@ -2550,10 +2679,22 @@ function setBBRolling(w,btn){
 }
 
 // ===== TIGER FIVE =====
-function buildTigerFive(){
+let tigerHoleData = null; // cached for par5/SI calcs
+
+async function buildTigerFive(){
   const r=currentPlayer.rounds;
   const s=sorted();
   const ps=currentPlayer.par_scoring;
+
+  // Fetch hole_data from Supabase for par5/SI metrics if not already loaded
+  if(tigerHoleData===null && currentPlayer.player_id){
+    try{
+      const {data:hd} = await sb.from('hole_data')
+        .select('par,score,appr_club,green,short_sided,round_id')
+        .eq('player_id', currentPlayer.player_id);
+      tigerHoleData = hd || [];
+    }catch(e){ tigerHoleData = []; }
+  }
   const totalH=r.length*18;
   const totalD=r.reduce((a,x)=>a+(x.doubles_plus||0),0);
   const doublePct=totalH>0?totalD/totalH*100:0;
@@ -2565,36 +2706,177 @@ function buildTigerFive(){
   const est3=pr.reduce((a,x)=>a+(x.three_putts||0),0);
   const t3Pct=totalHPutt>0?est3/totalHPutt*100:8;
   const a_scram=avg(r.filter(x=>x.scrambling!=null).map(x=>x.scrambling));
-  const failUD=100-(a_scram||50);
+  // For career failUD: use easy_ud_attempts where available, else fall back to scrambling
+  const roundsWithUD=r.filter(x=>x.easy_ud_attempts>0);
+  const failUD = roundsWithUD.length>=3
+    ? Math.round((roundsWithUD.reduce((a,x)=>a+x.failed_ud,0)/roundsWithUD.reduce((a,x)=>a+x.easy_ud_attempts,0))*1000)/10
+    : 100-(a_scram||50);
   const par5Pct=Math.max(5,Math.min(45,(ps['5']||0)*15+20));
 
   const metrics=[
     {name:'Bogey+ on Par 5s',pct:Math.round(par5Pct*10)/10,goal:20,pass:par5Pct<=20},
     {name:'Double Bogeys+',pct:Math.round(doublePct*10)/10,goal:10,pass:doublePct<=10},
-    {name:'Bogeys ≤ 9-Iron',pct:Math.round(shortBogPct*10)/10,goal:20,pass:shortBogPct<=20},
+    {name:'Bogeys ≤ 9i',pct:Math.round(shortBogPct*10)/10,goal:20,pass:shortBogPct<=20},
     {name:'3-Putts',pct:Math.round(t3Pct*10)/10,goal:5,pass:t3Pct<=5},
     {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,goal:33,pass:failUD<=33}
   ];
-  document.getElementById('tiger-cards').innerHTML=metrics.map(m=>`
-    <div class="tiger-card ${m.pass?'tiger-pass':'tiger-fail'}">
+  // Build per-round series for rolling chart
+  // For par5/SI: use round-level fields if available, else aggregate from hole_data
+  const hd = tigerHoleData || [];
+
+  // Build round-id lookup from sorted rounds
+  const roundById = {};
+  // We match holes to rounds by date+course since hole_data may use UUIDs
+  // Use hole_data grouped by round_id to compute per-round par5/SI stats
+  const par5ByRound = {}, siByRound = {};
+  if(hd.length){
+    for(const h of hd){
+      if(!h.round_id) continue;
+      if(!par5ByRound[h.round_id]) par5ByRound[h.round_id]={bog:0,total:0};
+      if(!siByRound[h.round_id])   siByRound[h.round_id]={bog:0,total:0};
+      if(h.par===5||h.par==='5'){
+        par5ByRound[h.round_id].total++;
+        if(parseInt(h.score)>parseInt(h.par)) par5ByRound[h.round_id].bog++;
+      }
+      const club=(h.appr_club||'').toLowerCase().replace(/\s+/g,'');
+      if(club==='9i'||club==='pw'||club==='10i'||club.includes('deg')){
+        siByRound[h.round_id].total++;
+        if(parseInt(h.score)>parseInt(h.par)) siByRound[h.round_id].bog++;
+      }
+    }
+  }
+
+  // Build par5 series: prefer Supabase hole_data, else round-level fields
+  const par5Series = Object.keys(par5ByRound).length>=2
+    ? Object.entries(par5ByRound)
+        .filter(([,d])=>d.total>0)
+        .map(([rid,d])=>({rid, val:Math.round(d.bog/d.total*1000)/10}))
+    : s.filter(x=>x.par5_holes>0).map(x=>({date:x.date, val:Math.round(x.par5_bogeys/x.par5_holes*1000)/10}));
+  const siSeries = Object.keys(siByRound).length>=2
+    ? Object.entries(siByRound)
+        .filter(([,d])=>d.total>0)
+        .map(([rid,d])=>({rid, val:Math.round(d.bog/d.total*1000)/10}))
+    : s.filter(x=>x.si_holes>0).map(x=>({date:x.date, val:Math.round(x.si_bogeys/x.si_holes*1000)/10}));
+
+  // For hole_data series, we need dates — join with rounds
+  // Supabase round UUIDs match holes via round_id
+  // We'll build a map from round UUID to date using loadPlayerFromSupabase data
+  // Since we don't have that mapping cached easily, use index order
+  const par5SeriesFinal = par5Series.map((x,i)=>x.date?x:{date:s[Math.min(i,s.length-1)]?.date||'',val:x.val});
+  const siSeriesFinal = siSeries.map((x,i)=>x.date?x:{date:s[Math.min(i,s.length-1)]?.date||'',val:x.val});
+
+  const tigerPerRound = {
+    'Bogey+ on Par 5s': par5SeriesFinal.filter(x=>x.date),
+    'Double Bogeys+': s.filter(x=>x.doubles_plus!=null&&x.holes).map(x=>({date:x.date,
+      val: Math.round(x.doubles_plus/(x.holes||18)*1000)/10})),
+    'Bogeys ≤ 9i': siSeriesFinal.filter(x=>x.date),
+    '3-Putts': s.filter(x=>x.three_putts!=null).map(x=>({date:x.date,
+      val: Math.round(x.three_putts/(x.holes||18)*1000)/10})),
+    'Failed Easy Up/Down': s.filter(x=>x.easy_ud_attempts>0).map(x=>({date:x.date,
+      val: Math.round(x.failed_ud/x.easy_ud_attempts*1000)/10})),
+  };
+  // Fall back to scrambling for old rounds without easy_ud_attempts
+  if(tigerPerRound['Failed Easy Up/Down'].length<2){
+    tigerPerRound['Failed Easy Up/Down']=s.filter(x=>x.scrambling!=null).map(x=>({date:x.date,
+      val: Math.round((100-x.scrambling)*10)/10}));
+  }
+
+  document.getElementById('tiger-cards').innerHTML=metrics.map((m,idx)=>`
+    <div class="tiger-card ${m.pass?'tiger-pass':'tiger-fail'}"
+         onclick="showTigerRolling('${m.name.replace(/'/g,"\\'")}')"
+         style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s"
+         onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'"
+         onmouseout="this.style.transform='';this.style.boxShadow=''">
       <div class="tiger-title">${m.name}</div>
       <div class="tiger-pct ${m.pass?'val-green':'val-red'}">${m.pct}%</div>
       <div class="tiger-goal">Goal: ≤${m.goal}%</div>
       <div class="tiger-diff ${m.pass?'val-green':'val-red'}">${m.pass?'✓ On Track':'✗ Needs Work'}</div>
+      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">click for trend →</div>
     </div>
   `).join('');
-  const sl=s.slice(-15);
-  mkChart('chart-tiger-trend','line',{
-    labels:sl.map(x=>x.date.slice(5,10)),
-    datasets:[
-      {label:'GIR %',data:sl.map(x=>x.gir_pct),borderColor:'rgba(74,222,128,0.8)',pointRadius:3,tension:0.3},
-      {label:'Scramble %',data:sl.map(x=>x.scrambling),borderColor:'rgba(251,191,36,0.8)',pointRadius:3,tension:0.3},
-      {label:'Fairway %',data:sl.map(x=>x.fw_pct),borderColor:'rgba(96,165,250,0.8)',pointRadius:3,tension:0.3}
-    ]
-  },{
-    responsive:true,
-    plugins:{legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1}},
-    scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,max:100,title:{display:true,text:'%',color:C.txt,font:FONT}}}
+
+  // Store series on window for access in showTigerRolling
+  window._tigerPerRound = tigerPerRound;
+  window._tigerMetrics  = metrics;
+}
+
+function showTigerRolling(metricName){
+  const wrap = document.getElementById('tiger-rolling-wrap');
+  const titleEl = document.getElementById('tiger-rolling-title');
+  const subEl   = document.getElementById('tiger-rolling-sub');
+  if(!wrap)return;
+
+  const series = window._tigerPerRound?.[metricName];
+  const metric = window._tigerMetrics?.find(m=>m.name===metricName);
+
+  // Highlight selected card
+  document.querySelectorAll('.tiger-card').forEach(c=>{
+    const t=c.querySelector('.tiger-title');
+    c.style.outline = t&&t.textContent.trim()===metricName ? '2px solid var(--blue)' : '';
+  });
+
+  if(!series){
+    titleEl.textContent = metricName + ' — Trend';
+    subEl.textContent   = 'This metric requires hole-level data (log rounds via Data Entry to unlock)';
+    wrap.style.display  = 'block';
+    wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+    if(charts['chart-tiger-rolling']){try{charts['chart-tiger-rolling'].destroy();}catch(e){}}
+    const el=document.getElementById('chart-tiger-rolling');
+    if(el)el.parentElement.querySelector('canvas').style.display='none';
+    return;
+  }
+
+  // Show canvas
+  const el = document.getElementById('chart-tiger-rolling');
+  if(el) el.style.display='block';
+
+  const filteredSeries = series.filter(x=>x.val!=null);
+  if(filteredSeries.length<2){
+    subEl.textContent='Not enough data yet — log more rounds to see the trend.';
+    wrap.style.display='block';
+    return;
+  }
+
+  titleEl.textContent = metricName + ' — 4-Round Rolling Average';
+  const goalVal = metric?.goal;
+  subEl.textContent   = `Goal: ≤${goalVal}% · ${filteredSeries.length} rounds with data`;
+  wrap.style.display  = 'block';
+  wrap.scrollIntoView({behavior:'smooth',block:'nearest'});
+
+  const labels = filteredSeries.map(x=>x.date.slice(5,10));
+  const vals   = filteredSeries.map(x=>x.val);
+  const ra4    = rollingAvg(vals,4);
+  const passColor='rgba(74,222,128,0.7)', failColor='rgba(248,113,113,0.7)';
+  const barColors = vals.map(v=>v<=goalVal?passColor:failColor);
+
+  if(charts['chart-tiger-rolling']){try{charts['chart-tiger-rolling'].destroy();}catch(e){}}
+  charts['chart-tiger-rolling']=new Chart(el.getContext('2d'),{
+    type:'bar',
+    data:{labels,datasets:[
+      {type:'bar',label:metricName,data:vals,
+        backgroundColor:barColors,
+        borderColor:vals.map(v=>v<=goalVal?C.green:C.red),
+        borderWidth:1,order:2},
+      {type:'line',label:'4-Rnd Avg',data:ra4,
+        borderColor:C.blue,backgroundColor:'transparent',
+        borderWidth:2.5,pointRadius:0,tension:0.4,order:1},
+      {type:'line',label:'Goal',data:vals.map(()=>goalVal),
+        borderColor:'rgba(251,191,36,0.7)',backgroundColor:'transparent',
+        borderWidth:1.5,borderDash:[6,4],pointRadius:0,order:0}
+    ]},
+    options:{
+      responsive:true,
+      plugins:{
+        legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:20}},
+        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+          callbacks:{label(ctx){return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'}`}}}
+      },
+      scales:{
+        x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+        y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},min:0,
+           title:{display:true,text:'%',color:C.txt,font:FONT}}
+      }
+    }
   });
 }
 
@@ -2842,6 +3124,21 @@ async function processFile(){
       // 1-putts and 3-putts
       const onePutts=validHoles.filter(h=>h.numPutts===1).length;
       const threePutts=validHoles.filter(h=>h.numPutts>=3).length;
+      // Tiger Five fields
+      const par5H=validHoles.filter(h=>h.par===5);
+      const par5Bog=par5H.filter(h=>h.score>h.par).length;
+      const siH=validHoles.filter(h=>{if(!h.apprClub)return false;const c=h.apprClub.toLowerCase().replace(/\s+/g,'');return c==='9i'||c==='pw'||c==='10i'||c.includes('deg');});
+      const siBog=siH.filter(h=>h.score>h.par).length;
+      const failUD=validHoles.filter(h=>{
+        const miss=h.green&&h.green.toLowerCase()!=='hit'||!h.green;
+        const notSS=!h.shortSided||String(h.shortSided).toLowerCase()!=='yes';
+        return miss&&notSS&&h.score>h.par;
+      }).length;
+      const easyUDA=validHoles.filter(h=>{
+        const miss=h.green&&h.green.toLowerCase()!=='hit'||!h.green;
+        const notSS=!h.shortSided||String(h.shortSided).toLowerCase()!=='yes';
+        return miss&&notSS;
+      }).length;
       const meta=courseMetaMap[key]||{};
 
       rounds.push({
@@ -2850,7 +3147,10 @@ async function processFile(){
         putts:totalPutts,gir_pct:girPct,penalties,fw_pct:fwPct,
         driver_dist:driverDist,scrambling:scramPct,
         one_putts:onePutts,three_putts:threePutts,
-        holes:validHoles.length
+        holes:validHoles.length,
+        par5_bogeys:par5Bog,par5_holes:par5H.length,
+        si_bogeys:siBog,si_holes:siH.length,
+        failed_ud:failUD,easy_ud_attempts:easyUDA
       });
     }
     rounds.sort((a,b)=>a.date.localeCompare(b.date));
@@ -3428,7 +3728,7 @@ async function sendCaddieMessage(){
       method: "POST",
       headers: { "Content-Type": "application/json", "anthropic-dangerous-direct-browser-access": "true" },
       body: JSON.stringify({
-        model: "claude-sonnet-4-20250514",
+        model: "claude-sonnet-4-6",
         max_tokens: 1000,
         system: `You are an expert golf coach and AI Caddie for ${currentPlayer.name}. You have complete access to their statistical profile below. Give specific, data-driven insights. Reference their actual numbers. Be conversational but precise. Use plain text — no markdown headers, no bullet asterisks. Use numbered lists or dashes when helpful.\n\n${ctx}`,
         messages: caddieHistory
@@ -3534,7 +3834,7 @@ const DEFINITIONS = [
       {name:"Tiger Five", body:"Five key metrics associated with elite amateur scoring. Keeping each below its goal threshold is strongly correlated with lower scores and fewer blowup holes."},
       {name:"Bogey+ on Par 5s", body:"The % of par 5 holes where you make bogey or worse. Par 5s should be birdie or par opportunities — bogeys here represent squandered scoring chances.", formula:"Goal: ≤ 20%"},
       {name:"Double Bogeys+", body:"The % of holes across all rounds where you make double bogey or worse. Blow-up holes kill scores faster than anything else.", formula:"Goal: ≤ 10% of holes played"},
-      {name:"Bogeys ≤ 9-Iron", body:"The % of approach shots with short irons (9i, PW) that result in bogey or worse. With a scoring club in hand, a bogey represents a significant missed opportunity.", formula:"Goal: ≤ 20%"},
+      {name:"Bogeys ≤ 9i", body:"The % of approach shots with short irons (9i, PW) that result in bogey or worse. With a scoring club in hand, a bogey represents a significant missed opportunity.", formula:"Goal: ≤ 20%"},
       {name:"3-Putts", body:"The % of holes where you take 3 or more putts. Three-putts directly cost strokes and are often caused by poor distance control or leaving yourself difficult angles.", formula:"Goal: ≤ 5% of holes"},
       {name:"Failed Easy Up/Down", body:"The inverse of Scrambling % — when you miss the green but fail to make par. Measures missed short-game opportunities.", formula:"= 100% − Scrambling % · Goal: ≤ 33%"},
     ]
@@ -4216,6 +4516,23 @@ async function deSaveRound(){
   const scramPct=missedGIR.length>0?Math.round(scramHoles.length/missedGIR.length*1000)/10:0;
   const onePutts=holes.filter(h=>h.numPutts===1).length;
   const threePutts=holes.filter(h=>h.numPutts&&h.numPutts>=3).length;
+  // Tiger Five round-level fields
+  const par5Holes=holes.filter(h=>h.par===5);
+  const par5Bogeys=par5Holes.filter(h=>h.score>h.par).length;
+  const shortIronHoles=holes.filter(h=>{if(!h.apprClub)return false;const c=h.apprClub.toLowerCase().replace(/\s+/g,'');return c==='9i'||c==='pw'||c==='10i'||c.includes('deg');});
+  const shortIronBogeys=shortIronHoles.filter(h=>h.score>h.par).length;
+  // Failed up/down: missed GIR, NOT short-sided, did not make par
+  const failedUD=holes.filter(h=>{
+    const missedGIR=!h.green||h.green.toLowerCase()!=='hit';
+    const notShortSided=!h.shortSided||h.shortSided.toLowerCase()!=='yes';
+    const failedPar=h.score>h.par;
+    return missedGIR&&notShortSided&&failedPar;
+  }).length;
+  const easyUDAttempts=holes.filter(h=>{
+    const missedGIR=!h.green||h.green.toLowerCase()!=='hit';
+    const notShortSided=!h.shortSided||h.shortSided.toLowerCase()!=='yes';
+    return missedGIR&&notShortSided;
+  }).length;
 
   const newRound = {
     date: deRoundMeta.date,
@@ -4233,6 +4550,12 @@ async function deSaveRound(){
     one_putts: onePutts,
     three_putts: threePutts,
     holes: holes.length,
+    par5_bogeys: par5Bogeys,
+    par5_holes: par5Holes.length,
+    si_bogeys: shortIronBogeys,
+    si_holes: shortIronHoles.length,
+    failed_ud: failedUD,
+    easy_ud_attempts: easyUDAttempts,
   };
 
   // Push to player rounds
@@ -4346,7 +4669,10 @@ async function deSaveRound(){
         birdies:newRound.birdies,bogeys:newRound.bogeys,doubles_plus:newRound.doubles_plus,
         putts:newRound.putts,gir_pct:newRound.gir_pct,penalties:newRound.penalties,
         fw_pct:newRound.fw_pct,driver_dist:newRound.driver_dist,scrambling:newRound.scrambling,
-        one_putts:newRound.one_putts,three_putts:newRound.three_putts,holes:holes.length
+        one_putts:newRound.one_putts,three_putts:newRound.three_putts,holes:holes.length,
+        par5_bogeys:newRound.par5_bogeys,par5_holes:newRound.par5_holes,
+        si_bogeys:newRound.si_bogeys,si_holes:newRound.si_holes,
+        failed_ud:newRound.failed_ud,easy_ud_attempts:newRound.easy_ud_attempts
       }).select().single();
       if(!rErr&&savedRound){
         // Save hole data
@@ -4465,6 +4791,8 @@ function setMgWindow(n, btn){
   mgWindow = n;
   const lbl=document.getElementById('mg-window-label');
   if(lbl) lbl.textContent=n;
+  const snap=document.getElementById('mg-snapshot-title');
+  if(snap) snap.textContent=`Last ${n} Rounds`;
   document.querySelectorAll('#mg-window-btns .roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   buildMyGame();
