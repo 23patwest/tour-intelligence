@@ -875,11 +875,11 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <!-- Trend sparkline charts -->
       <div class="chart-grid" style="margin-bottom:0">
         <div class="chart-card">
-          <div class="chart-title">Scoring — Last 10 Rounds</div>
+          <div class="chart-title" id="mg-score-title">Scoring — Last 4 Rounds</div>
           <canvas id="chart-mg-score" height="140"></canvas>
         </div>
         <div class="chart-card">
-          <div class="chart-title">Key Stats — Last 10 Rounds</div>
+          <div class="chart-title" id="mg-stats-title">Key Stats — Last 4 Rounds</div>
           <canvas id="chart-mg-stats" height="140"></canvas>
         </div>
       </div>
@@ -946,11 +946,18 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div class="chart-grid">
         <div class="chart-card chart-full">
           <div class="chart-title">Score — Rolling Average</div>
-          <div class="rolling-controls">
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
+              A shorter window (4 rounds) reacts quickly to recent form — useful for spotting a hot streak or a sudden dip.
+              A longer window (10 rounds) smooths out the noise and reveals the underlying trend. Use 4 rounds to ask
+              <em>"how am I playing right now?"</em> and 10 rounds to ask <em>"which direction is my game actually heading?"</em>
+            </div>
+            <div class="rolling-controls" style="margin-bottom:0">
             <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
             <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
             <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
             <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
+            </div>
           </div>
           <canvas id="chart-rolling" height="120"></canvas>
         </div>
@@ -988,7 +995,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="chart-card chart-full">
           <div class="chart-title">Drive L/R Distribution — Fairway Width Buckets</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:10px">
-            Centre bucket = ±45 ft (≈ ±15 yards, typical fairway half-width) · green = in play · outer buckets = 45 ft wide each
+            Centre bucket = ±15 yds (typical fairway half-width) · green = in fairway zone · outer buckets = 15 yds wide each
           </div>
           <canvas id="chart-tee-lr-dist" height="150"></canvas>
           <div id="chart-tee-lr-empty" style="display:none;text-align:center;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">No individual tee shot data available — upload from Hole Level Data sheet to unlock</div>
@@ -1943,16 +1950,17 @@ function buildTeeLRDist(){
   // Centre bucket = typical fairway half-width = ±45 ft (≈ ±15 yards)
   // Outer buckets = 30 ft wide (≈ 10 yards) each
   // Layout: >135L | 90-135L | 45-90L | FAIRWAY (±45) | 45-90R | 90-135R | >135R
-  const FW = 45; // half-fairway in feet
-  const BW = 45; // outer bucket width in feet
+  // Data stored in yards. Centre bucket = ±15 yds (typical fairway half-width). Outer buckets = 15 yds wide.
+  const FW = 15; // half-fairway in yards
+  const BW = 15; // outer bucket width in yards
   const buckets = [
-    {label:'>135L',       min:-Infinity, max:-(FW+2*BW), zone:'wide'},
-    {label:'90-135L',     min:-(FW+2*BW), max:-(FW+BW),  zone:'mid'},
-    {label:'45-90L',      min:-(FW+BW),   max:-FW,        zone:'close'},
-    {label:'Fairway \u00b145ft', min:-FW,     max:FW,         zone:'fairway'},
-    {label:'45-90R',      min:FW,         max:FW+BW,      zone:'close'},
-    {label:'90-135R',     min:FW+BW,      max:FW+2*BW,    zone:'mid'},
-    {label:'>135R',       min:FW+2*BW,    max:Infinity,   zone:'wide'},
+    {label:'>45L',        min:-Infinity,  max:-(FW+2*BW), zone:'wide'},
+    {label:'30-45L',      min:-(FW+2*BW), max:-(FW+BW),   zone:'mid'},
+    {label:'15-30L',      min:-(FW+BW),   max:-FW,         zone:'close'},
+    {label:'Fairway \u00b115 yds', min:-FW, max:FW,        zone:'fairway'},
+    {label:'15-30R',      min:FW,         max:FW+BW,       zone:'close'},
+    {label:'30-45R',      min:FW+BW,      max:FW+2*BW,     zone:'mid'},
+    {label:'>45R',        min:FW+2*BW,    max:Infinity,    zone:'wide'},
   ];
 
   const counts = buckets.map(b=>({
@@ -2017,7 +2025,7 @@ function buildTeeLRDist(){
         x:{
           grid:{color:C.grid},
           ticks:{color:C.txt,font:FONT},
-          title:{display:true,text:'← Left miss                    Fairway                    Right miss →',color:C.txt,font:FONT}
+          title:{display:true,text:'← Left (yds)          Fairway          Right (yds) →',color:C.txt,font:FONT}
         },
         y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
            title:{display:true,text:'# of Drives',color:C.txt,font:FONT}}
@@ -2777,11 +2785,11 @@ async function buildTigerFive(){
     : 100-(a_scram||50);
 
   const metrics = [
+    {name:'3-Putts',           pct:Math.round(t3Pct*10)/10,        goal:5,  pass:t3Pct<=5},
+    {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,      goal:33, pass:failUD<=33},
     {name:'Bogey+ on Par 5s',  pct:Math.round(par5Pct*10)/10,     goal:20, pass:par5Pct<=20},
     {name:'Double Bogeys+',    pct:Math.round(doublePct*10)/10,    goal:10, pass:doublePct<=10},
     {name:'Bogeys ≤ 9i',       pct:Math.round(shortBogPct*10)/10,  goal:20, pass:shortBogPct<=20},
-    {name:'3-Putts',           pct:Math.round(t3Pct*10)/10,        goal:5,  pass:t3Pct<=5},
-    {name:'Failed Easy Up/Down',pct:Math.round(failUD*10)/10,      goal:33, pass:failUD<=33},
   ];
 
   // ── Per-round series for rolling chart ────────────────────────
@@ -3491,7 +3499,7 @@ function formatDate(d){
 
 
 // ===== SHOT DISPERSION =====
-let dispCat='Mid Iron', dispCI=0.50; // overridden at buildShotDispersion time
+let dispCat='Mid Iron', dispCI=0.50, dispRecent='all'; // overridden at buildShotDispersion time
 const CAT_COL={
   'Mid Iron':{pt:'rgba(96,165,250,0.75)',el:'rgba(96,165,250,0.8)',fill:'rgba(96,165,250,0.12)'},
   'Short Iron':{pt:'rgba(74,222,128,0.75)',el:'rgba(74,222,128,0.8)',fill:'rgba(74,222,128,0.12)'},
@@ -3505,6 +3513,12 @@ const CHI2={0.50:1.3863,0.75:2.7726,0.95:5.9915};
 function setDispCat(cat,btn){
   dispCat=cat;
   document.querySelectorAll('#disp-cat-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildShotDispersion();
+}
+function setDispRecent(recent,btn){
+  dispRecent=recent;
+  document.querySelectorAll('#disp-recent-btns .roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   buildShotDispersion();
 }
@@ -3539,7 +3553,21 @@ function computeEllipsePixels(pixPts,chiSqVal){
 }
 
 function buildShotDispersion(){
-  const shots=currentPlayer.approach_shots||[];
+  let shots=currentPlayer.approach_shots||[];
+  // Apply recency filter
+  if(dispRecent!=='all' && shots.length>0){
+    const allRounds=[...currentPlayer.rounds].sort((a,b)=>a.date.localeCompare(b.date));
+    if(dispRecent==='last1'){
+      const lastDate=allRounds[allRounds.length-1]?.date;
+      shots=shots.filter(s=>s.date===lastDate||!s.date); // fall back to all if no date on shots
+      // For shots without date field, use last N approach shots by index
+      if(shots.every(s=>!s.date)) shots=(currentPlayer.approach_shots||[]).slice(-18);
+    } else if(dispRecent==='last10'){
+      const last10Dates=new Set(allRounds.slice(-10).map(r=>r.date));
+      shots=shots.filter(s=>s.date&&last10Dates.has(s.date));
+      if(shots.length===0) shots=(currentPlayer.approach_shots||[]).slice(-180);
+    }
+  }
   const el=document.getElementById('chart-dispersion');
   if(!el)return;
   // Default to category with most shots on first load
@@ -3901,7 +3929,7 @@ const DEFINITIONS = [
   {
     section: "Tiger Five",
     terms: [
-      {name:"Tiger Five", body:"Five key metrics associated with elite amateur scoring. Keeping each below its goal threshold is strongly correlated with lower scores and fewer blowup holes."},
+      {name:"Tiger Five", body:"Five key metrics associated with elite-level scoring. Keeping each below its goal threshold is strongly correlated with lower scores and fewer blow-up holes."},
       {name:"Bogey+ on Par 5s", body:"The % of par 5 holes where you make bogey or worse. Par 5s should be birdie or par opportunities — bogeys here represent squandered scoring chances.", formula:"Goal: ≤ 20%"},
       {name:"Double Bogeys+", body:"The % of holes across all rounds where you make double bogey or worse. Blow-up holes kill scores faster than anything else.", formula:"Goal: ≤ 10% of holes played"},
       {name:"Bogeys ≤ 9i", body:"The % of approach shots with short irons (9i, PW) that result in bogey or worse. With a scoring club in hand, a bogey represents a significant missed opportunity.", formula:"Goal: ≤ 20%"},
@@ -4863,6 +4891,10 @@ function setMgWindow(n, btn){
   if(lbl) lbl.textContent=n;
   const snap=document.getElementById('mg-snapshot-title');
   if(snap) snap.textContent=`Last ${n} Rounds`;
+  const scTitle=document.getElementById('mg-score-title');
+  if(scTitle) scTitle.textContent=`Scoring — Last ${n} Rounds`;
+  const stTitle=document.getElementById('mg-stats-title');
+  if(stTitle) stTitle.textContent=`Key Stats — Last ${n} Rounds`;
   document.querySelectorAll('#mg-window-btns .roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   buildMyGame();
@@ -5358,10 +5390,11 @@ async function buildAdminDebug(){
   let authStatus = '—';
   let authOk = null;
   try{
-    const {data:{session}} = await sb.auth.getSession();
+    const sessionResult = await sb.auth.getSession();
+    const session = sessionResult?.data?.session;
     if(session){ authStatus = '✓ Active (' + session.user.email + ')'; authOk = true; }
-    else { authStatus = 'No active session'; authOk = false; }
-  }catch(e){ authStatus = 'Error: '+e.message; authOk = false; }
+    else { authStatus = 'No active Supabase session'; authOk = false; }
+  }catch(e){ authStatus = 'Session check failed: '+e.message; authOk = false; }
 
   // 5. Supabase rounds count
   let roundsCount = '—';
