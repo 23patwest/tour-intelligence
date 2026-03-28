@@ -421,11 +421,36 @@ tr:hover td{background:var(--surface2)}
 @media(max-width:900px){#mygame-weaknesses{grid-template-columns:1fr}}
 @media(max-width:600px){#mygame-weaknesses{grid-template-columns:1fr}#mygame-quickstats{grid-template-columns:repeat(2,1fr)}}
 
+
+/* ── Pin Performance ─────────────────────────── */
+.pin-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:24px;max-width:700px}
+.pin-cell{background:var(--surface);border:1px solid var(--border);padding:16px 12px;text-align:center;cursor:pointer;position:relative;transition:all 0.18s;border-radius:2px}
+.pin-cell:hover{transform:translateY(-2px);box-shadow:0 6px 20px rgba(0,0,0,0.3)}
+.pin-cell.pin-selected{outline:2px solid var(--blue);outline-offset:2px}
+.pin-cell-loc{font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:6px}
+.pin-cell-val{font-family:'Bebas Neue',sans-serif;font-size:32px;line-height:1;margin-bottom:2px}
+.pin-cell-shots{font-family:'DM Mono',monospace;font-size:9px;color:rgba(255,255,255,0.35);position:absolute;top:6px;right:8px}
+.pin-cell-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)}
+.pin-stat-btn{font-family:'DM Mono',monospace;font-size:10px;padding:5px 10px;background:transparent;border:1px solid var(--border);color:var(--text-dim);cursor:pointer;transition:all 0.15s}
+.pin-stat-btn.active{background:var(--blue);border-color:var(--blue);color:#0a0f0a;font-weight:700}
+.pin-stat-btn:hover:not(.active){border-color:var(--blue);color:var(--blue)}
+.pin-legend{display:flex;align-items:center;gap:6px;font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim)}
+.pin-legend-swatch{width:40px;height:8px}
+@media(max-width:600px){.pin-grid{max-width:100%}.pin-cell-val{font-size:24px}}
+
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/umd/supabase.js"></script>
 <script>
 const { createClient } = supabase;
-const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU');
+const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', {
+  auth: {
+    persistSession: true,
+    storageKey: 'ti_auth',
+    autoRefreshToken: true,
+    detectSessionInUrl: false
+  },
+  realtime: { params: { eventsPerSecond: 1 } }
+});
 </script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3NQDVQDK65"></script>
@@ -572,9 +597,9 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <button class="nav-btn" onclick="showSection('dashboard',this)">Latest Rounds</button>
       <button class="nav-btn" onclick="showSection('alerts',this)">Alerts</button>
       <button class="nav-btn" onclick="showSection('aicaddie',this)">AI Caddie</button>
-      <button class="nav-btn" onclick="showSection('scoring',this)">Trends</button>
       <button class="nav-btn" onclick="showSection('tiger',this)">Tiger Five</button>
       <button class="nav-btn" onclick="showSection('tee',this)">Off the Tee</button>
+      <button class="nav-btn" onclick="showSection('pinperf',this)">Pin Performance</button>
       <button class="nav-btn" onclick="showSection('approach',this)">Approach</button>
       <button class="nav-btn" onclick="showSection('dispersion',this)">Shot Dispersion</button>
       <button class="nav-btn" onclick="showSection('putting',this)">Putting</button>
@@ -883,6 +908,36 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
           <canvas id="chart-mg-stats" height="140"></canvas>
         </div>
       </div>
+
+      <!-- Scoring Trends (moved from Trends tab) -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:32px 0 14px">Scoring Trends</div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Score — Rolling Average</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
+              A shorter window (4 rounds) reacts quickly to recent form. A longer window (10 rounds) smooths out noise to reveal the true trend. Use 4 to ask <em>"how am I playing right now?"</em> and 10 to ask <em>"which direction is my game heading?"</em>
+            </div>
+            <div class="rolling-controls" style="margin-bottom:0">
+              <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
+            </div>
+          </div>
+          <canvas id="chart-rolling" height="120"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Avg +/- to Par by Hole Type</div>
+          <canvas id="chart-par-type" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">+/- to Par Each Round</div>
+          <canvas id="chart-plusminus" height="200"></canvas>
+        </div>
+      </div>
     </div>
 
     <!-- ALERTS -->
@@ -914,6 +969,15 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:12px">Session Diagnostics — Your Account</div>
         <div id="admin-debug-rows" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px"></div>
         <button class="roll-btn" onclick="buildAdminDebug()" style="margin-top:12px;font-size:10px">↻ Refresh diagnostics</button>
+      <div id="admin-fix-guide" style="margin-top:16px;padding:14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;display:none">
+        <div style="color:var(--amber);font-weight:700;margin-bottom:8px;letter-spacing:1px">⚠ SETUP REQUIRED — Run in Supabase SQL Editor:</div>
+        <div style="color:var(--text)">1. Go to Supabase → Authentication → Users → Add user<br>
+        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)">tourintelligence@gmail.com</span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
+        2. Copy the UUID from the new user, then run:<br>
+        <span style="color:var(--blue)">UPDATE public.players SET user_id = '&lt;paste-uuid-here&gt;' WHERE name = 'Pat West';</span><br><br>
+        3. Also run to allow admin hole_data access:<br>
+        <span style="color:var(--blue)">CREATE POLICY "Admin full access to hole_data" ON public.hole_data FOR ALL USING (is_admin());</span></div>
+      </div>
       </div>
       <div class="stats-grid" id="admin-kpis" style="margin-bottom:24px"></div>
       <div class="card" style="margin-bottom:24px">
@@ -934,43 +998,6 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
           <button class="roll-btn" onclick="document.getElementById('admin-player-detail').style.display='none'">← Back</button>
         </div>
         <div class="stats-grid" id="admin-detail-stats"></div>
-      </div>
-    </div>
-
-    <!-- SCORING TRENDS -->
-    <div class="section" id="section-scoring">
-      <div class="section-header">
-        <div class="section-title">Scoring <span>Trends</span></div>
-        <div class="section-meta">Rolling averages, par-type performance &amp; momentum</div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card chart-full">
-          <div class="chart-title">Score — Rolling Average</div>
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
-              A shorter window (4 rounds) reacts quickly to recent form — useful for spotting a hot streak or a sudden dip.
-              A longer window (10 rounds) smooths out the noise and reveals the underlying trend. Use 4 rounds to ask
-              <em>"how am I playing right now?"</em> and 10 rounds to ask <em>"which direction is my game actually heading?"</em>
-            </div>
-            <div class="rolling-controls" style="margin-bottom:0">
-            <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
-            <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
-            <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
-            <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
-            </div>
-          </div>
-          <canvas id="chart-rolling" height="120"></canvas>
-        </div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Avg +/- to Par by Hole Type</div>
-          <canvas id="chart-par-type" height="200"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">+/- to Par Each Round</div>
-          <canvas id="chart-plusminus" height="200"></canvas>
-        </div>
       </div>
     </div>
 
@@ -1224,6 +1251,95 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     </div>
 
 
+
+    <!-- PIN PERFORMANCE -->
+    <div class="section" id="section-pinperf">
+      <div class="section-header">
+        <div class="section-title">Pin <span>Performance</span></div>
+        <div class="section-meta">Approach outcomes by pin location — identify which flags give you trouble</div>
+      </div>
+
+      <!-- Controls row -->
+      <div style="display:flex;flex-wrap:wrap;gap:20px;align-items:flex-start;margin-bottom:24px">
+        <!-- Stat selector -->
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Stat</div>
+          <div style="display:flex;flex-wrap:wrap;gap:4px" id="pin-stat-btns">
+            <button class="pin-stat-btn active" onclick="setPinStat('pm',this)">+/- to Par</button>
+            <button class="pin-stat-btn" onclick="setPinStat('birdie_pct',this)">Birdie+ %</button>
+            <button class="pin-stat-btn" onclick="setPinStat('bogey_pct',this)">Bogey+ %</button>
+            <button class="pin-stat-btn" onclick="setPinStat('gir_pct',this)">GIR %</button>
+            <button class="pin-stat-btn" onclick="setPinStat('gir1putt',this)">GIR 1-Putt %</button>
+            <button class="pin-stat-btn" onclick="setPinStat('avg_putts',this)">Avg Putts</button>
+            <button class="pin-stat-btn" onclick="setPinStat('proximity',this)">Avg Proximity</button>
+            <button class="pin-stat-btn" onclick="setPinStat('short_sided',this)">Short-Sided %</button>
+            <button class="pin-stat-btn" onclick="setPinStat('sg_approach',this)" id="pin-sg-btn" style="display:none">SG Approach</button>
+          </div>
+        </div>
+        <!-- Round window -->
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Window</div>
+          <div class="rolling-controls" id="pin-window-btns">
+            <button class="roll-btn" onclick="setPinWindow(4,this)">Last 4</button>
+            <button class="roll-btn" onclick="setPinWindow(10,this)">Last 10</button>
+            <button class="roll-btn active" onclick="setPinWindow(0,this)">All Time</button>
+          </div>
+        </div>
+        <!-- Club filter -->
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">Club Category</div>
+          <div class="rolling-controls" id="pin-club-btns" style="flex-wrap:wrap">
+            <button class="roll-btn active" onclick="setPinClub('All',this)">All</button>
+            <button class="roll-btn" onclick="setPinClub('Wood',this)">Wood</button>
+            <button class="roll-btn" onclick="setPinClub('Hybrid',this)">Hybrid</button>
+            <button class="roll-btn" onclick="setPinClub('Long Iron',this)">Long Iron</button>
+            <button class="roll-btn" onclick="setPinClub('Mid Iron',this)">Mid Iron</button>
+            <button class="roll-btn" onclick="setPinClub('Short Iron',this)">Short Iron</button>
+            <button class="roll-btn" onclick="setPinClub('Wedge',this)">Wedge</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Grid + legend -->
+      <div style="display:flex;flex-wrap:wrap;gap:32px;align-items:flex-start">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">← Back of Green →</div>
+          <div class="pin-grid" id="pin-grid"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px">← Front of Green →</div>
+          <!-- Legend -->
+          <div style="display:flex;align-items:center;gap:12px;margin-top:12px;flex-wrap:wrap">
+            <div class="pin-legend">
+              <div class="pin-legend-swatch" style="background:linear-gradient(to right,rgba(74,222,128,0.8),rgba(74,222,128,0.1))"></div>
+              Best
+            </div>
+            <div class="pin-legend">
+              <div class="pin-legend-swatch" style="background:linear-gradient(to right,rgba(148,163,184,0.3),rgba(148,163,184,0.1))"></div>
+              Average
+            </div>
+            <div class="pin-legend">
+              <div class="pin-legend-swatch" style="background:linear-gradient(to left,rgba(248,113,113,0.8),rgba(248,113,113,0.1))"></div>
+              Worst
+            </div>
+            <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim)">Shot count shown top-right · click pin for trend</div>
+          </div>
+        </div>
+        <!-- Pin summary panel -->
+        <div id="pin-summary" style="flex:1;min-width:260px;display:none">
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px" id="pin-summary-title">Pin Trend</div>
+          <div style="background:var(--surface);border:1px solid var(--border);padding:16px;margin-bottom:12px" id="pin-summary-stats"></div>
+          <div class="chart-card" style="padding:16px">
+            <div class="chart-title" id="pin-trend-title">Trend</div>
+            <canvas id="chart-pin-trend" height="160"></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Empty state -->
+      <div id="pin-empty" style="display:none;text-align:center;padding:48px 24px;font-family:'DM Mono',monospace;font-size:12px;color:var(--text-dim)">
+        No hole-level data accessible. If data exists but isn't showing, an admin RLS policy may be needed in Supabase. Log rounds via Data Entry or contact the administrator.
+      </div>
+    </div>
+
     <!-- SHOT DISPERSION -->
     <div class="section" id="section-dispersion">
       <div class="section-header">
@@ -1464,6 +1580,14 @@ async function handleLogin(){
       const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
       if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
         currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:PLAYERS[fallbackKey].is_admin||false};
+        // Try to get player_id from Supabase (session-free direct query)
+        try{
+          const {data:playerRow}=await sb.from('players').select('id,is_admin').eq('name',name).eq('pin',pin).single();
+          if(playerRow){
+            currentPlayer.player_id=playerRow.id;
+            currentPlayer.is_admin=playerRow.is_admin||currentPlayer.is_admin;
+          }
+        }catch(authErr){/* silent */}
         launchApp();return;
       }
       err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
@@ -1610,7 +1734,8 @@ document.getElementById('login-player').addEventListener('change',function(){
 
 async function handleLogout(){
   puttHoleData = null;
-  tigerHoleData = null; // reset tiger hole cache
+  tigerHoleData = null;
+  pinHoleData   = null;
   await sb.auth.signOut().catch(()=>{});
   currentPlayer=null;
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
@@ -1689,8 +1814,8 @@ function initApp(){
   const safe=(fn,name)=>{try{fn();}catch(e){console.error('Tab build error ['+name+']:',e);}};
   safe(buildMyGame,'MyGame');
   safe(buildDashboard,'Dashboard');
-  safe(buildScoring,'Scoring');
   safe(buildTee,'Tee');
+  buildPinPerformance().catch(e=>console.error('Tab build error [PinPerf]:',e));
   safe(buildApproach,'Approach');
   safe(buildShotDispersion,'Dispersion');
   buildPutting(); // async, errors handled internally
@@ -1731,7 +1856,7 @@ function buildDashboard(){
 
   const girTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>GIR % Calculation</strong><br><br>A green is hit "in regulation" when the ball is on the putting surface in (par − 2) strokes.<br><br>• Par 3: on the green in 1<br>• Par 4: on the green in 2<br>• Par 5: on the green in 3<br><br>GIR % = (GIRs ÷ 18) × 100</span></span>`;
   const scramTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Scrambling % Calculation</strong><br><br>The % of holes where you missed the green in regulation but still made par or better.<br><br>Scrambling % = (Pars-or-better after missed GIR ÷ total missed GIRs) × 100<br><br>A high % means strong short-game rescue ability.</span></span>`;
-  const proxTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Proximity to Hole</strong><br><br>Average distance of your 1st putt on holes where you hit the green in regulation (GIR).<br><br>Lower is better — it means your approach shots are finishing closer to the pin.<br><br>PGA Tour average: ~22 ft</span></span>`;
+  const proxTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Proximity to Hole</strong><br><br>Average radial distance of approach shots from the pin, calculated as √(L/R miss² + S/L miss²). Lower is better — it means your approach shots are finishing closer to the pin.<br><br>PGA Tour average: ~22 ft</span></span>`;
   const lrTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Left/Right Miss</strong><br><br>Weighted average of approach shot Left/Right miss across all club categories.<br><br>Negative = left of target, Positive = right of target.</span></span>`;
   const slTT=`<span class="tooltip-icon">?<span class="tooltip-box"><strong>Short/Long Miss</strong><br><br>Weighted average of approach shot Short/Long miss across all club categories.<br><br>Negative = short of target, Positive = long of target.</span></span>`;
 
@@ -1781,6 +1906,7 @@ function buildDashboard(){
     </tr>`;
   }).join('');
 
+  buildScoring(); // Trends charts now live in dashboard section
   // Scoring history with trend line
   const scores_s=s.map(x=>x.score);
   const n_s=scores_s.length;
@@ -1834,6 +1960,7 @@ function buildDashboard(){
 }
 
 // ===== SCORING TRENDS =====
+// Called by buildDashboard so charts are in same section
 function buildScoring(){
   const s=sorted();
   buildRollingChart(s,rollingWindow);
@@ -1880,7 +2007,7 @@ function buildRollingChart(s,w){
 }
 function setRolling(w,btn){
   rollingWindow=w;
-  document.querySelectorAll('#section-scoring .rolling-controls .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   buildRollingChart(sorted(),w);
 }
@@ -3997,6 +4124,11 @@ const DE_FIELDS = {
   bad_club:       {label:'Bad Score – Club',      group:'Notes',      def:true},
 
   putt_notes:     {label:'Putting Notes',         group:'Notes',      def:false},
+  // STROKES GAINED (optional)
+  sg_off_tee:  {label:'SG: Off the Tee',         group:'Strokes Gained', def:false},
+  sg_approach: {label:'SG: Approach',             group:'Strokes Gained', def:false},
+  sg_short_game:{label:'SG: Short Game',          group:'Strokes Gained', def:false},
+  sg_putting:  {label:'SG: Putting',              group:'Strokes Gained', def:false},
 };
 
 const CLUBS_LIST = ['Dr','3w','4w','5w','7w','2h','3h','4h','5h','7h',
@@ -4366,6 +4498,16 @@ function deRenderForm(holeNum, existing){
 
 
     if(deEnabled['putt_notes']) html+=`<div class="de-field"><label class="de-label">Putting Notes</label><textarea id="form-putt-notes" class="de-input" rows="2" placeholder="Anything notable about your putting…" style="resize:vertical">${existing?.puttNotes||''}</textarea></div>`;
+    // Strokes Gained
+    const sgFields=['sg_off_tee','sg_approach','sg_short_game','sg_putting'];
+    if(sgFields.some(f=>deEnabled[f])){
+      html+=`<div class="de-section"><div class="de-section-title">Strokes Gained</div>`;
+      if(deEnabled['sg_off_tee'])   html+=`<div class="de-field"><label class="de-label">SG: Off the Tee</label><input type="number" step="0.001" id="form-sg-off-tee" class="de-input" placeholder="e.g. 0.412" value="${existing?.sgOffTee||''}"></div>`;
+      if(deEnabled['sg_approach'])  html+=`<div class="de-field"><label class="de-label">SG: Approach</label><input type="number" step="0.001" id="form-sg-approach" class="de-input" placeholder="e.g. -0.234" value="${existing?.sgApproach||''}"></div>`;
+      if(deEnabled['sg_short_game'])html+=`<div class="de-field"><label class="de-label">SG: Short Game</label><input type="number" step="0.001" id="form-sg-short-game" class="de-input" placeholder="e.g. 0.118" value="${existing?.sgShortGame||''}"></div>`;
+      if(deEnabled['sg_putting'])   html+=`<div class="de-field"><label class="de-label">SG: Putting</label><input type="number" step="0.001" id="form-sg-putting" class="de-input" placeholder="e.g. -0.311" value="${existing?.sgPutting||''}"></div>`;
+      html+=`</div>`;
+    }
     html+=`</div>`;
   }
 
@@ -4516,6 +4658,10 @@ function deCollectHole(){
     badClub: deEnabled.bad_club?deGetField('form-bad-club'):null,
 
     puttNotes: deEnabled.putt_notes?deGetField('form-putt-notes'):null,
+    sgOffTee:   deEnabled.sg_off_tee?parseFloat(deGetField('form-sg-off-tee'))||null:null,
+    sgApproach: deEnabled.sg_approach?parseFloat(deGetField('form-sg-approach'))||null:null,
+    sgShortGame:deEnabled.sg_short_game?parseFloat(deGetField('form-sg-short-game'))||null:null,
+    sgPutting:  deEnabled.sg_putting?parseFloat(deGetField('form-sg-putting'))||null:null,
   };
 }
 
@@ -4787,7 +4933,9 @@ async function deSaveRound(){
           putt1_break_amt:h.putt1BreakAmt,putt1_slope:h.putt1Slope,
           putt1_hl:h.putt1HL,putt2_len:h.putt2Len,
           penalty:h.penalty||0,bad_reason:h.badReason,bad_club:h.badClub,
-          putt_notes:h.puttNotes
+          putt_notes:h.puttNotes,
+          sg_off_tee:h.sgOffTee, sg_approach:h.sgApproach,
+          sg_short_game:h.sgShortGame, sg_putting:h.sgPutting
         }));
         await sb.from('hole_data').insert(holeRows);
         // Save approach shots
@@ -4918,7 +5066,14 @@ function alertGetVal(rnd){
     case 'bogeys_total':    return r.bogeys!=null?(r.bogeys+(r.doubles_plus||0)):null;
     case 'one_putts':       return r.one_putts!=null?r.one_putts:null;
     case 'one_putt_scram':  return r.scrambling!=null?r.scrambling:null;
-    case 'proximity':       return null; // not stored per round — falls back gracefully
+    case 'proximity': {
+      // Calculate from approach_shots for this round using date matching
+      const rDate = r.date;
+      const apprShots = (currentPlayer.approach_shots||[]).filter(s=>s.date===rDate&&s.x!=null&&s.y!=null);
+      if(!apprShots.length) return null;
+      const radials = apprShots.map(s=>Math.sqrt(s.x*s.x+s.y*s.y));
+      return Math.round(radials.reduce((a,b)=>a+b,0)/radials.length*10)/10;
+    }
     case 'putts':           return r.putts!=null?r.putts:null;
     case 'gir1putt':       {
       const g=r.gir_pct>0?r.gir_pct:null;
@@ -5348,6 +5503,219 @@ function navToSection(id){
 // ADMIN DASHBOARD
 // ═══════════════════════════════════════════════════════════════════
 
+// ═══════════════════════════════════════════════════════════════════
+// PIN PERFORMANCE
+// ═══════════════════════════════════════════════════════════════════
+let pinHoleData  = null;
+let pinStat      = 'pm';
+let pinWindow    = 0;
+let pinClub      = 'All';
+let pinSelected  = null;
+
+const PIN_LOCS   = ['BL','BM','BR','ML','MM','MR','FL','FM','FR'];
+const PIN_LABELS = {BL:'Back Left',BM:'Back Mid',BR:'Back Right',ML:'Mid Left',MM:'Mid Mid',MR:'Mid Right',FL:'Front Left',FM:'Front Mid',FR:'Front Right'};
+const PIN_STATS  = {
+  pm:         {label:'+/- to Par',    dir:'low',  fmt:v=>(v>=0?'+':'')+v.toFixed(2)},
+  birdie_pct: {label:'Birdie+ %',     dir:'high', fmt:v=>v.toFixed(1)+'%'},
+  bogey_pct:  {label:'Bogey+ %',      dir:'low',  fmt:v=>v.toFixed(1)+'%'},
+  gir_pct:    {label:'GIR %',         dir:'high', fmt:v=>v.toFixed(1)+'%'},
+  gir1putt:   {label:'GIR 1-Putt %',  dir:'high', fmt:v=>v.toFixed(1)+'%'},
+  avg_putts:  {label:'Avg Putts',     dir:'low',  fmt:v=>v.toFixed(2)},
+  proximity:  {label:'Proximity (ft)', dir:'low',  fmt:v=>v.toFixed(1)+' ft'},
+  short_sided:{label:'Short-Sided %', dir:'low',  fmt:v=>v.toFixed(1)+'%'},
+  sg_approach:{label:'SG Approach',   dir:'high', fmt:v=>(v>=0?'+':'')+v.toFixed(3)},
+};
+
+function setPinStat(stat,btn){
+  pinStat=stat;
+  document.querySelectorAll('#pin-stat-btns .pin-stat-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  renderPinGrid();
+  if(pinSelected) showPinTrend(pinSelected);
+}
+function setPinWindow(w,btn){
+  pinWindow=w;
+  document.querySelectorAll('#pin-window-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  pinSelected=null;
+  const s=document.getElementById('pin-summary');if(s)s.style.display='none';
+  renderPinGrid();
+}
+function setPinClub(cat,btn){
+  pinClub=cat;
+  document.querySelectorAll('#pin-club-btns .roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  pinSelected=null;
+  const s=document.getElementById('pin-summary');if(s)s.style.display='none';
+  renderPinGrid();
+}
+
+async function buildPinPerformance(){
+  if(pinHoleData===null && currentPlayer.player_id){
+    try{
+      const {data:hd}=await sb.from('hole_data')
+        .select('pin_loc,par,score,green,num_putts,short_sided,appr_club,appr_lr,appr_sl,putt1_len,sg_approach,round_id,rounds!inner(date)')
+        .eq('player_id',currentPlayer.player_id);
+      pinHoleData=(hd||[]).map(h=>({
+        pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
+        green:h.green, num_putts:parseInt(h.num_putts)||null,
+        short_sided:h.short_sided, appr_club:h.appr_club,
+        appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
+        putt1_len:parseFloat(h.putt1_len)||null,
+        sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
+        round_id:h.round_id, date:h.rounds?.date||null,
+      }));
+    }catch(e){pinHoleData=[];}
+  }
+  const hd=pinHoleData||[];
+  const emEl=document.getElementById('pin-empty');
+  const grid=document.getElementById('pin-grid');
+  if(!hd.filter(h=>h.pin_loc).length){
+    if(emEl)emEl.style.display='block';
+    if(grid)grid.style.display='none';
+    return;
+  }
+  if(emEl)emEl.style.display='none';
+  if(grid)grid.style.display='grid';
+  const hasSG=hd.some(h=>h.sg_approach!=null);
+  const sgBtn=document.getElementById('pin-sg-btn');
+  if(sgBtn)sgBtn.style.display=hasSG?'':'none';
+  renderPinGrid();
+}
+
+function getFilteredPinHoles(){
+  let hd=pinHoleData||[];
+  if(pinClub!=='All'){
+    hd=hd.filter(h=>{
+      if(!h.appr_club)return false;
+      const c=h.appr_club.toLowerCase().replace(/\s+/g,'');
+      const MAP={Wood:['3w','4w','5w','7w'],Hybrid:['2h','3h','4h','5h','7h'],
+        'Long Iron':['2i','3i','4i'],'Mid Iron':['5i','6i','7i','8i'],
+        'Short Iron':['9i','pw','10i'],Wedge:[]};
+      if(pinClub==='Wedge')return c.includes('deg');
+      return(MAP[pinClub]||[]).includes(c);
+    });
+  }
+  if(pinWindow>0){
+    const s=[...currentPlayer.rounds].sort((a,b)=>a.date.localeCompare(b.date));
+    const dates=new Set(s.slice(-pinWindow).map(r=>r.date));
+    hd=hd.filter(h=>h.date&&dates.has(h.date));
+  }
+  return hd;
+}
+
+function calcPinStats(holes){
+  const n=holes.length; if(!n)return null;
+  const avg=a=>{const v=a.filter(x=>x!=null);return v.length?v.reduce((s,x)=>s+x,0)/v.length:null;};
+  const gir=holes.filter(h=>h.green&&h.green.toLowerCase()==='hit');
+  const gir1p=gir.filter(h=>h.num_putts===1);
+  const ss=holes.filter(h=>h.short_sided&&h.short_sided.toLowerCase()==='yes');
+  return{
+    n,
+    pm:          avg(holes.filter(h=>h.par&&h.score).map(h=>h.score-h.par)),
+    birdie_pct:  holes.filter(h=>h.par&&h.score&&h.score<h.par).length/n*100,
+    bogey_pct:   holes.filter(h=>h.par&&h.score&&h.score>h.par).length/n*100,
+    gir_pct:     gir.length/n*100,
+    gir1putt:    gir.length?gir1p.length/gir.length*100:null,
+    avg_putts:   avg(holes.filter(h=>h.num_putts).map(h=>h.num_putts)),
+    proximity:   avg(holes.filter(h=>h.appr_lr!=null&&h.appr_sl!=null).map(h=>Math.sqrt(h.appr_lr*h.appr_lr+h.appr_sl*h.appr_sl))),
+    short_sided: ss.length/n*100,
+    sg_approach: avg(holes.filter(h=>h.sg_approach!=null).map(h=>h.sg_approach)),
+  };
+}
+
+function pinHeatColor(normVal){
+  if(normVal===null)return 'rgba(20,28,20,0.8)';
+  if(normVal>=0.65)return`rgba(74,222,128,${0.12+normVal*0.5})`;
+  if(normVal<=0.35)return`rgba(248,113,113,${0.12+(1-normVal)*0.5})`;
+  return'rgba(148,163,184,0.12)';
+}
+
+function renderPinGrid(){
+  const grid=document.getElementById('pin-grid');if(!grid)return;
+  const hd=getFilteredPinHoles();
+  const meta=PIN_STATS[pinStat];
+  const stats={};PIN_LOCS.forEach(loc=>{stats[loc]=calcPinStats(hd.filter(h=>h.pin_loc===loc));});
+  const vals=PIN_LOCS.map(loc=>stats[loc]?.[pinStat]).filter(v=>v!=null);
+  const minV=vals.length?Math.min(...vals):0;
+  const maxV=vals.length?Math.max(...vals):1;
+  const rng=maxV-minV||1;
+
+  grid.innerHTML=PIN_LOCS.map(loc=>{
+    const st=stats[loc]; const val=st?.[pinStat]; const n=st?.n||0;
+    const norm=val!=null?(meta.dir==='high'?(val-minV)/rng:(maxV-val)/rng):null;
+    const bg=pinHeatColor(norm);
+    const isSel=pinSelected===loc;
+    const valColor=val==null?'var(--text-dim)':norm>=0.6?'rgba(74,222,128,0.95)':norm<=0.4?'rgba(248,113,113,0.9)':'var(--text)';
+    return`<div class="pin-cell${isSel?' pin-selected':''}" style="background:${bg}" onclick="selectPin('${loc}')">
+      <div class="pin-cell-shots">${n}</div>
+      <div class="pin-cell-loc">${loc}</div>
+      <div class="pin-cell-val" style="color:${valColor}">${val!=null?meta.fmt(val):'—'}</div>
+      <div class="pin-cell-sub">${n} shot${n!==1?'s':''}</div>
+    </div>`;
+  }).join('');
+}
+
+function selectPin(loc){
+  pinSelected=loc;
+  renderPinGrid();
+  showPinTrend(loc);
+}
+
+function showPinTrend(loc){
+  const summary=document.getElementById('pin-summary');
+  if(!summary)return;
+  const hd=getFilteredPinHoles().filter(h=>h.pin_loc===loc);
+  const meta=PIN_STATS[pinStat];
+  const overall=calcPinStats(hd);
+  summary.style.display='block';
+  const titleEl=document.getElementById('pin-summary-title');
+  if(titleEl)titleEl.textContent=`${PIN_LABELS[loc]} — ${meta.label}`;
+  const statsEl=document.getElementById('pin-summary-stats');
+  if(statsEl&&overall){
+    const rows=[
+      {l:'Shots',v:`${overall.n}`},
+      {l:'+/- to Par',v:overall.pm!=null?(overall.pm>=0?'+':'')+overall.pm.toFixed(2):'—'},
+      {l:'GIR %',v:overall.gir_pct!=null?overall.gir_pct.toFixed(1)+'%':'—'},
+      {l:'Birdie+ %',v:overall.birdie_pct!=null?overall.birdie_pct.toFixed(1)+'%':'—'},
+      {l:'Bogey+ %',v:overall.bogey_pct!=null?overall.bogey_pct.toFixed(1)+'%':'—'},
+      {l:'Avg Putts',v:overall.avg_putts!=null?overall.avg_putts.toFixed(2):'—'},
+      {l:'Proximity (radial)',v:overall.proximity!=null?overall.proximity.toFixed(1)+' ft':'—'},
+      {l:'Short-Sided %',v:overall.short_sided!=null?overall.short_sided.toFixed(1)+'%':'—'},
+    ];
+    if(overall.sg_approach!=null)rows.push({l:'SG Approach',v:(overall.sg_approach>=0?'+':'')+overall.sg_approach.toFixed(3)});
+    statsEl.innerHTML=rows.map(x=>`<div style="display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--border);font-family:'DM Mono',monospace;font-size:11px">
+      <span style="color:var(--text-dim)">${x.l}</span><span style="color:var(--text);font-weight:600">${x.v}</span></div>`).join('');
+  }
+  // Trend by round
+  const byDate={};
+  hd.forEach(h=>{if(!h.date)return;if(!byDate[h.date])byDate[h.date]=[];byDate[h.date].push(h);});
+  const dates=Object.keys(byDate).sort();
+  const tVals=dates.map(d=>{const st=calcPinStats(byDate[d]);return st?.[pinStat]??null;});
+  const vDates=dates.filter((_,i)=>tVals[i]!=null);
+  const vVals=tVals.filter(v=>v!=null);
+  const tTitle=document.getElementById('pin-trend-title');
+  if(tTitle)tTitle.textContent=`${PIN_LABELS[loc]} — ${meta.label} Over Time`;
+  if(charts['chart-pin-trend']){try{charts['chart-pin-trend'].destroy();}catch(e){}}
+  const canv=document.getElementById('chart-pin-trend');
+  if(!canv||vVals.length<2)return;
+  const minV=Math.min(...vVals),maxV=Math.max(...vVals),rng=maxV-minV||1;
+  charts['chart-pin-trend']=new Chart(canv.getContext('2d'),{
+    type:'line',
+    data:{labels:vDates.map(d=>d.slice(5,10)),datasets:[{
+      data:vVals,borderColor:C.blue,backgroundColor:'rgba(96,165,250,0.07)',
+      pointBackgroundColor:vVals.map(v=>{const n=meta.dir==='high'?(v-minV)/rng:(maxV-v)/rng;return n>=0.6?C.green:n<=0.4?C.red:C.amber;}),
+      pointRadius:5,tension:0.3,fill:true
+    }]},
+    options:{responsive:true,plugins:{legend:{display:false},
+      tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+        callbacks:{label(ctx){return `${meta.label}: ${meta.fmt(ctx.raw)}`}}}},
+    scales:{x:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT}},
+      y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
+         title:{display:true,text:meta.label,color:C.txt,font:FONT}}}}
+  });
+}
+
 async function buildAdminDebug(){
   const el = document.getElementById('admin-debug-rows');
   if(!el) return;
@@ -5409,9 +5777,13 @@ async function buildAdminDebug(){
     }catch(e){ roundsCount = 'Error: '+e.message; }
   }
 
+  // Show setup guide if player_id is null
+  const guide = document.getElementById('admin-fix-guide');
+  if(guide) guide.style.display = pidOk ? 'none' : 'block';
+
   el.innerHTML =
     row('Logged-in Player', currentPlayer?.name || '—', null) +
-    row('player_id', pidOk ? pid.slice(0,8)+'…' : 'null — not linked to Supabase', pidOk) +
+    row('player_id', pidOk ? pid.slice(0,8)+'…' : 'null — Supabase auth not set up yet (see admin instructions)', pidOk) +
     row('Auth Session', authStatus, authOk) +
     row('Rounds in Supabase', roundsCount, null) +
     row('hole_data in Supabase', liveCount, liveOk) +
@@ -5428,8 +5800,24 @@ async function buildAdminDashboard(){
   kpiEl.innerHTML='<div class="stat-card"><div class="stat-label">Loading…</div></div>';
   tbodyEl.innerHTML='<tr><td colspan="6" style="text-align:center;color:var(--text-dim);padding:20px">Loading players…</td></tr>';
   try{
-    const {data:players,error}=await sb.rpc('get_all_players');
+    // Use direct table query instead of RPC to avoid Headers clone error
+    const {data:players,error}=await sb.from('players')
+      .select('id,name,is_admin,created_at,user_id')
+      .order('name');
     if(error)throw error;
+    // Get round counts separately
+    const {data:roundCounts}=await sb.from('rounds')
+      .select('player_id')
+      .then(r=>({data:r.data?.reduce((acc,row)=>{acc[row.player_id]=(acc[row.player_id]||0)+1;return acc;},{})}));
+    const {data:lastRounds}=await sb.from('rounds')
+      .select('player_id,date')
+      .order('date',{ascending:false})
+      .then(r=>({data:r.data?.reduce((acc,row)=>{if(!acc[row.player_id])acc[row.player_id]=row.date;return acc;},{})}));
+    // Enrich players with round data
+    players.forEach(p=>{
+      p.round_count=(roundCounts||{})[p.id]||0;
+      p.last_round=(lastRounds||{})[p.id]||null;
+    });
     const totalRounds=players.reduce((s,p)=>s+(parseInt(p.round_count)||0),0);
     const totalPlayers=players.length;
     const activeToday=players.filter(p=>{
