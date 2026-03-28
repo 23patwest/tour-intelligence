@@ -1502,15 +1502,25 @@ async function loadPlayerFromSupabase(playerRecord){
   const loading=document.getElementById('login-loading');
   const err=document.getElementById('login-error');
   try{
-    // Fetch rounds
-    const {data:rounds,error:re}=await sb.from('rounds')
-      .select('*').eq('player_id',playerRecord.player_id).order('date');
-    // Fetch approach shots
-    const {data:apprShots}=await sb.from('approach_shots')
-      .select('*').eq('player_id',playerRecord.player_id);
-    // Fetch tee shots
-    const {data:teeShots}=await sb.from('tee_shots')
-      .select('*').eq('player_id',playerRecord.player_id);
+    // Fetch all player data in parallel
+    const [
+      {data:rounds, error:re},
+      {data:apprShots},
+      {data:teeShots},
+      {data:rawHoleData},
+      {data:roundRows}
+    ] = await Promise.all([
+      sb.from('rounds').select('*').eq('player_id',playerRecord.player_id).order('date'),
+      sb.from('approach_shots').select('*').eq('player_id',playerRecord.player_id),
+      sb.from('tee_shots').select('*').eq('player_id',playerRecord.player_id),
+      sb.from('hole_data').select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts').eq('player_id',playerRecord.player_id),
+      sb.from('rounds').select('id,date').eq('player_id',playerRecord.player_id)
+    ]);
+    // Build round_id → date map for hole_data
+    const _rdm = {};
+    (roundRows||[]).forEach(r=>{ _rdm[r.id]=r.date; });
+    const formattedHoleData = (rawHoleData||[]).map(h=>({...h, date:_rdm[h.round_id]||null}));
+    console.log(`Loaded ${formattedHoleData.length} hole_data rows for ${playerRecord.player_name}`);
 
     const stats=playerRecord.stats||{};
     const formattedRounds=(rounds||[]).map(r=>({
@@ -1560,9 +1570,13 @@ async function loadPlayerFromSupabase(playerRecord){
       bad_reasons:stats.bad_reasons||{},
       bad_clubs:stats.bad_clubs||{},
       proximity:stats.proximity||null,
-      tee_shots:tee_final,
       course_data:[],
     };
+    // Pre-populate hole_data caches so Putting and Tiger Five work immediately
+    if(formattedHoleData.length){
+      puttHoleData  = formattedHoleData;
+      tigerHoleData = formattedHoleData;
+    }
     launchApp();
   }catch(e){
     loading.style.display='none';
@@ -2454,17 +2468,12 @@ async function buildPutting(){
   });
 
   // ── Fetch hole data for HL / Break / Slope charts ─────────────
-  // If player_id is null, try to look it up by name
-  if(!currentPlayer.player_id && currentPlayer.name){
-    try{
-      const {data:pl}=await sb.from('players').select('id').eq('name',currentPlayer.name).single();
-      if(pl?.id) currentPlayer.player_id=pl.id;
-    }catch(e){}
-  }
+  // puttHoleData is pre-loaded at login for Supabase players
+  // Only fetch lazily if not yet loaded (e.g. demo player or first load)
   if(puttHoleData===null && currentPlayer.player_id){
     try{
       const {data:hd} = await sb.from('hole_data')
-        .select('putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
+        .select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
         .eq('player_id', currentPlayer.player_id);
       puttHoleData = hd || [];
     }catch(e){ puttHoleData = []; }
@@ -2712,34 +2721,18 @@ async function buildTigerFive(){
   const s = sorted();
 
   // ── Fetch hole_data with dates via Supabase join ──────────────
-  if(tigerHoleData === null && currentPlayer.player_id){
+  // tigerHoleData pre-loaded at login — lazy fetch only as fallback
+  if(tigerHoleData===null && currentPlayer.player_id){
     try{
-      // Single query: hole_data joined to rounds for the date field
+      const {data:roundRows} = await sb.from('rounds')
+        .select('id,date').eq('player_id', currentPlayer.player_id);
+      const rdm = {};
+      (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
       const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id,rounds!inner(date)')
+        .select('par,score,appr_club,green,short_sided,round_id')
         .eq('player_id', currentPlayer.player_id);
-      tigerHoleData = (hd||[]).map(h=>({
-        par:       h.par,
-        score:     h.score,
-        appr_club: h.appr_club,
-        green:     h.green,
-        short_sided: h.short_sided,
-        round_id:  h.round_id,
-        date:      h.rounds?.date || null
-      }));
-    }catch(e){
-      // Fallback: separate fetches
-      try{
-        const {data:roundRows} = await sb.from('rounds')
-          .select('id,date').eq('player_id', currentPlayer.player_id);
-        const rdm = {};
-        (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
-        const {data:hd2} = await sb.from('hole_data')
-          .select('par,score,appr_club,green,short_sided,round_id')
-          .eq('player_id', currentPlayer.player_id);
-        tigerHoleData = (hd2||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
-      }catch(e2){ tigerHoleData = []; }
-    }
+      tigerHoleData = (hd||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
+    }catch(e){ tigerHoleData = []; }
   }
 
   const hd = tigerHoleData || [];
