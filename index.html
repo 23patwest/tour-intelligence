@@ -395,7 +395,7 @@ tr:hover td{background:var(--surface2)}
 .alert-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .alert-kpi.kpi-last::before{background:var(--blue)}
 .alert-kpi.kpi-4::before{background:var(--amber)}
-.alert-kpi.kpi-10::before{background:var(--green)}
+.alert-kpi.kpi-10::before{background:rgba(220,38,38,0.85)}
 .alert-kpi-label{font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
 .alert-kpi-val{font-family:'Bebas Neue',sans-serif;font-size:44px;letter-spacing:1px;line-height:1}
 .alert-kpi-sub{font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-top:5px}
@@ -446,7 +446,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
   auth: {
     persistSession: true,
     storageKey: 'ti_auth',
-    autoRefreshToken: true,
+    autoRefreshToken: false,
     detectSessionInUrl: false
   },
   realtime: { params: { eventsPerSecond: 1 } }
@@ -643,6 +643,35 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
           <canvas id="chart-score-dist" height="200"></canvas>
         </div>
       </div>
+      <!-- Scoring Trends -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:32px 0 14px">Scoring Trends</div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Score — Rolling Average</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
+              A shorter window (4 rounds) reacts quickly to recent form. A longer window (10 rounds) smooths out noise to reveal the true trend. Use 4 to ask <em>"how am I playing right now?"</em> and 10 to ask <em>"which direction is my game heading?"</em>
+            </div>
+            <div class="rolling-controls" style="margin-bottom:0">
+              <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
+            </div>
+          </div>
+          <canvas id="chart-rolling" height="120"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Avg +/- to Par by Hole Type</div>
+          <canvas id="chart-par-type" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">+/- to Par Each Round</div>
+          <canvas id="chart-plusminus" height="200"></canvas>
+        </div>
+      </div>
     </div>
 
 
@@ -650,36 +679,53 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     <div class="section" id="section-aicaddie">
       <div class="section-header">
         <div class="section-title">AI <span>Caddie</span></div>
-        <div class="section-meta">Ask anything about your game — powered by Claude AI</div>
+        <div class="section-meta">Personalised coaching insights powered by AI — coming soon</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start">
-        <!-- Chat area -->
+      <!-- Coming Soon notice -->
+      <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.25);padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:20px">🚧</div>
+        <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);line-height:1.6">
+          <strong style="color:var(--text)">AI Caddie is coming soon.</strong>
+          When live, it will analyse your full statistical profile and answer coaching questions in plain language. Here's an example of what it will look like:
+        </div>
+      </div>
+
+      <!-- Example conversation -->
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;opacity:0.85">
         <div>
-          <div id="caddie-chat" style="background:var(--surface);border:1px solid var(--border);min-height:420px;max-height:560px;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;margin-bottom:16px">
-            <div class="caddie-msg caddie-msg-ai" id="caddie-welcome">
-              <div class="caddie-avatar">AI</div>
-              <div class="caddie-bubble">Hi! I'm your AI Caddie. I have full access to your stats and round history. Ask me anything about your game — strengths, weaknesses, what to practice, or how to play a specific situation.</div>
+          <div style="background:var(--surface);border:1px solid var(--border);padding:24px;display:flex;flex-direction:column;gap:16px;margin-bottom:16px">
+            <!-- Example user message -->
+            <div style="display:flex;gap:12px;justify-content:flex-end">
+              <div style="background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.3);padding:12px 16px;max-width:80%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);line-height:1.6">
+                What is my biggest weakness based on my stats?
+              </div>
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(96,165,250,0.2);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--blue);flex-shrink:0">PW</div>
+            </div>
+            <!-- Example AI response -->
+            <div style="display:flex;gap:12px">
+              <div style="width:36px;height:36px;border-radius:50%;background:rgba(74,222,128,0.15);border:1px solid rgba(74,222,128,0.3);display:flex;align-items:center;justify-content:center;font-family:'DM Mono',monospace;font-size:11px;color:var(--green);flex-shrink:0">AI</div>
+              <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 16px;max-width:85%;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.8">
+                Based on your last 10 rounds, your biggest weakness is <strong style="color:var(--text)">approach play from Mid Irons</strong>. Your GIR% with 5–8 irons is 43.6% — well below the 55–60% you'd expect at your scoring level. Combined with an average miss of 22ft short of target, you're consistently leaving yourself long putting opportunities.<br><br>
+                Your putting data actually looks solid — 27% GIR 1-putt rate is close to Tour average. The issue is <em>where you're missing greens</em>. Short-side misses from Mid Irons are creating scramble situations you're only converting 22% of the time.<br><br>
+                Recommendation: Take one extra club from the 150–180yd range and commit to swinging to 90%. The data suggests your miss is distance-related, not directional.
+              </div>
             </div>
           </div>
-          <div style="display:flex;gap:10px">
-            <textarea id="caddie-input" placeholder="Ask your caddie anything…" rows="2"
-              style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;resize:none;outline:none;line-height:1.5;transition:border-color 0.2s"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCaddieMessage()}"
-              onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-            <button onclick="sendCaddieMessage()" id="caddie-send-btn"
-              style="background:var(--blue);color:#0a0f1a;border:none;padding:12px 20px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;white-space:nowrap;align-self:stretch;transition:all 0.2s"
-              onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">Send →</button>
+          <!-- Greyed out input -->
+          <div style="display:flex;gap:10px;opacity:0.4;pointer-events:none">
+            <input disabled placeholder="AI Caddie coming soon…" style="flex:1;background:var(--surface);border:1px solid var(--border);padding:12px 16px;font-family:'DM Mono',monospace;font-size:13px;color:var(--text-dim);outline:none">
+            <button disabled style="background:var(--blue);color:#0a0f0a;border:none;padding:12px 20px;font-family:'DM Mono',monospace;font-size:12px;letter-spacing:1px;cursor:not-allowed">SEND</button>
           </div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:8px">Press Enter to send · Shift+Enter for new line</div>
         </div>
-        <!-- Suggested prompts sidebar -->
+        <!-- Example prompts -->
         <div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Suggested Prompts</div>
-          <div style="display:flex;flex-direction:column;gap:8px" id="caddie-prompts"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Example questions</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            <div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">What is my biggest weakness based on my stats?</div><div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">Which club category should I practice most?</div><div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">How has my scoring trended over my last 10 rounds?</div><div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">Where am I losing the most shots on approach?</div><div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">What does my putting data tell you?</div><div style="background:var(--surface);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);opacity:0.7">What's one thing I should focus on to break 75?</div>
+          </div>
         </div>
       </div>
     </div>
-
 
     <!-- DEFINITIONS -->
     <div class="section" id="section-definitions">
@@ -886,7 +932,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       </div>
 
       <!-- 3 Weakness cards -->
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px" id="mg-focus-label">
         Top Focus Areas — based on your last 10 rounds
       </div>
       <div id="mygame-weaknesses" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:32px"></div>
@@ -909,35 +955,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         </div>
       </div>
 
-      <!-- Scoring Trends (moved from Trends tab) -->
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:32px 0 14px">Scoring Trends</div>
-      <div class="chart-grid">
-        <div class="chart-card chart-full">
-          <div class="chart-title">Score — Rolling Average</div>
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
-              A shorter window (4 rounds) reacts quickly to recent form. A longer window (10 rounds) smooths out noise to reveal the true trend. Use 4 to ask <em>"how am I playing right now?"</em> and 10 to ask <em>"which direction is my game heading?"</em>
-            </div>
-            <div class="rolling-controls" style="margin-bottom:0">
-              <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
-            </div>
-          </div>
-          <canvas id="chart-rolling" height="120"></canvas>
-        </div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Avg +/- to Par by Hole Type</div>
-          <canvas id="chart-par-type" height="200"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">+/- to Par Each Round</div>
-          <canvas id="chart-plusminus" height="200"></canvas>
-        </div>
-      </div>
+
     </div>
 
     <!-- ALERTS -->
@@ -945,6 +963,12 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div class="section-header">
         <div class="section-title">Performance <span>Alerts</span></div>
         <div class="section-meta">Track trends across key stats — last round, 4-round avg, and 10-round avg</div>
+      </div>
+      <!-- Instruction note -->
+      <div style="font-family:'DM Sans',sans-serif;font-size:13px;color:var(--text-dim);margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue);line-height:1.6">
+        <strong style="color:var(--text)">Recent Performance</strong> = last 4 rounds &nbsp;·&nbsp;
+        <strong style="color:var(--text)">Longer-Term Trend</strong> = last 10 rounds.
+        Click any metric below to see how your short-term form compares to your longer-term average.
       </div>
       <!-- Stat picker -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px" id="alerts-stat-picker"></div>
@@ -975,8 +999,10 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)">tourintelligence@gmail.com</span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
         2. Copy the UUID from the new user, then run:<br>
         <span style="color:var(--blue)">UPDATE public.players SET user_id = '&lt;paste-uuid-here&gt;' WHERE name = 'Pat West';</span><br><br>
-        3. Also run to allow admin hole_data access:<br>
-        <span style="color:var(--blue)">CREATE POLICY "Admin full access to hole_data" ON public.hole_data FOR ALL USING (is_admin());</span></div>
+        3. Allow anonymous player lookup (required for login):<br>
+        <span style="color:var(--blue)">CREATE POLICY "Anon player read" ON public.players FOR SELECT USING (true);</span><br><br>
+        4. Allow hole_data reads (if not already done):<br>
+        <span style="color:var(--blue)">CREATE POLICY "Allow all read" ON public.hole_data FOR SELECT USING (true);</span></div>
       </div>
       </div>
       <div class="stats-grid" id="admin-kpis" style="margin-bottom:24px"></div>
@@ -1175,7 +1201,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="chart-card chart-full">
           <div class="chart-title" id="putt-slope-title">Miss % by Slope (Uphill vs Downhill)</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Uphill putts should have higher make rates — larger miss % on downhill indicates speed control issues</div>
-          <canvas id="chart-putt-slope" height="130"></canvas>
+          <canvas id="chart-putt-slope" height="80"></canvas>
           <div id="putt-slope-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
         </div>
       </div>
@@ -1217,6 +1243,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="section-title">The Tiger <span>Five</span></div>
         <div class="section-meta">Five key metrics that define elite scoring — track your goals</div>
       </div>
+      <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);margin-bottom:14px;padding:8px 14px;background:var(--surface);border:1px solid var(--border);border-left:3px solid var(--blue)">Tap any card below to see your rolling trend for that metric</div>
       <div class="tiger-grid" id="tiger-cards"></div>
       <!-- Tiger rolling chart — appears when a card is clicked -->
       <div id="tiger-rolling-wrap" style="display:none;margin-top:20px">
@@ -1240,7 +1267,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div class="chart-grid">
         <div class="chart-card">
           <div class="chart-title">Clubs Most Responsible for Bad Scores</div>
-          <canvas id="chart-bad-clubs" height="280"></canvas>
+          <canvas id="chart-bad-clubs" height="160"></canvas>
         </div>
         <div class="chart-card">
           <div class="chart-title">Top Reasons for Bad Scores</div>
@@ -1580,14 +1607,31 @@ async function handleLogin(){
       const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
       if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
         currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:PLAYERS[fallbackKey].is_admin||false};
-        // Try to get player_id from Supabase (session-free direct query)
+        // Use raw REST fetch instead of Supabase JS client to avoid BroadcastChannel error
         try{
-          const {data:playerRow}=await sb.from('players').select('id,is_admin').eq('name',name).eq('pin',pin).single();
-          if(playerRow){
-            currentPlayer.player_id=playerRow.id;
-            currentPlayer.is_admin=playerRow.is_admin||currentPlayer.is_admin;
+          const _res = await fetch(
+            'https://teedtnlqtfjkburfeucl.supabase.co/rest/v1/players?name=eq.'+encodeURIComponent(name)+'&pin=eq.'+encodeURIComponent(pin)+'&select=id,name,is_admin,stats&limit=1',
+            { headers: { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', 'Accept': 'application/json' } }
+          );
+          const _rows = _res.ok ? await _res.json() : [];
+          const playerRow = _rows && _rows.length ? _rows[0] : null;
+          if(playerRow && playerRow.id){
+            console.log('Fallback: recovered player_id', playerRow.id, '— loading full Supabase data');
+            const fullRecord = {
+              player_id: playerRow.id,
+              player_name: playerRow.name || name,
+              is_admin: playerRow.is_admin || PLAYERS[fallbackKey].is_admin || false,
+              stats: playerRow.stats || PLAYERS[fallbackKey]
+            };
+            loading.style.display='block';
+            await loadPlayerFromSupabase(fullRecord);
+            return;
+          } else {
+            console.warn('Fallback: no player found in Supabase for', name);
           }
-        }catch(authErr){/* silent */}
+        }catch(authErr){ console.warn('Fallback player lookup exception:', authErr.message); }
+        // No player_id available — launch with hardcoded data only
+        console.warn('Launching with hardcoded fallback data — hole-level charts unavailable');
         launchApp();return;
       }
       err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
@@ -1626,25 +1670,30 @@ async function loadPlayerFromSupabase(playerRecord){
   const loading=document.getElementById('login-loading');
   const err=document.getElementById('login-error');
   try{
-    // Fetch all player data in parallel
-    const [
-      {data:rounds, error:re},
-      {data:apprShots},
-      {data:teeShots},
-      {data:rawHoleData},
-      {data:roundRows}
-    ] = await Promise.all([
-      sb.from('rounds').select('*').eq('player_id',playerRecord.player_id).order('date'),
-      sb.from('approach_shots').select('*').eq('player_id',playerRecord.player_id),
-      sb.from('tee_shots').select('*').eq('player_id',playerRecord.player_id),
-      sb.from('hole_data').select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts').eq('player_id',playerRecord.player_id),
-      sb.from('rounds').select('id,date').eq('player_id',playerRecord.player_id)
+    // Use raw REST fetch to avoid Supabase JS client BroadcastChannel error
+    const _pid = playerRecord.player_id;
+    const _h = { 'apikey': 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', 'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', 'Accept': 'application/json' };
+    const _base = 'https://teedtnlqtfjkburfeucl.supabase.co/rest/v1';
+    const _get = async (path) => {
+      try {
+        const r = await fetch(_base + path, {headers:_h});
+        if(!r.ok) { console.warn('REST fetch error', r.status, path); return []; }
+        return await r.json();
+      } catch(e) { console.warn('REST fetch exception', path, e.message); return []; }
+    };
+    const [rounds, apprShots, teeShots, rawHoleData, roundRows] = await Promise.all([
+      _get('/rounds?player_id=eq.'+_pid+'&order=date&select=*'),
+      _get('/approach_shots?player_id=eq.'+_pid+'&select=*'),
+      _get('/tee_shots?player_id=eq.'+_pid+'&select=*'),
+      _get('/hole_data?player_id=eq.'+_pid+'&select=par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts,appr_lr,appr_sl,putt1_len,sg_approach,pin_loc'),
+      _get('/rounds?player_id=eq.'+_pid+'&select=id,date'),
     ]);
+    console.log('Raw REST fetches complete — rounds:', rounds.length, 'hole_data:', rawHoleData.length);
     // Build round_id → date map for hole_data
     const _rdm = {};
     (roundRows||[]).forEach(r=>{ _rdm[r.id]=r.date; });
     const formattedHoleData = (rawHoleData||[]).map(h=>({...h, date:_rdm[h.round_id]||null}));
-    console.log(`Loaded ${formattedHoleData.length} hole_data rows for ${playerRecord.player_name}`);
+    console.log(`Loaded ${formattedHoleData.length} hole_data rows for ${playerRecord.player_name}`, holeErr?'(error: '+holeErr.message+')':'');
 
     const stats=playerRecord.stats||{};
     const formattedRounds=(rounds||[]).map(r=>({
@@ -1696,11 +1745,29 @@ async function loadPlayerFromSupabase(playerRecord){
       proximity:stats.proximity||null,
       course_data:[],
     };
-    // Pre-populate hole_data caches so Putting and Tiger Five work immediately
-    if(formattedHoleData.length){
-      puttHoleData  = formattedHoleData;
-      tigerHoleData = formattedHoleData;
-    }
+    // Always set hole_data caches — even [] is better than null (null = "not yet fetched")
+    // Putting needs: putt1_hl, putt1_break, putt1_slope, putt2_hl, putt2_break, putt2_slope, num_putts
+    // Tiger needs: par, score, appr_club, green, short_sided, round_id
+    // Pin needs: pin_loc + appr_lr/sl + putt1_len + sg_approach
+    // All columns now fetched in one query above, so all three caches can share the same data
+    puttHoleData  = formattedHoleData;
+    tigerHoleData = formattedHoleData;
+    pinHoleData   = formattedHoleData.map(h=>({
+      pin_loc:  h.pin_loc,
+      par:      parseInt(h.par)||null,
+      score:    parseInt(h.score)||null,
+      green:    h.green,
+      num_putts:parseInt(h.num_putts)||null,
+      short_sided:h.short_sided,
+      appr_club:h.appr_club,
+      appr_lr:  parseFloat(h.appr_lr)||null,
+      appr_sl:  parseFloat(h.appr_sl)||null,
+      putt1_len:parseFloat(h.putt1_len)||null,
+      sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
+      round_id: h.round_id,
+      date:     h.date,
+    }));
+    console.log(`hole_data caches set — putt:${puttHoleData.length} tiger:${tigerHoleData.length} pin:${pinHoleData.length}`);
     launchApp();
   }catch(e){
     loading.style.display='none';
@@ -1868,7 +1935,7 @@ function buildDashboard(){
   document.getElementById('career-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Scoring Avg</div><div class="stat-value">${fmt(a_score,1)}</div><div class="stat-sub">${fmtPM(+(a_pm||0).toFixed(1))} avg to par</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">GIR % ${girTT}</div><div class="stat-value ${a_gir>=67?'stat-good':a_gir<50?'stat-bad':'stat-neutral'}">${fmt(a_gir,1)}%</div><div class="stat-sub">Goal: 67%</div></div>
-    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value ${a_fw>=70?'stat-good':a_fw<50?'stat-bad':'stat-neutral'}">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways %</div><div class="stat-value ${a_fw>=60?'stat-good':a_fw<45?'stat-bad':'stat-neutral'}">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 60%</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Scrambling % ${scramTT}</div><div class="stat-value ${a_scram>=50?'stat-good':a_scram<30?'stat-bad':'stat-neutral'}">${fmt(a_scram,1)}%</div><div class="stat-sub">Goal: 50%</div></div>
     <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr only)</div></div>
     <div class="stat-card"><div class="stat-label" style="position:relative">Proximity ${proxTT}</div><div class="stat-value ${prox&&prox<=25?'stat-good':'stat-neutral'}">${prox?prox.toFixed(1)+'ft':'—'}</div><div class="stat-sub">avg on GIR holes</div></div>
@@ -1890,7 +1957,7 @@ function buildDashboard(){
   document.getElementById('rounds-tbody').innerHTML=allRnds.map(rnd=>{
     const pc=rnd.plus_minus<=4?'val-green':rnd.plus_minus>=10?'val-red':'val-amber';
     const gcls=rnd.gir_pct>=67?'val-green':rnd.gir_pct>0&&rnd.gir_pct<50?'val-red':'';
-    const fwcls=rnd.fw_pct!=null?(rnd.fw_pct>=70?'val-green':rnd.fw_pct<50?'val-red':''):'';
+    const fwcls=rnd.fw_pct!=null?(rnd.fw_pct>=60?'val-green':rnd.fw_pct<40?'val-red':''):'';
     const drcls=''; const scrcls=rnd.scrambling!=null?(rnd.scrambling>=50?'val-green':rnd.scrambling<25?'val-red':''):'';
     const puttcls=rnd.putts!=null?(rnd.putts<=30?'val-green':rnd.putts>=36?'val-red':''):'';
     return`<tr>
@@ -2023,7 +2090,7 @@ function buildTee(){
   document.getElementById('tee-stats').innerHTML=`
     <div class="stat-card"><div class="stat-label">Driver Avg</div><div class="stat-value">${fmt(a_dr,0)}</div><div class="stat-sub">yards (Dr)</div></div>
     <div class="stat-card"><div class="stat-label">Max Drive</div><div class="stat-value stat-good">${max_dr||'—'}</div><div class="stat-sub">career best</div></div>
-    <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 70%</div></div>
+    <div class="stat-card"><div class="stat-label">Fairways Hit</div><div class="stat-value">${fmt(a_fw,1)}%</div><div class="stat-sub">Goal: 60%</div></div>
   `;
   const sdr=s.filter(x=>x.driver_dist);
   // Fairway accuracy with trend line
@@ -2599,11 +2666,11 @@ async function buildPutting(){
   // Only fetch lazily if not yet loaded (e.g. demo player or first load)
   if(puttHoleData===null && currentPlayer.player_id){
     try{
-      const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
-        .eq('player_id', currentPlayer.player_id);
-      puttHoleData = hd || [];
-    }catch(e){ puttHoleData = []; }
+      const _r = await fetch('https://teedtnlqtfjkburfeucl.supabase.co/rest/v1/hole_data?player_id=eq.'+currentPlayer.player_id+'&select=par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts,appr_lr,appr_sl,putt1_len,sg_approach,pin_loc',
+        {headers:{'apikey':'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU','Authorization':'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU','Accept':'application/json'}});
+      if(_r.ok){ puttHoleData = await _r.json(); }
+      else{ console.warn('Putting lazy fetch HTTP', _r.status); /* keep null for retry */ }
+    }catch(e){ console.warn('Putting lazy fetch exception:', e.message); /* keep null for retry */ }
   }
   const hd = puttHoleData || [];
   buildPuttHLChart(hd);
@@ -2624,23 +2691,22 @@ function buildPuttHLChart(hd){
   const titleEl = document.getElementById('putt-hl-title');
   if(!hlEl)return;
 
-  // Combine putt1 and putt2 high/low data
-  const hlCounts={High:{made:0,total:0},Low:{made:0,total:0}};
+  // High/Low chart: MISSED putts only
+  // Only count putts where the putt was missed (not holed)
+  // putt1 missed = num_putts > 1; putt2 missed = num_putts > 2
+  const hlCounts={High:{missed:0},Low:{missed:0}};
   for(const h of hd){
-    // putt1
-    if(h.putt1_hl&&['High','Low'].includes(h.putt1_hl)){
-      const made = h.num_putts===1?1:0;
-      hlCounts[h.putt1_hl].total++;
-      hlCounts[h.putt1_hl].made+=made;
+    // putt1 — only if missed (num_putts > 1) and HL data exists
+    if(h.putt1_hl&&['High','Low'].includes(h.putt1_hl)&&h.num_putts>1){
+      hlCounts[h.putt1_hl].missed++;
     }
-    // putt2
-    if(h.putt2_hl&&['High','Low'].includes(h.putt2_hl)){
-      const made = h.num_putts===2?1:0;
-      hlCounts[h.putt2_hl].total++;
-      hlCounts[h.putt2_hl].made+=made;
+    // putt2 — only if missed (num_putts > 2) and HL data exists
+    if(h.putt2_hl&&['High','Low'].includes(h.putt2_hl)&&h.num_putts>2){
+      hlCounts[h.putt2_hl].missed++;
     }
   }
-  const hasData = hlCounts.High.total+hlCounts.Low.total > 3;
+  const totalMisses = hlCounts.High.missed + hlCounts.Low.missed;
+  const hasData = totalMisses > 3;
   if(!hasData){
     hlEl.style.display='none';
     if(emptyEl) emptyEl.style.display='block';
@@ -2649,13 +2715,15 @@ function buildPuttHLChart(hd){
   hlEl.style.display='block';
   if(emptyEl) emptyEl.style.display='none';
 
-  const isM = puttViewMode==='make';
-  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % — High vs Low Side`;
+  // Always show Miss % distribution (high vs low of missed putts only)
+  if(titleEl) titleEl.textContent = 'Miss Direction — High vs Low Side';
+  const hlNote = document.getElementById('putt-hl-note');
+  if(hlNote) hlNote.textContent = `Of ${totalMisses} missed putts with direction data — goal: 50/50 split`;
 
   const labels=['High Side','Low Side'];
-  const vals=[
-    puttMissOrMake(hlCounts.High.total,hlCounts.High.made),
-    puttMissOrMake(hlCounts.Low.total,hlCounts.Low.made),
+  const missedVals=[
+    totalMisses>0?Math.round(hlCounts.High.missed/totalMisses*1000)/10:null,
+    totalMisses>0?Math.round(hlCounts.Low.missed/totalMisses*1000)/10:null,
   ];
   const goal50=[50,50];
 
@@ -2663,24 +2731,23 @@ function buildPuttHLChart(hd){
   charts['chart-putt-hl']=new Chart(hlEl.getContext('2d'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:`${isM?'Make':'Miss'} %`,data:vals,
+      {label:'% of Missed Putts',data:missedVals,
         backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)'],
         borderColor:[C.blue,C.amber],borderWidth:1.5,order:2},
-      {label:'50% goal',data:goal50,type:'line',
+      {label:'50/50 goal',data:goal50,type:'line',
         borderColor:'rgba(74,222,128,0.6)',borderWidth:2,borderDash:[5,4],
         pointRadius:0,tension:0,order:1,backgroundColor:'transparent'}
     ]},
-    options:{...bOpts(`${isM?'Make':'Miss'} %`),
+    options:{...bOpts('% of Misses'),
       plugins:{...bOpts().plugins,
         legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:16}},
         tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
           callbacks:{label(ctx){
             const i=ctx.dataIndex;
-            const side=labels[i];
-            const tot=i===0?hlCounts.High.total:hlCounts.Low.total;
-            return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${tot} putts)`;
+            const count=i===0?hlCounts.High.missed:hlCounts.Low.missed;
+            return `${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} of misses (${count} putts)`;
           }}}},
-      scales:{...bOpts(`${isM?'Make':'Miss'} %`).scales,y:{...bOpts().scales?.y,min:0,max:100,
+      scales:{...bOpts('% of Misses').scales,y:{min:0,max:100,
         grid:{color:C.grid},ticks:{color:C.txt,font:FONT}}}
     }
   });
@@ -2714,8 +2781,8 @@ function buildPuttBreakChart(hd){
   const isM = puttViewMode==='make';
   if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % by Break Type`;
 
-  const labels=['Left to Right (LR)','Right to Left (RL)','No Break'];
-  const keys=['LR','RL','No Break'];
+  const labels=['Left to Right (LR)','No Break','Right to Left (RL)'];
+  const keys=['LR','No Break','RL'];
   const vals=keys.map(k=>puttMissOrMake(brCounts[k].total,brCounts[k].made));
 
   if(charts['chart-putt-break']){try{charts['chart-putt-break'].destroy();}catch(e){}}
@@ -2723,8 +2790,8 @@ function buildPuttBreakChart(hd){
     type:'bar',
     data:{labels,datasets:[{
       label:`${isM?'Make':'Miss'} %`,data:vals,
-      backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)','rgba(74,222,128,0.6)'],
-      borderColor:[C.blue,C.amber,C.green],borderWidth:1.5
+      backgroundColor:['rgba(96,165,250,0.6)','rgba(148,163,184,0.5)','rgba(251,191,36,0.6)'],
+      borderColor:[C.blue,'rgba(148,163,184,0.8)',C.amber],borderWidth:1.5
     }]},
     options:{...bOpts(`${isM?'Make':'Miss'} %`),
       plugins:{...bOpts().plugins,legend:{display:false},
@@ -2850,16 +2917,9 @@ async function buildTigerFive(){
   // ── Fetch hole_data with dates via Supabase join ──────────────
   // tigerHoleData pre-loaded at login — lazy fetch only as fallback
   if(tigerHoleData===null && currentPlayer.player_id){
-    try{
-      const {data:roundRows} = await sb.from('rounds')
-        .select('id,date').eq('player_id', currentPlayer.player_id);
-      const rdm = {};
-      (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
-      const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id')
-        .eq('player_id', currentPlayer.player_id);
-      tigerHoleData = (hd||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
-    }catch(e){ tigerHoleData = []; }
+    // Reuse puttHoleData if already loaded
+    if(puttHoleData!==null){ tigerHoleData = puttHoleData; }
+    // else: will be fetched next time buildPutting runs, then shared
   }
 
   const hd = tigerHoleData || [];
@@ -2965,14 +3025,14 @@ async function buildTigerFive(){
   document.getElementById('tiger-cards').innerHTML = metrics.map(m=>`
     <div class="tiger-card ${m.pass?'tiger-pass':'tiger-fail'}"
          onclick="showTigerRolling('${m.name.replace(/'/g,"\\'")}')"
-         style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s"
-         onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 8px 24px rgba(0,0,0,0.3)'"
-         onmouseout="this.style.transform='';this.style.boxShadow=''">
+         style="cursor:pointer;transition:transform 0.15s,box-shadow 0.15s;border-bottom:3px solid ${m.pass?'rgba(74,222,128,0.5)':'rgba(248,113,113,0.5)'}"
+         onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(0,0,0,0.4)';this.style.borderBottomColor='rgba(96,165,250,0.9)'"
+         onmouseout="this.style.transform='';this.style.boxShadow='';this.style.borderBottomColor='${m.pass?'rgba(74,222,128,0.5)':'rgba(248,113,113,0.5)'}';">
       <div class="tiger-title">${m.name}</div>
       <div class="tiger-pct ${m.pass?'val-green':'val-red'}">${m.pct}%</div>
       <div class="tiger-goal">Goal: ≤${m.goal}%</div>
       <div class="tiger-diff ${m.pass?'val-green':'val-red'}">${m.pass?'✓ On Track':'✗ Needs Work'}</div>
-      <div style="font-family:'DM Mono',monospace;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">click for trend →</div>
+      <div style="margin-top:10px;padding:5px 0;border-top:1px solid rgba(255,255,255,0.1);font-family:'DM Mono',monospace;font-size:10px;color:var(--blue);letter-spacing:0.5px;text-align:center">📈 Tap to see trend</div>
     </div>`).join('');
 
   window._tigerPerRound = tigerPerRound;
@@ -3898,7 +3958,7 @@ TOTAL ROUNDS: ${r.length}
 CAREER AVERAGES:
   Scoring Avg: ${a_score!=null?a_score.toFixed(1):'n/a'} (${a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):'n/a'} to par)
   GIR %: ${a_gir!=null?a_gir.toFixed(1):'n/a'}% (Goal: 67%)
-  Fairways %: ${a_fw!=null?a_fw.toFixed(1):'n/a'}% (Goal: 70%)
+  Fairways %: ${a_fw!=null?a_fw.toFixed(1):'n/a'}% (Goal: 60%)
   Scrambling %: ${a_scram!=null?a_scram.toFixed(1):'n/a'}% (Goal: 50%)
   GIR 1-Putt %: ${(()=>{const v=r.filter(x=>x.gir_pct>0&&x.one_putts!=null);if(!v.length)return 'n/a';const avg=v.map(x=>Math.round((x.one_putts/Math.max(1,Math.round(x.gir_pct/100*(x.holes||18))))*1000)/10);return (avg.reduce((a,b)=>a+b,0)/avg.length).toFixed(1)+'%';})()} (Tour avg: ~30%)
   Birdies/Round: ${a_birds!=null?a_birds.toFixed(1):'n/a'}
@@ -3952,7 +4012,7 @@ async function sendCaddieMessage(){
     if(geminiContents.length > 0 && geminiContents[0].role==='user'){
       geminiContents[0].parts[0].text = systemPrompt + '\n\nPlayer question: ' + geminiContents[0].parts[0].text;
     }
-    const GEMINI_KEY = 'AIzaSyASAJdavpInQTlNlQ1eBt4uuVUkwMqfZ6c';
+    const GEMINI_KEY = '';  // key removed — AI Caddie coming soon
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_KEY}`,
       {
@@ -5045,6 +5105,8 @@ function setMgWindow(n, btn){
   if(scTitle) scTitle.textContent=`Scoring — Last ${n} Rounds`;
   const stTitle=document.getElementById('mg-stats-title');
   if(stTitle) stTitle.textContent=`Key Stats — Last ${n} Rounds`;
+  const focusLbl=document.getElementById('mg-focus-label');
+  if(focusLbl) focusLbl.textContent=`Top Focus Areas — based on your last ${n} rounds`;
   document.querySelectorAll('#mg-window-btns .roll-btn').forEach(b=>b.classList.remove('active'));
   btn.classList.add('active');
   buildMyGame();
@@ -5182,8 +5244,8 @@ function renderAlertsContent(){
     const last10sub = last10dates.length?`${last10dates[0].slice(5)} – ${last10dates[last10dates.length-1].slice(5)}`:'';
     kpiEl.innerHTML =
       kpiCard('Last Round', valLast, d1_vs4, 'kpi-last', '4-rnd avg', `${lastRnd.date.slice(5)} — ${lastRnd.course}`) +
-      kpiCard('4-Round Avg', avg4, d2_vs10, 'kpi-4', '10-rnd avg', last4sub) +
-      kpiCard('10-Round Avg', avg10, null, 'kpi-10', '', last10sub);
+      kpiCard('Recent Performance', avg4, d2_vs10, 'kpi-4', '10-rnd avg', '4-round average · ' + last4sub) +
+      kpiCard('Longer-Term Trend', avg10, null, 'kpi-10', '', '10-round average · ' + last10sub);
   }
 
   // Chart title
@@ -5227,7 +5289,7 @@ function renderAlertsContent(){
           borderColor:C.amber,backgroundColor:'transparent',
           borderWidth:2.5,pointRadius:0,tension:0.4,order:2},
         {label:'10-Round Avg',data:ra10,
-          borderColor:C.green,backgroundColor:'transparent',
+          borderColor:'rgba(220,38,38,0.85)',backgroundColor:'transparent',
           borderWidth:2.5,pointRadius:0,tension:0.4,order:1},
       ]
     },
@@ -5362,8 +5424,8 @@ function buildMyGame(){
     : 'No GIR data tracked yet.';
 
   const fwDesc = a_fw!=null
-    ? (a_fw>=70?`${a_fw.toFixed(1)}% fairways. On target. Keep the driver under control.`
-              :a_fw>=55?`${a_fw.toFixed(1)}% fairways — below the 70% goal. Errant drives make every hole harder.`
+    ? (a_fw>=60?`${a_fw.toFixed(1)}% fairways. On target. Keep the driver under control.`
+              :a_fw>=50?`${a_fw.toFixed(1)}% fairways — below the 60% goal. Errant drives make every hole harder.`
               :`${a_fw.toFixed(1)}% fairways is well below goal. Your tee game is hurting you.`)
     : 'No fairway data tracked yet.';
 
@@ -5386,9 +5448,9 @@ function buildMyGame(){
     : 'No driver distance data tracked yet.';
 
   const allMetrics = [
-    {key:'pm',    label:'+/- to Par',    val:a_pm,  goal:6,  dir:'low',  fmt:v=>v!=null?(v>=0?'+':'')+v.toFixed(1):' —',  tab:'scoring',  tabLabel:'Trends Tab',       desc:scoreDesc},
+    {key:'pm',    label:'+/- to Par',    val:a_pm,  goal:6,  dir:'low',  fmt:v=>v!=null?(v>=0?'+':'')+v.toFixed(1):' —',  tab:'dashboard',  tabLabel:'Latest Rounds',       desc:scoreDesc},
     {key:'gir',   label:'GIR %',         val:a_gir, goal:67, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'approach', tabLabel:'Approach Tab',     desc:girDesc},
-    {key:'fw',    label:'Fairways Hit',  val:a_fw,  goal:70, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'tee',      tabLabel:'Off the Tee Tab',  desc:fwDesc},
+    {key:'fw',    label:'Fairways Hit',  val:a_fw,  goal:60, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'tee',      tabLabel:'Off the Tee Tab',  desc:fwDesc},
     {key:'scram', label:'Scrambling',    val:a_scr, goal:50, dir:'high', fmt:v=>v!=null?v.toFixed(1)+'%':'—',               tab:'approach', tabLabel:'Approach Tab',     desc:scrDesc},
 
     {key:'dr',    label:'Driver Avg',    val:a_dr,  goal:260,dir:'high', fmt:v=>v!=null?v.toFixed(0)+' yds':' —',           tab:'tee',      tabLabel:'Off the Tee Tab',  desc:drDesc},
@@ -5427,7 +5489,7 @@ function buildMyGame(){
         <div class="mg-weakness-stat" style="color:${statColor}">${m.fmt(m.val)}</div>
         <div class="mg-weakness-goal">${goalStr}</div>
         <div class="mg-weakness-desc">${m.desc}</div>
-        <div class="mg-weakness-link">Analyse in ${m.tabLabel} →</div>
+        <div class="mg-weakness-link">Analyze in ${m.tabLabel} →</div>
       </div>`;
     }).join('');
   }
@@ -5438,7 +5500,7 @@ function buildMyGame(){
     const stats=[
       {label:'Scoring Avg',  val:a_pm!=null?(a_pm>=0?'+':'')+a_pm.toFixed(1):' —',  sub:`last ${mgWindow} rounds`, cls:a_pm<=4?'stat-good':a_pm>=10?'stat-bad':''},
       {label:'GIR %',        val:a_gir!=null?a_gir.toFixed(1)+'%':' —',             cls:a_gir>=67?'stat-good':a_gir<50?'stat-bad':''},
-      {label:'Fairways %',   val:a_fw!=null?a_fw.toFixed(1)+'%':' —',              cls:a_fw>=70?'stat-good':a_fw<50?'stat-bad':''},
+      {label:'Fairways %',   val:a_fw!=null?a_fw.toFixed(1)+'%':' —',              cls:a_fw>=60?'stat-good':a_fw<40?'stat-bad':''},
       {label:'Scrambling',   val:a_scr!=null?a_scr.toFixed(1)+'%':' —',            cls:a_scr>=50?'stat-good':a_scr<30?'stat-bad':''},
       {label:'GIR 1-Putt %', val:a_gir1putt!=null?a_gir1putt.toFixed(1)+'%':' —', cls:a_gir1putt>=30?'stat-good':a_gir1putt<20?'stat-bad':''},
       {label:'Driver Avg',   val:a_dr!=null?a_dr.toFixed(0)+' yds':' —'},
@@ -5552,20 +5614,19 @@ function setPinClub(cat,btn){
 
 async function buildPinPerformance(){
   if(pinHoleData===null && currentPlayer.player_id){
-    try{
-      const {data:hd}=await sb.from('hole_data')
-        .select('pin_loc,par,score,green,num_putts,short_sided,appr_club,appr_lr,appr_sl,putt1_len,sg_approach,round_id,rounds!inner(date)')
-        .eq('player_id',currentPlayer.player_id);
-      pinHoleData=(hd||[]).map(h=>({
+    // Reuse puttHoleData if available — same data, all columns present
+    if(puttHoleData!==null){
+      pinHoleData = puttHoleData.map(h=>({
         pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
         green:h.green, num_putts:parseInt(h.num_putts)||null,
         short_sided:h.short_sided, appr_club:h.appr_club,
         appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
         putt1_len:parseFloat(h.putt1_len)||null,
         sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
-        round_id:h.round_id, date:h.rounds?.date||null,
+        round_id:h.round_id, date:h.date||null,
       }));
-    }catch(e){pinHoleData=[];}
+    }
+    // else puttHoleData not ready yet — will populate when Putting tab loads
   }
   const hd=pinHoleData||[];
   const emEl=document.getElementById('pin-empty');
@@ -5734,7 +5795,7 @@ async function buildAdminDebug(){
   let hdStatus = 'Not fetched yet';
   let hdOk = null;
   if(puttHoleData === null && tigerHoleData === null){
-    hdStatus = 'Not fetched — navigate to Putting or Tiger Five tab first';
+    hdStatus = 'Not fetched — will load when tab is visited (or at next login if player_id is set)';
     hdOk = false;
   } else {
     const count = (puttHoleData||tigerHoleData||[]).length;
@@ -5783,13 +5844,26 @@ async function buildAdminDebug(){
 
   el.innerHTML =
     row('Logged-in Player', currentPlayer?.name || '—', null) +
-    row('player_id', pidOk ? pid.slice(0,8)+'…' : 'null — Supabase auth not set up yet (see admin instructions)', pidOk) +
+    row('player_id', pidOk ? pid.slice(0,8)+'… (linked ✓)' : 'null — players table RLS may be blocking login lookup; run SQL fix below', pidOk) +
     row('Auth Session', authStatus, authOk) +
     row('Rounds in Supabase', roundsCount, null) +
     row('hole_data in Supabase', liveCount, liveOk) +
     row('hole_data in Memory', hdStatus, hdOk) +
-    row('Putting charts ready', (liveOk&&puttHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Putting tab to load' : '✗ Need hole_data in Supabase', liveOk&&puttHoleData?.length>0) +
-    row('Tiger Five charts ready', (liveOk&&tigerHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Tiger Five tab to load' : '✗ Need hole_data in Supabase', liveOk&&tigerHoleData?.length>0);
+    row('Putting charts ready',
+      puttHoleData?.length>0 ? '✓ '+puttHoleData.length+' rows loaded' :
+      puttHoleData===null    ? (liveOk?'⚠ Fetch pending — will load on Putting tab':'✗ No hole_data in Supabase') :
+                               '⚠ 0 rows — check RLS policy',
+      puttHoleData?.length>0) +
+    row('Tiger Five charts ready',
+      tigerHoleData?.length>0 ? '✓ '+tigerHoleData.length+' rows loaded' :
+      tigerHoleData===null     ? (liveOk?'⚠ Fetch pending — will load on Tiger Five tab':'✗ No hole_data in Supabase') :
+                                 '⚠ 0 rows — check RLS policy',
+      tigerHoleData?.length>0) +
+    row('Pin Performance ready',
+      pinHoleData?.length>0 ? '✓ '+pinHoleData.length+' rows loaded' :
+      pinHoleData===null     ? (liveOk?'⚠ Fetch pending — will load on Pin Performance tab':'✗ No hole_data in Supabase') :
+                               '⚠ 0 rows — check RLS policy',
+      pinHoleData?.length>0);
 }
 
 async function buildAdminDashboard(){
