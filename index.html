@@ -972,7 +972,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div id="admin-fix-guide" style="margin-top:16px;padding:14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;display:none">
         <div style="color:var(--amber);font-weight:700;margin-bottom:8px;letter-spacing:1px">⚠ SETUP REQUIRED — Run in Supabase SQL Editor:</div>
         <div style="color:var(--text)">1. Go to Supabase → Authentication → Users → Add user<br>
-        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)">tourintelligence@gmail.com</span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
+        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d2a6bda7a0bbbca6b7bebebbb5b7bcb1b792b5bfb3bbbefcb1bdbf">[email&#160;protected]</a></span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
         2. Copy the UUID from the new user, then run:<br>
         <span style="color:var(--blue)">UPDATE public.players SET user_id = '&lt;paste-uuid-here&gt;' WHERE name = 'Pat West';</span><br><br>
         3. Also run to allow admin hole_data access:<br>
@@ -1386,7 +1386,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
   </main>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ===== DATA =====
 const PLAYERS = {
   pat_west: {
@@ -1552,6 +1552,28 @@ let currentPlayer=null, rollingWindow=4, bbRollingWindow=4, drRollingWindow=4, g
 const charts={};
 const drillState={};
 
+// ===== CENTRALIZED DATA STORE =====
+const DataStore = {
+  player: null,
+  rounds: null,
+  holeData: null,
+  approachShots: null,
+  teeShots: null,
+  loaded: false,
+  loading: false,
+  error: null,
+  reset(){
+    this.player = null;
+    this.rounds = null;
+    this.holeData = null;
+    this.approachShots = null;
+    this.teeShots = null;
+    this.loaded = false;
+    this.loading = false;
+    this.error = null;
+  }
+};
+
 // ===== AUTH =====
 // ── Supabase Auth + Login ─────────────────────────────────────────
 function nameToEmail(name){
@@ -1588,6 +1610,12 @@ async function handleLogin(){
             currentPlayer.is_admin=playerRow.is_admin||currentPlayer.is_admin;
           }
         }catch(authErr){/* silent */}
+        // Populate DataStore with hardcoded data (no hole_data available for fallback)
+        DataStore.player = currentPlayer;
+        DataStore.rounds = currentPlayer.rounds||[];
+        DataStore.holeData = [];
+        DataStore.loaded = true;
+        console.log('DATASTORE: Fallback login — no hole_data available for hardcoded player');
         launchApp();return;
       }
       err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
@@ -1616,6 +1644,12 @@ async function handleLogin(){
     const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
     if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
       currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:false};
+      // Populate DataStore with hardcoded data
+      DataStore.player = currentPlayer;
+      DataStore.rounds = currentPlayer.rounds||[];
+      DataStore.holeData = [];
+      DataStore.loaded = true;
+      console.log('DATASTORE: Network fallback login — no hole_data available');
       launchApp();return;
     }
     err.style.display='block';err.textContent='Connection error. Please try again.';
@@ -1625,26 +1659,56 @@ async function handleLogin(){
 async function loadPlayerFromSupabase(playerRecord){
   const loading=document.getElementById('login-loading');
   const err=document.getElementById('login-error');
+  DataStore.loading = true;
+  DataStore.error = null;
   try{
-    // Fetch all player data in parallel
+    const _pid = playerRecord.player_id;
+
+    // ── SINGLE CENTRALIZED FETCH — all data loaded here, nowhere else ──
     const [
-      {data:rounds, error:re},
-      {data:apprShots},
-      {data:teeShots},
-      {data:rawHoleData},
-      {data:roundRows}
+      roundsResult,
+      apprResult,
+      teeResult,
+      holeResult
     ] = await Promise.all([
-      sb.from('rounds').select('*').eq('player_id',playerRecord.player_id).order('date'),
-      sb.from('approach_shots').select('*').eq('player_id',playerRecord.player_id),
-      sb.from('tee_shots').select('*').eq('player_id',playerRecord.player_id),
-      sb.from('hole_data').select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts').eq('player_id',playerRecord.player_id),
-      sb.from('rounds').select('id,date').eq('player_id',playerRecord.player_id)
+      sb.from('rounds').select('*').eq('player_id',_pid).order('date'),
+      sb.from('approach_shots').select('*').eq('player_id',_pid),
+      sb.from('tee_shots').select('*').eq('player_id',_pid),
+      sb.from('hole_data').select('*').eq('player_id',_pid)
     ]);
-    // Build round_id → date map for hole_data
+
+    // ── Extract data and errors from each result ──
+    const rounds = roundsResult.data;
+    const roundsErr = roundsResult.error;
+    const apprShots = apprResult.data;
+    const apprErr = apprResult.error;
+    const teeShots = teeResult.data;
+    const teeErr = teeResult.error;
+    const rawHoleData = holeResult.data;
+    const holeErr = holeResult.error;
+
+    // ── Log and throw on any Supabase error ──
+    if(roundsErr){
+      console.error('DATASTORE: rounds fetch error:', roundsErr.message, roundsErr);
+      throw new Error('rounds fetch failed: ' + roundsErr.message);
+    }
+    if(holeErr){
+      console.error('DATASTORE: hole_data fetch error:', holeErr.message, holeErr);
+      throw new Error('hole_data fetch failed: ' + holeErr.message);
+    }
+    if(apprErr) console.error('DATASTORE: approach_shots fetch error:', apprErr.message, apprErr);
+    if(teeErr)  console.error('DATASTORE: tee_shots fetch error:', teeErr.message, teeErr);
+
+    // Build round_id → date map from the single rounds query (no duplicate fetch)
     const _rdm = {};
-    (roundRows||[]).forEach(r=>{ _rdm[r.id]=r.date; });
+    (rounds||[]).forEach(r=>{ _rdm[r.id]=r.date; });
     const formattedHoleData = (rawHoleData||[]).map(h=>({...h, date:_rdm[h.round_id]||null}));
-    console.log(`Loaded ${formattedHoleData.length} hole_data rows for ${playerRecord.player_name}`);
+
+    // ── DEBUG LOGGING ──
+    console.log('DATASTORE: ROUNDS:', (rounds||[]).length);
+    console.log('DATASTORE: HOLE DATA:', formattedHoleData.length);
+    console.log('DATASTORE: APPROACH SHOTS:', (apprShots||[]).length);
+    console.log('DATASTORE: TEE SHOTS:', (teeShots||[]).length);
 
     const stats=playerRecord.stats||{};
     const formattedRounds=(rounds||[]).map(r=>({
@@ -1696,17 +1760,28 @@ async function loadPlayerFromSupabase(playerRecord){
       proximity:stats.proximity||null,
       course_data:[],
     };
-    // Pre-populate hole_data caches so Putting and Tiger Five work immediately
-    if(formattedHoleData.length){
-      puttHoleData  = formattedHoleData;
-      tigerHoleData = formattedHoleData;
-    }
+
+    // ── Populate DataStore — single source of truth ──
+    DataStore.player = currentPlayer;
+    DataStore.rounds = rounds_final;
+    DataStore.holeData = formattedHoleData;
+    DataStore.approachShots = appr_final;
+    DataStore.teeShots = tee_final;
+    DataStore.loaded = true;
+    DataStore.loading = false;
+    DataStore.error = null;
+
+    console.log('DATASTORE: ✓ All data loaded successfully. hole_data=' + DataStore.holeData.length + ' rounds=' + DataStore.rounds.length);
+
     launchApp();
   }catch(e){
+    DataStore.loading = false;
+    DataStore.error = e;
+    DataStore.loaded = false;
     loading.style.display='none';
     err.style.display='block';
-    err.textContent='Failed to load player data. Please try again.';
-    console.error(e);
+    err.textContent='Failed to load player data: ' + e.message;
+    console.error('DATASTORE: loadPlayerFromSupabase FAILED:', e);
   }
 }
 
@@ -1733,9 +1808,7 @@ document.getElementById('login-player').addEventListener('change',function(){
 });
 
 async function handleLogout(){
-  puttHoleData = null;
-  tigerHoleData = null;
-  pinHoleData   = null;
+  DataStore.reset();
   await sb.auth.signOut().catch(()=>{});
   currentPlayer=null;
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
@@ -1815,14 +1888,14 @@ function initApp(){
   safe(buildMyGame,'MyGame');
   safe(buildDashboard,'Dashboard');
   safe(buildTee,'Tee');
-  buildPinPerformance().catch(e=>console.error('Tab build error [PinPerf]:',e));
+  safe(buildPinPerformance,'PinPerf');
   safe(buildApproach,'Approach');
   safe(buildShotDispersion,'Dispersion');
-  buildPutting(); // async, errors handled internally
+  safe(buildPutting,'Putting');
   safe(buildAICaddie,'AICaddie');
   safe(buildDefinitions,'Definitions');
   safe(buildBirdiesBogeys,'BirdiesBogeys');
-  buildTigerFive().catch(e=>console.error('Tab build error [TigerFive]:',e));
+  safe(buildTigerFive,'TigerFive');
   safe(buildBadGood,'BadGood');
   safe(initDataEntry,'DataEntry');
   safe(buildAlerts,'Alerts');
@@ -2508,7 +2581,6 @@ function toggleDrill(cat){
 // ===== PUTTING =====
 
 let puttViewMode = 'make'; // 'make' or 'miss'
-let puttHoleData = null;   // cached hole_data — null=unfetched, []=fetched but empty
 
 function setPuttView(mode, btn){
   puttViewMode = mode;
@@ -2517,7 +2589,7 @@ function setPuttView(mode, btn){
   buildPutting();
 }
 
-async function buildPutting(){
+function buildPutting(){
   const r = currentPlayer.rounds;
   const mp = currentPlayer.make_pct || {};
 
@@ -2594,18 +2666,8 @@ async function buildPutting(){
     }
   });
 
-  // ── Fetch hole data for HL / Break / Slope charts ─────────────
-  // puttHoleData is pre-loaded at login for Supabase players
-  // Only fetch lazily if not yet loaded (e.g. demo player or first load)
-  if(puttHoleData===null && currentPlayer.player_id){
-    try{
-      const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
-        .eq('player_id', currentPlayer.player_id);
-      puttHoleData = hd || [];
-    }catch(e){ puttHoleData = []; }
-  }
-  const hd = puttHoleData || [];
+  // ── hole_data loaded centrally at login via DataStore ─────────────
+  const hd = DataStore.holeData || [];
   buildPuttHLChart(hd);
   buildPuttBreakChart(hd);
   buildPuttSlopeChart(hd);
@@ -2841,28 +2903,13 @@ function setBBRolling(w,btn){
 }
 
 // ===== TIGER FIVE =====
-let tigerHoleData = null; // null=unfetched, []=fetched
 
-async function buildTigerFive(){
+function buildTigerFive(){
   const r = currentPlayer.rounds;
   const s = sorted();
 
-  // ── Fetch hole_data with dates via Supabase join ──────────────
-  // tigerHoleData pre-loaded at login — lazy fetch only as fallback
-  if(tigerHoleData===null && currentPlayer.player_id){
-    try{
-      const {data:roundRows} = await sb.from('rounds')
-        .select('id,date').eq('player_id', currentPlayer.player_id);
-      const rdm = {};
-      (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
-      const {data:hd} = await sb.from('hole_data')
-        .select('par,score,appr_club,green,short_sided,round_id')
-        .eq('player_id', currentPlayer.player_id);
-      tigerHoleData = (hd||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
-    }catch(e){ tigerHoleData = []; }
-  }
-
-  const hd = tigerHoleData || [];
+  // ── hole_data loaded centrally at login via DataStore ──────────────
+  const hd = DataStore.holeData || [];
 
   // ── Career stat calculations ──────────────────────────────────
   const totalH = r.length * 18;
@@ -3563,35 +3610,57 @@ function enterAppFromUpload(){
 }
 
 // Load players from Supabase into login dropdown on page load
-(async function loadPlayersDropdown(){
+async function loadPlayersDropdown(){
   const sel=document.getElementById('login-player');
+  if(!sel){
+    console.error('DROPDOWN: login-player select element not found');
+    return;
+  }
+  const FALLBACK_PLAYERS=['Pat West','Demo Player'];
+
+  // Step 1: ALWAYS add fallback players first so dropdown is never empty
+  FALLBACK_PLAYERS.forEach(name=>{
+    const opt=document.createElement('option');
+    opt.value=name;opt.textContent=name;
+    sel.appendChild(opt);
+  });
+  console.log('DROPDOWN: Fallback players added. Options:', sel.options.length);
+
+  // Step 2: Try to fetch from Supabase — only replace if we get valid data
   try{
-    // First add hardcoded players as fallback
-    ['Pat West','Demo Player'].forEach(name=>{
+    const {data:players, error:dbErr}=await sb.from('players').select('name').order('name');
+    if(dbErr){
+      console.error('DROPDOWN: Supabase query error:', dbErr.message, dbErr);
+      return; // keep fallbacks
+    }
+    if(!players||players.length===0){
+      console.warn('DROPDOWN: No players returned from DB, keeping fallback');
+      return; // keep fallbacks
+    }
+    // DB returned valid data — merge with fallbacks (DB names first, then any fallbacks not in DB)
+    const dbNames=new Set(players.map(p=>p.name));
+    const merged=[...players.map(p=>p.name), ...FALLBACK_PLAYERS.filter(n=>!dbNames.has(n))];
+    // Clear existing options (keep placeholder at index 0)
+    while(sel.options.length>1)sel.remove(1);
+    merged.forEach(name=>{
       const opt=document.createElement('option');
       opt.value=name;opt.textContent=name;
       sel.appendChild(opt);
     });
-    // Then fetch all players from Supabase
-    const {data:players}=await sb.from('players').select('name').order('name');
-    if(players&&players.length){
-      // Clear and rebuild from DB
-      while(sel.options.length>1)sel.remove(1);
-      players.forEach(p=>{
-        const opt=document.createElement('option');
-        opt.value=p.name;opt.textContent=p.name;
-        sel.appendChild(opt);
-      });
-    }
+    console.log('DROPDOWN: DB + fallback merge complete. Options:', sel.options.length);
   }catch(e){
-    // Fallback already added above - silently continue
-    console.log('Supabase dropdown load failed, using fallback');
+    console.error('DROPDOWN: Exception during Supabase fetch, keeping fallback:', e.message);
+    // Fallbacks already in dropdown — do nothing
   }
-})();
+}
+
+// Initialize dropdown when DOM is ready
+document.addEventListener('DOMContentLoaded', function(){
+  loadPlayersDropdown();
+});
 
 function rebuildLoginDropdown(){
-  // Re-run dropdown load after new player registers
-  loadPlayersDropdown && loadPlayersDropdown();
+  loadPlayersDropdown();
 }
 
 // ===== UTIL FUNCTIONS FOR PARSER =====
@@ -4902,6 +4971,18 @@ async function deSaveRound(){
   }catch(e){}
 
   // Rebuild all analytics
+  DataStore.rounds = currentPlayer.rounds;
+  // Add new hole data to DataStore
+  const newHoleEntries = holes.map(h=>({
+    par:h.par, score:h.score, appr_club:h.apprClub, green:h.green,
+    short_sided:h.shortSided, num_putts:h.numPutts,
+    putt1_hl:h.putt1HL, putt1_break:h.putt1Break, putt1_slope:h.putt1Slope,
+    putt1_len:h.putt1Len, putt2_len:h.putt2Len,
+    appr_lr:h.apprLR, appr_sl:h.apprSL, pin_loc:h.pinLoc,
+    sg_approach:h.sgApproach, round_id:null, date:deRoundMeta.date
+  }));
+  DataStore.holeData = (DataStore.holeData||[]).concat(newHoleEntries);
+  console.log('DATASTORE: Updated after upload. rounds=' + DataStore.rounds.length + ' holeData=' + (DataStore.holeData||[]).length);
   buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();
 
@@ -5506,7 +5587,6 @@ function navToSection(id){
 // ═══════════════════════════════════════════════════════════════════
 // PIN PERFORMANCE
 // ═══════════════════════════════════════════════════════════════════
-let pinHoleData  = null;
 let pinStat      = 'pm';
 let pinWindow    = 0;
 let pinClub      = 'All';
@@ -5550,24 +5630,20 @@ function setPinClub(cat,btn){
   renderPinGrid();
 }
 
-async function buildPinPerformance(){
-  if(pinHoleData===null && currentPlayer.player_id){
-    try{
-      const {data:hd}=await sb.from('hole_data')
-        .select('pin_loc,par,score,green,num_putts,short_sided,appr_club,appr_lr,appr_sl,putt1_len,sg_approach,round_id,rounds!inner(date)')
-        .eq('player_id',currentPlayer.player_id);
-      pinHoleData=(hd||[]).map(h=>({
-        pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
-        green:h.green, num_putts:parseInt(h.num_putts)||null,
-        short_sided:h.short_sided, appr_club:h.appr_club,
-        appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
-        putt1_len:parseFloat(h.putt1_len)||null,
-        sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
-        round_id:h.round_id, date:h.rounds?.date||null,
-      }));
-    }catch(e){pinHoleData=[];}
-  }
-  const hd=pinHoleData||[];
+function buildPinPerformance(){
+  // ── hole_data loaded centrally at login via DataStore ──
+  const pinHoleData = (DataStore.holeData||[]).map(h=>({
+    pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
+    green:h.green, num_putts:parseInt(h.num_putts)||null,
+    short_sided:h.short_sided, appr_club:h.appr_club,
+    appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
+    putt1_len:parseFloat(h.putt1_len)||null,
+    sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
+    round_id:h.round_id, date:h.date||null,
+  }));
+  // Store as module-level for getFilteredPinHoles
+  buildPinPerformance._pinHoleData = pinHoleData;
+  const hd=pinHoleData;
   const emEl=document.getElementById('pin-empty');
   const grid=document.getElementById('pin-grid');
   if(!hd.filter(h=>h.pin_loc).length){
@@ -5584,7 +5660,7 @@ async function buildPinPerformance(){
 }
 
 function getFilteredPinHoles(){
-  let hd=pinHoleData||[];
+  let hd=buildPinPerformance._pinHoleData||[];
   if(pinClub!=='All'){
     hd=hd.filter(h=>{
       if(!h.appr_club)return false;
@@ -5733,11 +5809,13 @@ async function buildAdminDebug(){
   // 2. hole_data fetch status
   let hdStatus = 'Not fetched yet';
   let hdOk = null;
-  if(puttHoleData === null && tigerHoleData === null){
-    hdStatus = 'Not fetched — navigate to Putting or Tiger Five tab first';
+  if(!DataStore.loaded){
+    hdStatus = DataStore.error
+      ? 'Fetch FAILED — ' + DataStore.error.message
+      : 'Not loaded — data loads on login';
     hdOk = false;
   } else {
-    const count = (puttHoleData||tigerHoleData||[]).length;
+    const count = (DataStore.holeData||[]).length;
     if(count > 0){ hdStatus = `✓ ${count} rows loaded`; hdOk = true; }
     else { hdStatus = '0 rows — migration may not have run, or player_id not linked'; hdOk = false; }
   }
@@ -5788,8 +5866,9 @@ async function buildAdminDebug(){
     row('Rounds in Supabase', roundsCount, null) +
     row('hole_data in Supabase', liveCount, liveOk) +
     row('hole_data in Memory', hdStatus, hdOk) +
-    row('Putting charts ready', (liveOk&&puttHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Putting tab to load' : '✗ Need hole_data in Supabase', liveOk&&puttHoleData?.length>0) +
-    row('Tiger Five charts ready', (liveOk&&tigerHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Tiger Five tab to load' : '✗ Need hole_data in Supabase', liveOk&&tigerHoleData?.length>0);
+    row('Putting charts ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0) +
+    row('Tiger Five charts ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0) +
+    row('Pin Performance ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0);
 }
 
 async function buildAdminDashboard(){
@@ -5874,13 +5953,4 @@ async function adminViewPlayer(playerId, playerName){
       <div class="stat-card"><div class="stat-label">GIR %</div><div class="stat-value">${avgGIRVal!=null?avgGIRVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Scrambling</div><div class="stat-value">${avgScramVal!=null?avgScramVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Last Round</div><div class="stat-value" style="font-size:18px">${lastRound.date}</div><div class="stat-sub">${lastRound.course}</div></div>
-      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</div></div>
-    `;
-  }catch(e){
-    statsEl.innerHTML=`<div class="stat-card"><div class="stat-label" style="color:var(--red)">${e.message}</div></div>`;
-  }
-}
-
-</script>
-</body>
-</html>
+      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastR
