@@ -471,6 +471,8 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <label>Select Player</label>
       <select id="login-player">
         <option value="">— Choose your profile —</option>
+        <option value="Pat West">Pat West</option>
+        <option value="Demo Player">Demo Player</option>
       </select>
     </div>
     <div class="login-field" id="login-pin-field">
@@ -972,7 +974,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div id="admin-fix-guide" style="margin-top:16px;padding:14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;display:none">
         <div style="color:var(--amber);font-weight:700;margin-bottom:8px;letter-spacing:1px">⚠ SETUP REQUIRED — Run in Supabase SQL Editor:</div>
         <div style="color:var(--text)">1. Go to Supabase → Authentication → Users → Add user<br>
-        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="d2a6bda7a0bbbca6b7bebebbb5b7bcb1b792b5bfb3bbbefcb1bdbf">[email&#160;protected]</a></span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
+        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)">tourintelligence@gmail.com</span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
         2. Copy the UUID from the new user, then run:<br>
         <span style="color:var(--blue)">UPDATE public.players SET user_id = '&lt;paste-uuid-here&gt;' WHERE name = 'Pat West';</span><br><br>
         3. Also run to allow admin hole_data access:<br>
@@ -1386,7 +1388,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
   </main>
 </div>
 
-<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
+<script>
 // ===== DATA =====
 const PLAYERS = {
   pat_west: {
@@ -3610,54 +3612,51 @@ function enterAppFromUpload(){
 }
 
 // Load players from Supabase into login dropdown on page load
+// Pat West and Demo Player are hardcoded in the HTML <select> — always available
 async function loadPlayersDropdown(){
   const sel=document.getElementById('login-player');
   if(!sel){
     console.error('DROPDOWN: login-player select element not found');
     return;
   }
-  const FALLBACK_PLAYERS=['Pat West','Demo Player'];
+  console.log('DROPDOWN: HTML options present:', sel.options.length);
 
-  // Step 1: ALWAYS add fallback players first so dropdown is never empty
-  FALLBACK_PLAYERS.forEach(name=>{
-    const opt=document.createElement('option');
-    opt.value=name;opt.textContent=name;
-    sel.appendChild(opt);
-  });
-  console.log('DROPDOWN: Fallback players added. Options:', sel.options.length);
-
-  // Step 2: Try to fetch from Supabase — only replace if we get valid data
+  // Only try to add DB players — never remove what's already in HTML
+  if(typeof sb === 'undefined'){
+    console.warn('DROPDOWN: Supabase client not loaded, using HTML options only');
+    return;
+  }
   try{
     const {data:players, error:dbErr}=await sb.from('players').select('name').order('name');
     if(dbErr){
       console.error('DROPDOWN: Supabase query error:', dbErr.message, dbErr);
-      return; // keep fallbacks
+      return;
     }
     if(!players||players.length===0){
-      console.warn('DROPDOWN: No players returned from DB, keeping fallback');
-      return; // keep fallbacks
+      console.warn('DROPDOWN: No players returned from DB');
+      return;
     }
-    // DB returned valid data — merge with fallbacks (DB names first, then any fallbacks not in DB)
-    const dbNames=new Set(players.map(p=>p.name));
-    const merged=[...players.map(p=>p.name), ...FALLBACK_PLAYERS.filter(n=>!dbNames.has(n))];
-    // Clear existing options (keep placeholder at index 0)
-    while(sel.options.length>1)sel.remove(1);
-    merged.forEach(name=>{
-      const opt=document.createElement('option');
-      opt.value=name;opt.textContent=name;
-      sel.appendChild(opt);
+    // Get names already in dropdown (from HTML)
+    const existing=new Set();
+    for(let i=0;i<sel.options.length;i++) existing.add(sel.options[i].value);
+    // Add any DB players not already present
+    let added=0;
+    players.forEach(p=>{
+      if(!existing.has(p.name)){
+        const opt=document.createElement('option');
+        opt.value=p.name;opt.textContent=p.name;
+        sel.appendChild(opt);
+        added++;
+      }
     });
-    console.log('DROPDOWN: DB + fallback merge complete. Options:', sel.options.length);
+    console.log('DROPDOWN: Added', added, 'DB players. Total options:', sel.options.length);
   }catch(e){
-    console.error('DROPDOWN: Exception during Supabase fetch, keeping fallback:', e.message);
-    // Fallbacks already in dropdown — do nothing
+    console.error('DROPDOWN: Exception during Supabase fetch:', e.message);
   }
 }
 
-// Initialize dropdown when DOM is ready
-document.addEventListener('DOMContentLoaded', function(){
-  loadPlayersDropdown();
-});
+// Try to enhance dropdown with DB players (HTML fallbacks always present regardless)
+loadPlayersDropdown();
 
 function rebuildLoginDropdown(){
   loadPlayersDropdown();
@@ -5953,4 +5952,13 @@ async function adminViewPlayer(playerId, playerName){
       <div class="stat-card"><div class="stat-label">GIR %</div><div class="stat-value">${avgGIRVal!=null?avgGIRVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Scrambling</div><div class="stat-value">${avgScramVal!=null?avgScramVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Last Round</div><div class="stat-value" style="font-size:18px">${lastRound.date}</div><div class="stat-sub">${lastRound.course}</div></div>
-      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastR
+      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</div></div>
+    `;
+  }catch(e){
+    statsEl.innerHTML=`<div class="stat-card"><div class="stat-label" style="color:var(--red)">${e.message}</div></div>`;
+  }
+}
+
+</script>
+</body>
+</html>
