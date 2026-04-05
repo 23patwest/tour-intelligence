@@ -441,16 +441,22 @@ tr:hover td{background:var(--surface2)}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.26.0/dist/umd/supabase.js"></script>
 <script>
-const { createClient } = supabase;
-const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', {
-  auth: {
-    persistSession: true,
-    storageKey: 'ti_auth',
-    autoRefreshToken: true,
-    detectSessionInUrl: false
-  },
-  realtime: { params: { eventsPerSecond: 1 } }
-});
+let sb;
+try {
+  const { createClient } = supabase;
+  sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRlZWR0bmxxdGZqa2J1cmZldWNsIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQzMDc4OTQsImV4cCI6MjA4OTg4Mzg5NH0.x6qoqeu-Uv6RpSNRY-7OsTN6CeiZwAqX-6LEiz4akEU', {
+    auth: {
+      persistSession: true,
+      storageKey: 'ti_auth',
+      autoRefreshToken: true,
+      detectSessionInUrl: false
+    },
+    realtime: { params: { eventsPerSecond: 1 } }
+  });
+} catch(e) {
+  console.warn('Supabase client failed to initialize (CDN may be unavailable):', e.message);
+  // sb remains undefined — fetchPlayers() will detect this and use fallback
+}
 </script>
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-3NQDVQDK65"></script>
@@ -3709,66 +3715,75 @@ function enterAppFromUpload(){
   initApp();
 }
 
-// Load players from Supabase into login dropdown on page load
 // ===== PLAYER DROPDOWN =====
+
+// Catch any uncaught JS errors that might otherwise kill execution silently
+window.onerror = function(msg, src, line, col, err) {
+  console.error('GLOBAL ERROR:', msg, 'at', src + ':' + line, err);
+};
+
 const FALLBACK_PLAYERS = ['Pat West', 'Demo Player'];
 
-async function fetchPlayers() {
+// Synchronously populate the dropdown with a list of name strings.
+// Called immediately with fallback, then optionally again with Supabase data.
+function populateDropdown(names) {
   const sel = document.getElementById('login-player');
-  if (!sel) {
-    console.error('fetchPlayers: #login-player element not found');
+  if (!sel) { console.error('populateDropdown: #login-player not found'); return; }
+  while (sel.options.length > 1) sel.remove(1);
+  names.forEach(name => {
+    const opt = document.createElement('option');
+    opt.value = name;
+    opt.textContent = name;
+    sel.appendChild(opt);
+  });
+  console.log('Dropdown populated with:', names);
+}
+
+async function fetchPlayers() {
+  console.log('fetchPlayers: starting');
+
+  // ── STEP 1: Populate fallback immediately (synchronous, guaranteed) ──
+  // The dropdown is usable before the async Supabase call even starts.
+  populateDropdown(FALLBACK_PLAYERS);
+
+  // ── STEP 2: Guard — sb must exist and be callable ──
+  if (typeof sb === 'undefined' || typeof sb.from !== 'function') {
+    console.warn('fetchPlayers: Supabase client (sb) not available — keeping fallback');
     return;
   }
 
-  console.log('Fetching players...');
-
-  // Helper: populate dropdown from an array of name strings
-  function populate(names) {
-    // Clear all options except the placeholder (index 0)
-    while (sel.options.length > 1) sel.remove(1);
-    names.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
-  }
-
+  // ── STEP 3: Try Supabase and upgrade the list if successful ──
   try {
+    console.log('fetchPlayers: querying Supabase players table...');
     const { data, error } = await sb
       .from('players')
       .select('id, name')
       .order('name', { ascending: true });
 
+    // Log the full response so any issue is visible in the console
+    console.log('fetchPlayers: Supabase response:', { data, error });
+
     if (error) {
       console.error('fetchPlayers: Supabase error —', error.message, error);
-      console.log('Using fallback players');
-      populate(FALLBACK_PLAYERS);
+      // Fallback already showing — nothing more to do
       return;
     }
 
     if (!data || data.length === 0) {
-      console.warn('fetchPlayers: No players returned from Supabase');
-      console.log('Using fallback players');
-      populate(FALLBACK_PLAYERS);
+      console.warn('fetchPlayers: Supabase returned no rows — keeping fallback');
       return;
     }
 
-    console.log('Players loaded:', data);
-    populate(data.map(p => p.name));
+    // Success — merge real players with hardcoded Demo Player
+    // Demo Player is never in Supabase; it always comes from local hardcoded data
+    const dbNames = data.map(p => p.name);
+    const merged = [...dbNames, 'Demo Player'];
+    console.log('fetchPlayers: loaded', data.length, 'players from Supabase, merged with Demo Player');
+    populateDropdown(merged);
 
   } catch (err) {
-    console.error('fetchPlayers: Unexpected error —', err);
-    console.log('Using fallback players');
-    // Populate with fallback so dropdown is never empty
-    // Clear first in case partial options were added
-    while (sel.options.length > 1) sel.remove(1);
-    FALLBACK_PLAYERS.forEach(name => {
-      const opt = document.createElement('option');
-      opt.value = name;
-      opt.textContent = name;
-      sel.appendChild(opt);
-    });
+    console.error('fetchPlayers: unexpected error —', err);
+    // Fallback already showing from Step 1 — dropdown is never empty
   }
 }
 
@@ -3776,7 +3791,8 @@ function rebuildLoginDropdown() {
   fetchPlayers();
 }
 
-// Run immediately if DOM is ready, otherwise wait for it
+// Run as soon as possible. The main script block is at the bottom of <body>
+// so the DOM is always ready by the time we get here — but guard anyway.
 if (document.readyState === 'loading') {
   document.addEventListener('DOMContentLoaded', fetchPlayers);
 } else {
