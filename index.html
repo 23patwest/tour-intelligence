@@ -464,6 +464,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
 <body>
 
 <div id="login-screen">
+  <div style="display:flex;align-items:flex-start;gap:28px;position:relative;z-index:1">
   <div class="login-card">
     <div class="login-logo">Tour Intelligence</div>
     <div class="login-sub">Advanced Golf Analytics Platform</div>
@@ -471,8 +472,6 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <label>Select Player</label>
       <select id="login-player">
         <option value="">— Choose your profile —</option>
-        <option value="Pat West">Pat West</option>
-        <option value="Demo Player">Demo Player</option>
       </select>
     </div>
     <div class="login-field" id="login-pin-field">
@@ -485,6 +484,34 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     <div class="login-error" id="login-error" style="display:none"></div>
   <button class="btn-secondary" onclick="showUpload()" style="margin-top:16px;width:100%;text-align:center">New player? Upload your data →</button>
   </div>
+
+  <!-- Sticky note -->
+  <div style="position:relative;margin-top:60px;flex-shrink:0">
+    <!-- Arrow pointing left toward Select Player -->
+    <div style="position:absolute;left:-38px;top:28px;display:flex;align-items:center;gap:0">
+      <svg width="36" height="20" viewBox="0 0 36 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M36 10 L8 10 M8 10 L18 3 M8 10 L18 17" stroke="#fbbf24" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div style="background:#fef9c3;border:2px solid #fbbf24;padding:18px 20px;width:240px;
+      box-shadow:3px 4px 12px rgba(0,0,0,0.35);transform:rotate(1.5deg);
+      font-family:'DM Sans',sans-serif;position:relative">
+      <!-- Pin dot -->
+      <div style="width:14px;height:14px;background:#fbbf24;border-radius:50%;
+        position:absolute;top:-7px;left:50%;transform:translateX(-50%);
+        box-shadow:0 2px 4px rgba(0,0,0,0.3)"></div>
+      <div style="font-family:'Bebas Neue',sans-serif;font-size:17px;letter-spacing:1.5px;
+        color:#92400e;margin-bottom:8px">Just Checking It Out?</div>
+      <p style="font-size:12.5px;color:#78350f;line-height:1.6;margin-bottom:8px">
+        Select <strong>Demo Player</strong> from the dropdown — no password or PIN required. Just click <strong>Sign In</strong>!
+      </p>
+      <p style="font-size:11px;color:#92400e;line-height:1.5;border-top:1px dashed #fbbf24;padding-top:8px;margin-top:4px">
+        Questions? Reach out to<br>
+        <a href="mailto:tourintelligence@gmail.com" style="color:#b45309;font-weight:600;text-decoration:none">tourintelligence@gmail.com</a>
+      </p>
+    </div>
+  </div>
+  </div><!-- end flex wrapper -->
 </div>
 
 <!-- UPLOAD / REGISTER SCREEN -->
@@ -502,9 +529,9 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     </div>
 
     <div class="template-note">
-      <strong>📋 Expected Format:</strong> Your spreadsheet must contain two sheets named
-      <strong>"Course Level Data"</strong> and <strong>"Hole Level Data"</strong> in the Tour Intelligence tracking format.
-      Headers must include: Player, Date, Course, Hole, Par, Score, Green, # of Putts, Fairway Hit, Tee Club, Tee Distance (yds), Approach Club, Approach Left/Right (ft), Approach Short/Long (ft).
+      <strong>📋 Expected Format:</strong> Your spreadsheet must contain a sheet named
+      <strong>"Hole Level Data"</strong> in the Tour Intelligence tracking format.
+      Required headers include: Player, Date, Course, Hole, Par, Score, Green, # of Putts, Fairway Hit, Tee Club, Tee Distance (yds), Approach Club, Approach Left/Right (ft), Approach Short/Long (ft).
     </div>
 
     <!-- STEP 1: Profile -->
@@ -645,6 +672,36 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
           <canvas id="chart-score-dist" height="200"></canvas>
         </div>
       </div>
+
+      <!-- Scoring Trends -->
+      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:8px 0 14px">Scoring Trends</div>
+      <div class="chart-grid">
+        <div class="chart-card chart-full">
+          <div class="chart-title">Score — Rolling Average</div>
+          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
+            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
+              A shorter window (4 rounds) reacts quickly to recent form. A longer window (10 rounds) smooths out noise to reveal the true trend. Use 4 to ask <em>"how am I playing right now?"</em> and 10 to ask <em>"which direction is my game heading?"</em>
+            </div>
+            <div class="rolling-controls" style="margin-bottom:0">
+              <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
+              <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
+            </div>
+          </div>
+          <canvas id="chart-rolling" height="120"></canvas>
+        </div>
+      </div>
+      <div class="chart-grid">
+        <div class="chart-card">
+          <div class="chart-title">Avg +/- to Par by Hole Type</div>
+          <canvas id="chart-par-type" height="200"></canvas>
+        </div>
+        <div class="chart-card">
+          <div class="chart-title">+/- to Par Each Round</div>
+          <canvas id="chart-plusminus" height="200"></canvas>
+        </div>
+      </div>
     </div>
 
 
@@ -652,32 +709,74 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
     <div class="section" id="section-aicaddie">
       <div class="section-header">
         <div class="section-title">AI <span>Caddie</span></div>
-        <div class="section-meta">Ask anything about your game — powered by Claude AI</div>
+        <div class="section-meta">Your personal analytics assistant — coming soon</div>
       </div>
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start">
-        <!-- Chat area -->
+
+      <!-- Coming Soon Banner -->
+      <div style="background:rgba(96,165,250,0.08);border:1px solid rgba(96,165,250,0.3);border-left:4px solid var(--blue);padding:16px 20px;margin-bottom:28px;display:flex;align-items:center;gap:14px">
+        <div style="font-size:24px">🚧</div>
         <div>
+          <div style="font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;color:var(--blue);margin-bottom:4px">Feature Coming Soon</div>
+          <div style="font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.6">The AI Caddie is currently in development. Below is a preview of what it will look like — personalized, data-driven insights about your game on demand.</div>
+        </div>
+      </div>
+
+      <!-- Example conversation -->
+      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start">
+        <div>
+          <div style="font-family:'DM Mono',monospace;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Example Conversation Preview</div>
           <div id="caddie-chat" style="background:var(--surface);border:1px solid var(--border);min-height:420px;max-height:560px;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;margin-bottom:16px">
-            <div class="caddie-msg caddie-msg-ai" id="caddie-welcome">
-              <div class="caddie-avatar">AI</div>
-              <div class="caddie-bubble">Hi! I'm your AI Caddie. I have full access to your stats and round history. Ask me anything about your game — strengths, weaknesses, what to practice, or how to play a specific situation.</div>
+            <!-- Example user message -->
+            <div style="display:flex;justify-content:flex-end">
+              <div style="max-width:75%;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.25);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);line-height:1.5">
+                Where am I losing the most strokes right now?
+              </div>
+            </div>
+            <!-- Example AI response -->
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:32px;height:32px;background:var(--blue);border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#0a0f1a;flex-shrink:0">AI</div>
+              <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.7;flex:1">
+                <p style="margin-bottom:10px">Looking at your last 6 rounds, <strong style="color:var(--text)">approach play is your biggest leak</strong> — particularly your mid-irons. Your GIR% from 150–175 yards is sitting at <strong style="color:var(--amber)">31%</strong>, well below the 55% goal, and you're averaging <strong style="color:var(--red)">8.4 feet left</strong> of target with those clubs.</p>
+                <p style="margin-bottom:10px">The good news: your short game is bailing you out — your scrambling rate is <strong style="color:var(--green)">52%</strong> over the same stretch, above the 50% benchmark. But you're working too hard. Tighten up the mid-iron dispersion and the scores will drop without any short game improvement needed.</p>
+                <p>Your <strong style="color:var(--text)">3-putt rate has also crept up</strong> to 9.4% over the last 4 rounds (goal: ≤5%). That's about 1.7 extra strokes per round you're giving away on the greens. I'd prioritize distance control from 20–35 feet — that's where most of the 3-putts are originating.</p>
+              </div>
+            </div>
+            <!-- Second user message -->
+            <div style="display:flex;justify-content:flex-end">
+              <div style="max-width:75%;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.25);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text);line-height:1.5">
+                What should I focus on before my next round?
+              </div>
+            </div>
+            <!-- Second AI response -->
+            <div style="display:flex;gap:12px;align-items:flex-start">
+              <div style="width:32px;height:32px;background:var(--blue);border-radius:2px;display:flex;align-items:center;justify-content:center;font-family:'Bebas Neue',sans-serif;font-size:14px;color:#0a0f1a;flex-shrink:0">AI</div>
+              <div style="background:var(--surface2);border:1px solid var(--border);padding:14px 18px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.7;flex:1">
+                <p style="margin-bottom:10px">Three things, in order of impact:</p>
+                <p style="margin-bottom:8px"><strong style="color:var(--green)">1. Lag putting (15 min on the practice green)</strong> — Pick 5 balls and practice from 25–35 feet, focusing purely on getting the ball within a 3-foot circle. Don't worry about making them. This directly targets your 3-putt problem.</p>
+                <p style="margin-bottom:8px"><strong style="color:var(--amber)">2. 7-iron alignment check</strong> — Your data shows a consistent left miss pattern with mid-irons. Take 10 minutes on the range checking your foot and shoulder alignment. A subtle closed stance is the most common culprit.</p>
+                <p><strong style="color:var(--blue)">3. On-course: commit to one more club on approach shots.</strong> Your short/long miss data shows you average 6.2 feet short of target. Take the extra club and swing at 85% — the dispersion will tighten.</p>
+              </div>
             </div>
           </div>
-          <div style="display:flex;gap:10px">
-            <textarea id="caddie-input" placeholder="Ask your caddie anything…" rows="2"
-              style="flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;resize:none;outline:none;line-height:1.5;transition:border-color 0.2s"
-              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendCaddieMessage()}"
-              onfocus="this.style.borderColor='var(--blue)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-            <button onclick="sendCaddieMessage()" id="caddie-send-btn"
-              style="background:var(--blue);color:#0a0f1a;border:none;padding:12px 20px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:pointer;white-space:nowrap;align-self:stretch;transition:all 0.2s"
-              onmouseover="this.style.background='#93c5fd'" onmouseout="this.style.background='var(--blue)'">Send →</button>
+
+          <!-- Disabled input area with explanation -->
+          <div style="display:flex;gap:10px;opacity:0.45;pointer-events:none">
+            <div style="flex:1;background:var(--surface2);border:1px solid var(--border);padding:12px 16px;font-family:'DM Sans',sans-serif;font-size:14px;color:var(--text-dim)">
+              AI Caddie is coming soon…
+            </div>
+            <button style="background:var(--blue);color:#0a0f1a;border:none;padding:12px 20px;font-family:'Bebas Neue',sans-serif;font-size:18px;letter-spacing:2px;cursor:not-allowed;white-space:nowrap">Send →</button>
           </div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:8px">Press Enter to send · Shift+Enter for new line</div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-faint);margin-top:8px">Live AI responses coming soon — stay tuned!</div>
         </div>
+
         <!-- Suggested prompts sidebar -->
         <div>
-          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Suggested Prompts</div>
-          <div style="display:flex;flex-direction:column;gap:8px" id="caddie-prompts"></div>
+          <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Prompts You'll Be Able to Ask</div>
+          <div style="display:flex;flex-direction:column;gap:8px">
+            ${['Where am I losing the most strokes?','What should I work on before my next round?','How has my putting trended lately?','What\'s my strongest part of my game?','Analyze my performance on par 5s','Which club category is hurting me most?'].map(p=>`
+              <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">${p}</div>
+            `).join('')}
+          </div>
         </div>
       </div>
     </div>
@@ -911,35 +1010,6 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         </div>
       </div>
 
-      <!-- Scoring Trends (moved from Trends tab) -->
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:32px 0 14px">Scoring Trends</div>
-      <div class="chart-grid">
-        <div class="chart-card chart-full">
-          <div class="chart-title">Score — Rolling Average</div>
-          <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:12px">
-            <div style="font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);max-width:520px;line-height:1.6">
-              A shorter window (4 rounds) reacts quickly to recent form. A longer window (10 rounds) smooths out noise to reveal the true trend. Use 4 to ask <em>"how am I playing right now?"</em> and 10 to ask <em>"which direction is my game heading?"</em>
-            </div>
-            <div class="rolling-controls" style="margin-bottom:0">
-              <button class="roll-btn active" onclick="setRolling(4,this)">4 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(6,this)">6 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(8,this)">8 Rounds</button>
-              <button class="roll-btn" onclick="setRolling(10,this)">10 Rounds</button>
-            </div>
-          </div>
-          <canvas id="chart-rolling" height="120"></canvas>
-        </div>
-      </div>
-      <div class="chart-grid">
-        <div class="chart-card">
-          <div class="chart-title">Avg +/- to Par by Hole Type</div>
-          <canvas id="chart-par-type" height="200"></canvas>
-        </div>
-        <div class="chart-card">
-          <div class="chart-title">+/- to Par Each Round</div>
-          <canvas id="chart-plusminus" height="200"></canvas>
-        </div>
-      </div>
     </div>
 
     <!-- ALERTS -->
@@ -950,6 +1020,10 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       </div>
       <!-- Stat picker -->
       <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:24px" id="alerts-stat-picker"></div>
+      <!-- Context note -->
+      <div style="background:rgba(96,165,250,0.06);border:1px solid rgba(96,165,250,0.2);border-left:3px solid var(--blue);padding:10px 16px;margin-bottom:16px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim);line-height:1.6">
+        💡 <strong style="color:var(--text)">Recent Performance</strong> (4-round avg) shows your short-term form. <strong style="color:var(--text)">Long-Term Average</strong> (10 rounds) is your baseline benchmark. <span style="color:var(--blue)">Click any metric button above to drill into its rolling trend chart below.</span>
+      </div>
       <!-- KPI tiles -->
       <div class="alert-kpi-grid" id="alerts-kpis"></div>
       <!-- Trend chart -->
@@ -974,7 +1048,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div id="admin-fix-guide" style="margin-top:16px;padding:14px;background:rgba(251,191,36,0.08);border:1px solid rgba(251,191,36,0.3);font-family:'DM Mono',monospace;font-size:11px;line-height:1.8;display:none">
         <div style="color:var(--amber);font-weight:700;margin-bottom:8px;letter-spacing:1px">⚠ SETUP REQUIRED — Run in Supabase SQL Editor:</div>
         <div style="color:var(--text)">1. Go to Supabase → Authentication → Users → Add user<br>
-        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)">tourintelligence@gmail.com</span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
+        &nbsp;&nbsp;&nbsp;Email: <span style="color:var(--green)"><a href="/cdn-cgi/l/email-protection" class="__cf_email__" data-cfemail="27534852554e4953424b4b4e404249444267404a464e4b0944484a">[email&#160;protected]</a></span> &nbsp; Password: <span style="color:var(--green)">1234</span><br><br>
         2. Copy the UUID from the new user, then run:<br>
         <span style="color:var(--blue)">UPDATE public.players SET user_id = '&lt;paste-uuid-here&gt;' WHERE name = 'Pat West';</span><br><br>
         3. Also run to allow admin hole_data access:<br>
@@ -1024,7 +1098,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
         <div class="chart-card chart-full">
           <div class="chart-title">Drive L/R Distribution — Fairway Width Buckets</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:10px">
-            Centre bucket = ±15 yds (typical fairway half-width) · green = in fairway zone · outer buckets = 15 yds wide each
+            Centre bucket = ±10 yds (tighter fairway zone) · green = in fairway zone · outer buckets = 15 yds wide each
           </div>
           <canvas id="chart-tee-lr-dist" height="150"></canvas>
           <div id="chart-tee-lr-empty" style="display:none;text-align:center;padding:24px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">No individual tee shot data available — upload from Hole Level Data sheet to unlock</div>
@@ -1161,7 +1235,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div class="chart-grid" style="margin-bottom:20px">
         <div class="chart-card">
           <div class="chart-title" id="putt-hl-title">Miss % — High vs Low Side</div>
-          <div id="putt-hl-note" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Goal: equal split (50/50) — missing high = aggressive, missing low = under-reading</div>
+          <div id="putt-hl-note" style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Of all missed putts: goal = equal split (50/50) — more high misses = over-reading break, more low = under-reading</div>
           <canvas id="chart-putt-hl" height="160"></canvas>
           <div id="putt-hl-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
         </div>
@@ -1174,12 +1248,13 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       </div>
       <!-- Slope analysis -->
       <div class="chart-grid">
-        <div class="chart-card chart-full">
+        <div class="chart-card">
           <div class="chart-title" id="putt-slope-title">Miss % by Slope (Uphill vs Downhill)</div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;color:var(--text-dim);margin-bottom:8px">Uphill putts should have higher make rates — larger miss % on downhill indicates speed control issues</div>
-          <canvas id="chart-putt-slope" height="130"></canvas>
+          <canvas id="chart-putt-slope" height="80"></canvas>
           <div id="putt-slope-empty" style="display:none;text-align:center;padding:20px;font-family:'DM Mono',monospace;font-size:11px;color:var(--text-dim)">Log rounds via Data Entry to unlock this chart</div>
         </div>
+        <div></div>
       </div>
     </div>
 
@@ -1242,11 +1317,11 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
       <div class="chart-grid">
         <div class="chart-card">
           <div class="chart-title">Clubs Most Responsible for Bad Scores</div>
-          <canvas id="chart-bad-clubs" height="280"></canvas>
+          <canvas id="chart-bad-clubs" height="160"></canvas>
         </div>
         <div class="chart-card">
           <div class="chart-title">Top Reasons for Bad Scores</div>
-          <div id="bad-reasons-list" style="margin-top:8px"></div>
+          <div id="bad-reasons-list" style="margin-top:8px;max-height:260px;overflow-y:auto"></div>
         </div>
       </div>
 
@@ -1388,7 +1463,7 @@ const sb = createClient('https://teedtnlqtfjkburfeucl.supabase.co', 'eyJhbGciOiJ
   </main>
 </div>
 
-<script>
+<script data-cfasync="false" src="/cdn-cgi/scripts/5c5dd728/cloudflare-static/email-decode.min.js"></script><script>
 // ===== DATA =====
 const PLAYERS = {
   pat_west: {
@@ -1554,28 +1629,6 @@ let currentPlayer=null, rollingWindow=4, bbRollingWindow=4, drRollingWindow=4, g
 const charts={};
 const drillState={};
 
-// ===== CENTRALIZED DATA STORE =====
-const DataStore = {
-  player: null,
-  rounds: null,
-  holeData: null,
-  approachShots: null,
-  teeShots: null,
-  loaded: false,
-  loading: false,
-  error: null,
-  reset(){
-    this.player = null;
-    this.rounds = null;
-    this.holeData = null;
-    this.approachShots = null;
-    this.teeShots = null;
-    this.loaded = false;
-    this.loading = false;
-    this.error = null;
-  }
-};
-
 // ===== AUTH =====
 // ── Supabase Auth + Login ─────────────────────────────────────────
 function nameToEmail(name){
@@ -1612,12 +1665,6 @@ async function handleLogin(){
             currentPlayer.is_admin=playerRow.is_admin||currentPlayer.is_admin;
           }
         }catch(authErr){/* silent */}
-        // Populate DataStore with hardcoded data (no hole_data available for fallback)
-        DataStore.player = currentPlayer;
-        DataStore.rounds = currentPlayer.rounds||[];
-        DataStore.holeData = [];
-        DataStore.loaded = true;
-        console.log('DATASTORE: Fallback login — no hole_data available for hardcoded player');
         launchApp();return;
       }
       err.style.display='block';err.textContent='Incorrect PIN or player not found.';return;
@@ -1646,12 +1693,6 @@ async function handleLogin(){
     const fallbackKey=Object.keys(PLAYERS).find(k=>PLAYERS[k].name===name);
     if(fallbackKey&&(fallbackKey==='demo_player'||PLAYERS[fallbackKey].pin===pin)){
       currentPlayer={...PLAYERS[fallbackKey],player_id:null,is_admin:false};
-      // Populate DataStore with hardcoded data
-      DataStore.player = currentPlayer;
-      DataStore.rounds = currentPlayer.rounds||[];
-      DataStore.holeData = [];
-      DataStore.loaded = true;
-      console.log('DATASTORE: Network fallback login — no hole_data available');
       launchApp();return;
     }
     err.style.display='block';err.textContent='Connection error. Please try again.';
@@ -1661,56 +1702,41 @@ async function handleLogin(){
 async function loadPlayerFromSupabase(playerRecord){
   const loading=document.getElementById('login-loading');
   const err=document.getElementById('login-error');
-  DataStore.loading = true;
-  DataStore.error = null;
   try{
-    const _pid = playerRecord.player_id;
-
-    // ── SINGLE CENTRALIZED FETCH — all data loaded here, nowhere else ──
+    // Fetch all player data in parallel
     const [
-      roundsResult,
-      apprResult,
-      teeResult,
-      holeResult
+      {data:rounds, error:re},
+      {data:apprShots},
+      {data:teeShots},
+      {data:rawHoleData},
+      {data:roundRows}
     ] = await Promise.all([
-      sb.from('rounds').select('*').eq('player_id',_pid).order('date'),
-      sb.from('approach_shots').select('*').eq('player_id',_pid),
-      sb.from('tee_shots').select('*').eq('player_id',_pid),
-      sb.from('hole_data').select('*').eq('player_id',_pid)
+      sb.from('rounds').select('*').eq('player_id',playerRecord.player_id).order('date'),
+      sb.from('approach_shots').select('*').eq('player_id',playerRecord.player_id),
+      sb.from('tee_shots').select('*').eq('player_id',playerRecord.player_id),
+      // Fetch ALL hole_data columns needed by every analytics tab in one shot.
+      // This pre-populates puttHoleData, tigerHoleData, and pinHoleData so no
+      // secondary lazy fetches are required when those tabs are first visited.
+      sb.from('hole_data')
+        .select([
+          'round_id','hole_number','par','score','fairway',
+          'tee_club','tee_dist',
+          'appr_club','appr_dist','appr_lr','appr_sl','green','short_sided','pin_loc',
+          'num_putts','putt1_len','putt1_hl','putt1_break','putt1_break_amt','putt1_slope',
+          'putt2_len','putt2_hl','putt2_break',
+          'sg_approach','penalty','bad_reason','bad_club'
+        ].join(','))
+        .eq('player_id',playerRecord.player_id),
+      sb.from('rounds').select('id,date').eq('player_id',playerRecord.player_id)
     ]);
 
-    // ── Extract data and errors from each result ──
-    const rounds = roundsResult.data;
-    const roundsErr = roundsResult.error;
-    const apprShots = apprResult.data;
-    const apprErr = apprResult.error;
-    const teeShots = teeResult.data;
-    const teeErr = teeResult.error;
-    const rawHoleData = holeResult.data;
-    const holeErr = holeResult.error;
+    if(re) console.error('rounds fetch error:',re.message);
 
-    // ── Log and throw on any Supabase error ──
-    if(roundsErr){
-      console.error('DATASTORE: rounds fetch error:', roundsErr.message, roundsErr);
-      throw new Error('rounds fetch failed: ' + roundsErr.message);
-    }
-    if(holeErr){
-      console.error('DATASTORE: hole_data fetch error:', holeErr.message, holeErr);
-      throw new Error('hole_data fetch failed: ' + holeErr.message);
-    }
-    if(apprErr) console.error('DATASTORE: approach_shots fetch error:', apprErr.message, apprErr);
-    if(teeErr)  console.error('DATASTORE: tee_shots fetch error:', teeErr.message, teeErr);
-
-    // Build round_id → date map from the single rounds query (no duplicate fetch)
+    // Build round_id → date map and attach dates to every hole row
     const _rdm = {};
-    (rounds||[]).forEach(r=>{ _rdm[r.id]=r.date; });
+    (roundRows||[]).forEach(r=>{ _rdm[r.id]=r.date; });
     const formattedHoleData = (rawHoleData||[]).map(h=>({...h, date:_rdm[h.round_id]||null}));
-
-    // ── DEBUG LOGGING ──
-    console.log('DATASTORE: ROUNDS:', (rounds||[]).length);
-    console.log('DATASTORE: HOLE DATA:', formattedHoleData.length);
-    console.log('DATASTORE: APPROACH SHOTS:', (apprShots||[]).length);
-    console.log('DATASTORE: TEE SHOTS:', (teeShots||[]).length);
+    console.log(`Loaded ${formattedHoleData.length} hole_data rows for ${playerRecord.player_name}`);
 
     const stats=playerRecord.stats||{};
     const formattedRounds=(rounds||[]).map(r=>({
@@ -1762,28 +1788,21 @@ async function loadPlayerFromSupabase(playerRecord){
       proximity:stats.proximity||null,
       course_data:[],
     };
-
-    // ── Populate DataStore — single source of truth ──
-    DataStore.player = currentPlayer;
-    DataStore.rounds = rounds_final;
-    DataStore.holeData = formattedHoleData;
-    DataStore.approachShots = appr_final;
-    DataStore.teeShots = tee_final;
-    DataStore.loaded = true;
-    DataStore.loading = false;
-    DataStore.error = null;
-
-    console.log('DATASTORE: ✓ All data loaded successfully. hole_data=' + DataStore.holeData.length + ' rounds=' + DataStore.rounds.length);
-
+    // Pre-populate ALL hole_data caches from the single login fetch.
+    // This eliminates secondary lazy fetches when Putting, Tiger Five,
+    // and Pin Performance tabs are first visited.
+    if(formattedHoleData.length){
+      puttHoleData  = formattedHoleData;
+      tigerHoleData = formattedHoleData;
+      pinHoleData   = formattedHoleData;
+      console.log(`✓ All hole caches primed (${formattedHoleData.length} rows)`);
+    }
     launchApp();
   }catch(e){
-    DataStore.loading = false;
-    DataStore.error = e;
-    DataStore.loaded = false;
     loading.style.display='none';
     err.style.display='block';
-    err.textContent='Failed to load player data: ' + e.message;
-    console.error('DATASTORE: loadPlayerFromSupabase FAILED:', e);
+    err.textContent='Failed to load player data. Please try again.';
+    console.error(e);
   }
 }
 
@@ -1810,7 +1829,9 @@ document.getElementById('login-player').addEventListener('change',function(){
 });
 
 async function handleLogout(){
-  DataStore.reset();
+  puttHoleData = null;
+  tigerHoleData = null;
+  pinHoleData   = null;
   await sb.auth.signOut().catch(()=>{});
   currentPlayer=null;
   Object.values(charts).forEach(c=>{try{c.destroy()}catch(e){}});
@@ -1890,14 +1911,14 @@ function initApp(){
   safe(buildMyGame,'MyGame');
   safe(buildDashboard,'Dashboard');
   safe(buildTee,'Tee');
-  safe(buildPinPerformance,'PinPerf');
+  buildPinPerformance().catch(e=>console.error('Tab build error [PinPerf]:',e));
   safe(buildApproach,'Approach');
   safe(buildShotDispersion,'Dispersion');
-  safe(buildPutting,'Putting');
+  buildPutting(); // async, errors handled internally
   safe(buildAICaddie,'AICaddie');
   safe(buildDefinitions,'Definitions');
   safe(buildBirdiesBogeys,'BirdiesBogeys');
-  safe(buildTigerFive,'TigerFive');
+  buildTigerFive().catch(e=>console.error('Tab build error [TigerFive]:',e));
   safe(buildBadGood,'BadGood');
   safe(initDataEntry,'DataEntry');
   safe(buildAlerts,'Alerts');
@@ -2163,20 +2184,19 @@ function buildTeeLRDist(){
   el.style.display='block';
   if(emEl) emEl.style.display='none';
 
-  // Centre bucket = typical fairway half-width = ±45 ft (≈ ±15 yards)
-  // Outer buckets = 30 ft wide (≈ 10 yards) each
-  // Layout: >135L | 90-135L | 45-90L | FAIRWAY (±45) | 45-90R | 90-135R | >135R
-  // Data stored in yards. Centre bucket = ±15 yds (typical fairway half-width). Outer buckets = 15 yds wide.
-  const FW = 15; // half-fairway in yards
+  // Centre bucket = typical fairway half-width = ±30 ft (≈ ±10 yards)
+  // Outer buckets = 15 yds wide each
+  // Data stored in yards. Centre bucket = ±10 yds. Outer buckets = 15 yds wide.
+  const FW = 10; // half-fairway in yards
   const BW = 15; // outer bucket width in yards
   const buckets = [
-    {label:'>45L',        min:-Infinity,  max:-(FW+2*BW), zone:'wide'},
-    {label:'30-45L',      min:-(FW+2*BW), max:-(FW+BW),   zone:'mid'},
-    {label:'15-30L',      min:-(FW+BW),   max:-FW,         zone:'close'},
-    {label:'Fairway \u00b115 yds', min:-FW, max:FW,        zone:'fairway'},
-    {label:'15-30R',      min:FW,         max:FW+BW,       zone:'close'},
-    {label:'30-45R',      min:FW+BW,      max:FW+2*BW,     zone:'mid'},
-    {label:'>45R',        min:FW+2*BW,    max:Infinity,    zone:'wide'},
+    {label:'>40L',        min:-Infinity,  max:-(FW+2*BW), zone:'wide'},
+    {label:'25-40L',      min:-(FW+2*BW), max:-(FW+BW),   zone:'mid'},
+    {label:'10-25L',      min:-(FW+BW),   max:-FW,         zone:'close'},
+    {label:'Fairway \u00b110 yds', min:-FW, max:FW,        zone:'fairway'},
+    {label:'10-25R',      min:FW,         max:FW+BW,       zone:'close'},
+    {label:'25-40R',      min:FW+BW,      max:FW+2*BW,     zone:'mid'},
+    {label:'>40R',        min:FW+2*BW,    max:Infinity,    zone:'wide'},
   ];
 
   const counts = buckets.map(b=>({
@@ -2228,7 +2248,7 @@ function buildTeeLRDist(){
           callbacks:{
             title(ctx){
               const b=buckets[ctx[0].dataIndex];
-              return b.zone==='fairway'?'Fairway (±45 ft of centre)':ctx[0].label+' of centre';
+              return b.zone==='fairway'?'Fairway (±10 yds of centre)':ctx[0].label+' of centre';
             },
             label(ctx){
               const n=ctx.raw, pct=Math.round(n/total*100);
@@ -2241,7 +2261,7 @@ function buildTeeLRDist(){
         x:{
           grid:{color:C.grid},
           ticks:{color:C.txt,font:FONT},
-          title:{display:true,text:'← Left (yds)          Fairway          Right (yds) →',color:C.txt,font:FONT}
+          title:{display:true,text:'← Left (yds)          Fairway ±10 yds          Right (yds) →',color:C.txt,font:FONT}
         },
         y:{grid:{color:C.grid},ticks:{color:C.txt,font:FONT},
            title:{display:true,text:'# of Drives',color:C.txt,font:FONT}}
@@ -2583,6 +2603,7 @@ function toggleDrill(cat){
 // ===== PUTTING =====
 
 let puttViewMode = 'make'; // 'make' or 'miss'
+let puttHoleData = null;   // cached hole_data — null=unfetched, []=fetched but empty
 
 function setPuttView(mode, btn){
   puttViewMode = mode;
@@ -2591,7 +2612,7 @@ function setPuttView(mode, btn){
   buildPutting();
 }
 
-function buildPutting(){
+async function buildPutting(){
   const r = currentPlayer.rounds;
   const mp = currentPlayer.make_pct || {};
 
@@ -2668,8 +2689,18 @@ function buildPutting(){
     }
   });
 
-  // ── hole_data loaded centrally at login via DataStore ─────────────
-  const hd = DataStore.holeData || [];
+  // ── Fetch hole data for HL / Break / Slope charts ─────────────
+  // puttHoleData is pre-loaded at login for Supabase players
+  // Only fetch lazily if not yet loaded (e.g. demo player or first load)
+  if(puttHoleData===null && currentPlayer.player_id){
+    try{
+      const {data:hd} = await sb.from('hole_data')
+        .select('par,score,appr_club,green,short_sided,round_id,putt1_hl,putt1_break,putt1_slope,putt2_hl,putt2_break,putt2_slope,num_putts')
+        .eq('player_id', currentPlayer.player_id);
+      puttHoleData = hd || [];
+    }catch(e){ puttHoleData = []; }
+  }
+  const hd = puttHoleData || [];
   buildPuttHLChart(hd);
   buildPuttBreakChart(hd);
   buildPuttSlopeChart(hd);
@@ -2688,23 +2719,21 @@ function buildPuttHLChart(hd){
   const titleEl = document.getElementById('putt-hl-title');
   if(!hlEl)return;
 
-  // Combine putt1 and putt2 high/low data
-  const hlCounts={High:{made:0,total:0},Low:{made:0,total:0}};
+  // Only count MISSED putts where hl is not null/blank
+  // putt1 missed = num_putts > 1; putt2 missed = num_putts > 2
+  const hlCounts={High:0, Low:0};
   for(const h of hd){
-    // putt1
-    if(h.putt1_hl&&['High','Low'].includes(h.putt1_hl)){
-      const made = h.num_putts===1?1:0;
-      hlCounts[h.putt1_hl].total++;
-      hlCounts[h.putt1_hl].made+=made;
+    // putt1 — missed if didn't hole it in 1 putt
+    if(h.putt1_hl && ['High','Low'].includes(h.putt1_hl) && h.num_putts !== 1){
+      hlCounts[h.putt1_hl]++;
     }
-    // putt2
-    if(h.putt2_hl&&['High','Low'].includes(h.putt2_hl)){
-      const made = h.num_putts===2?1:0;
-      hlCounts[h.putt2_hl].total++;
-      hlCounts[h.putt2_hl].made+=made;
+    // putt2 — missed if didn't hole it in 2 putts
+    if(h.putt2_hl && ['High','Low'].includes(h.putt2_hl) && h.num_putts > 2){
+      hlCounts[h.putt2_hl]++;
     }
   }
-  const hasData = hlCounts.High.total+hlCounts.Low.total > 3;
+  const totalMissed = hlCounts.High + hlCounts.Low;
+  const hasData = totalMissed > 3;
   if(!hasData){
     hlEl.style.display='none';
     if(emptyEl) emptyEl.style.display='block';
@@ -2713,13 +2742,12 @@ function buildPuttHLChart(hd){
   hlEl.style.display='block';
   if(emptyEl) emptyEl.style.display='none';
 
-  const isM = puttViewMode==='make';
-  if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % — High vs Low Side`;
+  if(titleEl) titleEl.textContent = 'Miss Direction — High vs Low Side (Missed Putts Only)';
 
   const labels=['High Side','Low Side'];
   const vals=[
-    puttMissOrMake(hlCounts.High.total,hlCounts.High.made),
-    puttMissOrMake(hlCounts.Low.total,hlCounts.Low.made),
+    Math.round(hlCounts.High / totalMissed * 1000) / 10,
+    Math.round(hlCounts.Low  / totalMissed * 1000) / 10,
   ];
   const goal50=[50,50];
 
@@ -2727,24 +2755,23 @@ function buildPuttHLChart(hd){
   charts['chart-putt-hl']=new Chart(hlEl.getContext('2d'),{
     type:'bar',
     data:{labels,datasets:[
-      {label:`${isM?'Make':'Miss'} %`,data:vals,
+      {label:'% of Missed Putts',data:vals,
         backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)'],
         borderColor:[C.blue,C.amber],borderWidth:1.5,order:2},
-      {label:'50% goal',data:goal50,type:'line',
+      {label:'50% equal split',data:goal50,type:'line',
         borderColor:'rgba(74,222,128,0.6)',borderWidth:2,borderDash:[5,4],
         pointRadius:0,tension:0,order:1,backgroundColor:'transparent'}
     ]},
-    options:{...bOpts(`${isM?'Make':'Miss'} %`),
+    options:{...bOpts('% of Missed Putts'),
       plugins:{...bOpts().plugins,
         legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:16}},
         tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
           callbacks:{label(ctx){
             const i=ctx.dataIndex;
-            const side=labels[i];
-            const tot=i===0?hlCounts.High.total:hlCounts.Low.total;
-            return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${tot} putts)`;
+            const count=i===0?hlCounts.High:hlCounts.Low;
+            return `${ctx.dataset.label}: ${ctx.parsed.y!=null?ctx.parsed.y.toFixed(1)+'%':'—'} (${count} of ${totalMissed} missed)`;
           }}}},
-      scales:{...bOpts(`${isM?'Make':'Miss'} %`).scales,y:{...bOpts().scales?.y,min:0,max:100,
+      scales:{...bOpts('% of Missed Putts').scales,y:{...bOpts().scales?.y,min:0,max:100,
         grid:{color:C.grid},ticks:{color:C.txt,font:FONT}}}
     }
   });
@@ -2778,8 +2805,9 @@ function buildPuttBreakChart(hd){
   const isM = puttViewMode==='make';
   if(titleEl) titleEl.textContent = `${isM?'Make':'Miss'} % by Break Type`;
 
-  const labels=['Left to Right (LR)','Right to Left (RL)','No Break'];
-  const keys=['LR','RL','No Break'];
+  // Order: Left to Right, No Break, Right to Left (No Break always in middle)
+  const labels=['Left to Right','No Break','Right to Left'];
+  const keys=['LR','No Break','RL'];
   const vals=keys.map(k=>puttMissOrMake(brCounts[k].total,brCounts[k].made));
 
   if(charts['chart-putt-break']){try{charts['chart-putt-break'].destroy();}catch(e){}}
@@ -2787,8 +2815,8 @@ function buildPuttBreakChart(hd){
     type:'bar',
     data:{labels,datasets:[{
       label:`${isM?'Make':'Miss'} %`,data:vals,
-      backgroundColor:['rgba(96,165,250,0.6)','rgba(251,191,36,0.6)','rgba(74,222,128,0.6)'],
-      borderColor:[C.blue,C.amber,C.green],borderWidth:1.5
+      backgroundColor:['rgba(96,165,250,0.6)','rgba(74,222,128,0.6)','rgba(251,191,36,0.6)'],
+      borderColor:[C.blue,C.green,C.amber],borderWidth:1.5
     }]},
     options:{...bOpts(`${isM?'Make':'Miss'} %`),
       plugins:{...bOpts().plugins,legend:{display:false},
@@ -2905,13 +2933,28 @@ function setBBRolling(w,btn){
 }
 
 // ===== TIGER FIVE =====
+let tigerHoleData = null; // null=unfetched, []=fetched
 
-function buildTigerFive(){
+async function buildTigerFive(){
   const r = currentPlayer.rounds;
   const s = sorted();
 
-  // ── hole_data loaded centrally at login via DataStore ──────────────
-  const hd = DataStore.holeData || [];
+  // ── Fetch hole_data with dates via Supabase join ──────────────
+  // tigerHoleData pre-loaded at login — lazy fetch only as fallback
+  if(tigerHoleData===null && currentPlayer.player_id){
+    try{
+      const {data:roundRows} = await sb.from('rounds')
+        .select('id,date').eq('player_id', currentPlayer.player_id);
+      const rdm = {};
+      (roundRows||[]).forEach(rr=>{ rdm[rr.id]=rr.date; });
+      const {data:hd} = await sb.from('hole_data')
+        .select('par,score,appr_club,green,short_sided,round_id')
+        .eq('player_id', currentPlayer.player_id);
+      tigerHoleData = (hd||[]).map(h=>({...h, date: rdm[h.round_id]||null}));
+    }catch(e){ tigerHoleData = []; }
+  }
+
+  const hd = tigerHoleData || [];
 
   // ── Career stat calculations ──────────────────────────────────
   const totalH = r.length * 18;
@@ -3554,7 +3597,8 @@ async function processFile(){
       if(playerErr)throw new Error('Player insert failed: '+playerErr.message);
       savedPlayerId=newPlayer.id;
       addLog('✓ Player account created in database','ok');
-      // Insert rounds in batches
+
+      // ── Insert rounds in batches, collecting returned IDs ────────
       const roundRows=rounds.map(r=>({
         player_id:savedPlayerId,date:r.date,course:r.course,score:r.score,par:r.par,
         plus_minus:r.plus_minus,birdies:r.birdies,bogeys:r.bogeys,doubles_plus:r.doubles_plus,
@@ -3563,11 +3607,65 @@ async function processFile(){
         one_putts:r.one_putts,three_putts:r.three_putts,holes:r.holes||18
       }));
       const BATCH=50;
+      // date|course → round_id (needed to attach hole rows)
+      const savedRoundIdMap={};
       for(let i=0;i<roundRows.length;i+=BATCH){
-        const {error:rErr}=await sb.from('rounds').insert(roundRows.slice(i,i+BATCH));
-        if(rErr)addLog('⚠ Some rounds failed to save: '+rErr.message,'warn');
+        const {data:insertedRounds,error:rErr}=await sb.from('rounds')
+          .insert(roundRows.slice(i,i+BATCH))
+          .select('id,date,course');
+        if(rErr){
+          addLog('⚠ Some rounds failed to save: '+rErr.message,'warn');
+          console.error('rounds batch insert error:',rErr);
+        } else if(insertedRounds){
+          insertedRounds.forEach(r=>{ savedRoundIdMap[r.date+'|'+r.course]=r.id; });
+        }
       }
-      addLog(`✓ ${rounds.length} rounds saved to database`,'ok');
+      addLog(`✓ ${Object.keys(savedRoundIdMap).length}/${rounds.length} rounds saved to database`,'ok');
+
+      // ── Build and insert hole_data rows ─────────────────────────
+      const allHoleRows=[];
+      for(const[key,rd] of Object.entries(roundMap)){
+        const roundId=savedRoundIdMap[rd.date+'|'+rd.course];
+        if(!roundId) continue; // round failed to save — skip its holes
+        rd.holes.forEach((h,idx)=>{
+          if(h.par==null||h.score==null) return;
+          allHoleRows.push({
+            player_id:savedPlayerId,
+            round_id:roundId,
+            hole_number:idx+1,
+            par:h.par,
+            score:h.score,
+            fairway:h.fairway||null,
+            tee_club:h.teeClub||null,
+            tee_dist:h.teeDist??null,
+            appr_club:h.apprClub||null,
+            appr_dist:h.apprDist??null,
+            appr_lr:h.apprLR??null,
+            appr_sl:h.apprSL??null,
+            green:h.green||null,
+            num_putts:h.numPutts??null,
+            putt1_len:h.putt1??null,   // Excel field name is putt1 → maps to putt1_len column
+            putt2_len:h.putt2??null,   // Excel field name is putt2 → maps to putt2_len column
+            penalty:h.penalty??0,
+            bad_reason:h.badScore||null,
+            bad_club:h.badClub||null,
+          });
+        });
+      }
+      if(allHoleRows.length){
+        const HD_BATCH=100;
+        let hdSaved=0;
+        for(let i=0;i<allHoleRows.length;i+=HD_BATCH){
+          const {error:hdErr}=await sb.from('hole_data').insert(allHoleRows.slice(i,i+HD_BATCH));
+          if(hdErr){
+            addLog('⚠ Some hole data failed to save: '+hdErr.message,'warn');
+            console.error('hole_data batch insert error:',hdErr);
+          } else {
+            hdSaved+=Math.min(HD_BATCH,allHoleRows.length-i);
+          }
+        }
+        addLog(`✓ ${hdSaved}/${allHoleRows.length} hole records saved to database`,'ok');
+      }
       // Insert approach shots
       if(approach_shots.length){
         const apprRows=approach_shots.map(s=>({player_id:savedPlayerId,x:s.x,y:s.y,cat:s.cat,club:s.club,gir:s.gir||false}));
@@ -3612,54 +3710,77 @@ function enterAppFromUpload(){
 }
 
 // Load players from Supabase into login dropdown on page load
-// Pat West and Demo Player are hardcoded in the HTML <select> — always available
-async function loadPlayersDropdown(){
-  const sel=document.getElementById('login-player');
-  if(!sel){
-    console.error('DROPDOWN: login-player select element not found');
-    return;
-  }
-  console.log('DROPDOWN: HTML options present:', sel.options.length);
+// ===== PLAYER DROPDOWN =====
+const FALLBACK_PLAYERS = ['Pat West', 'Demo Player'];
 
-  // Only try to add DB players — never remove what's already in HTML
-  if(typeof sb === 'undefined'){
-    console.warn('DROPDOWN: Supabase client not loaded, using HTML options only');
+async function fetchPlayers() {
+  const sel = document.getElementById('login-player');
+  if (!sel) {
+    console.error('fetchPlayers: #login-player element not found');
     return;
   }
-  try{
-    const {data:players, error:dbErr}=await sb.from('players').select('name').order('name');
-    if(dbErr){
-      console.error('DROPDOWN: Supabase query error:', dbErr.message, dbErr);
-      return;
-    }
-    if(!players||players.length===0){
-      console.warn('DROPDOWN: No players returned from DB');
-      return;
-    }
-    // Get names already in dropdown (from HTML)
-    const existing=new Set();
-    for(let i=0;i<sel.options.length;i++) existing.add(sel.options[i].value);
-    // Add any DB players not already present
-    let added=0;
-    players.forEach(p=>{
-      if(!existing.has(p.name)){
-        const opt=document.createElement('option');
-        opt.value=p.name;opt.textContent=p.name;
-        sel.appendChild(opt);
-        added++;
-      }
+
+  console.log('Fetching players...');
+
+  // Helper: populate dropdown from an array of name strings
+  function populate(names) {
+    // Clear all options except the placeholder (index 0)
+    while (sel.options.length > 1) sel.remove(1);
+    names.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
     });
-    console.log('DROPDOWN: Added', added, 'DB players. Total options:', sel.options.length);
-  }catch(e){
-    console.error('DROPDOWN: Exception during Supabase fetch:', e.message);
+  }
+
+  try {
+    const { data, error } = await sb
+      .from('players')
+      .select('id, name')
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('fetchPlayers: Supabase error —', error.message, error);
+      console.log('Using fallback players');
+      populate(FALLBACK_PLAYERS);
+      return;
+    }
+
+    if (!data || data.length === 0) {
+      console.warn('fetchPlayers: No players returned from Supabase');
+      console.log('Using fallback players');
+      populate(FALLBACK_PLAYERS);
+      return;
+    }
+
+    console.log('Players loaded:', data);
+    populate(data.map(p => p.name));
+
+  } catch (err) {
+    console.error('fetchPlayers: Unexpected error —', err);
+    console.log('Using fallback players');
+    // Populate with fallback so dropdown is never empty
+    // Clear first in case partial options were added
+    while (sel.options.length > 1) sel.remove(1);
+    FALLBACK_PLAYERS.forEach(name => {
+      const opt = document.createElement('option');
+      opt.value = name;
+      opt.textContent = name;
+      sel.appendChild(opt);
+    });
   }
 }
 
-// Try to enhance dropdown with DB players (HTML fallbacks always present regardless)
-loadPlayersDropdown();
+function rebuildLoginDropdown() {
+  fetchPlayers();
+}
 
-function rebuildLoginDropdown(){
-  loadPlayersDropdown();
+// Run immediately if DOM is ready, otherwise wait for it
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', fetchPlayers);
+} else {
+  fetchPlayers();
 }
 
 // ===== UTIL FUNCTIONS FOR PARSER =====
@@ -4970,18 +5091,6 @@ async function deSaveRound(){
   }catch(e){}
 
   // Rebuild all analytics
-  DataStore.rounds = currentPlayer.rounds;
-  // Add new hole data to DataStore
-  const newHoleEntries = holes.map(h=>({
-    par:h.par, score:h.score, appr_club:h.apprClub, green:h.green,
-    short_sided:h.shortSided, num_putts:h.numPutts,
-    putt1_hl:h.putt1HL, putt1_break:h.putt1Break, putt1_slope:h.putt1Slope,
-    putt1_len:h.putt1Len, putt2_len:h.putt2Len,
-    appr_lr:h.apprLR, appr_sl:h.apprSL, pin_loc:h.pinLoc,
-    sg_approach:h.sgApproach, round_id:null, date:deRoundMeta.date
-  }));
-  DataStore.holeData = (DataStore.holeData||[]).concat(newHoleEntries);
-  console.log('DATASTORE: Updated after upload. rounds=' + DataStore.rounds.length + ' holeData=' + (DataStore.holeData||[]).length);
   buildDashboard();buildScoring();buildTee();buildApproach();
   buildShotDispersion();buildPutting();buildBirdiesBogeys();buildTigerFive();
 
@@ -5001,23 +5110,38 @@ async function deSaveRound(){
         failed_ud:newRound.failed_ud,easy_ud_attempts:newRound.easy_ud_attempts
       }).select().single();
       if(!rErr&&savedRound){
-        // Save hole data
+        // ── Save hole data ───────────────────────────────────────────
         const holeRows=holes.map(h=>({
           round_id:savedRound.id,player_id:currentPlayer.player_id,
           hole_number:h.hole,par:h.par,score:h.score,
-          tee_club:h.teeClub,shape_ott:h.shapeOTT,tee_dist:h.teeDist,
-          fairway:h.fairway,tee_miss_lr:h.teeMissLR,wind_strength:h.windStrength,wind_dir:h.windDir,
-          appr_club:h.apprClub,appr_dist:h.apprDist,appr_lr:h.apprLR,appr_sl:h.apprSL,
-          pin_loc:h.pinLoc,green:h.green,short_sided:h.shortSided,
-          num_putts:h.numPutts,putt1_len:h.putt1Len,putt1_break:h.putt1Break,
-          putt1_break_amt:h.putt1BreakAmt,putt1_slope:h.putt1Slope,
-          putt1_hl:h.putt1HL,putt2_len:h.putt2Len,
-          penalty:h.penalty||0,bad_reason:h.badReason,bad_club:h.badClub,
-          putt_notes:h.puttNotes,
-          sg_off_tee:h.sgOffTee, sg_approach:h.sgApproach,
-          sg_short_game:h.sgShortGame, sg_putting:h.sgPutting
+          tee_club:h.teeClub||null,shape_ott:h.shapeOTT||null,tee_dist:h.teeDist||null,
+          fairway:h.fairway||null,tee_miss_lr:h.teeMissLR||null,
+          wind_strength:h.windStrength||null,wind_dir:h.windDir||null,
+          appr_club:h.apprClub||null,appr_dist:h.apprDist||null,
+          appr_lr:h.apprLR??null,appr_sl:h.apprSL??null,
+          pin_loc:h.pinLoc||null,green:h.green||null,short_sided:h.shortSided||null,
+          num_putts:h.numPutts??null,
+          putt1_len:h.putt1Len??null,putt1_break:h.putt1Break||null,
+          putt1_break_amt:h.putt1BreakAmt||null,putt1_slope:h.putt1Slope||null,
+          putt1_hl:h.putt1HL||null,
+          putt2_len:h.putt2Len??null,putt2_break:h.putt2Break||null,
+          penalty:h.penalty||0,bad_reason:h.badReason||null,bad_club:h.badClub||null,
+          putt_notes:h.puttNotes||null,
+          sg_off_tee:h.sgOffTee??null,sg_approach:h.sgApproach??null,
+          sg_short_game:h.sgShortGame??null,sg_putting:h.sgPutting??null,
         }));
-        await sb.from('hole_data').insert(holeRows);
+        const {error:hdErr}=await sb.from('hole_data').insert(holeRows);
+        if(hdErr){
+          console.error('hole_data insert error:',hdErr.message,hdErr);
+          // Non-fatal — round is saved, hole detail is lost for this round only
+        } else {
+          console.log(`✓ ${holeRows.length} hole records saved for round ${savedRound.id}`);
+          // Update in-memory hole caches so analytics refresh immediately
+          const newHoleData=holeRows.map(h=>({...h,date:deRoundMeta.date}));
+          puttHoleData =[...(puttHoleData ||[]),...newHoleData];
+          tigerHoleData=[...(tigerHoleData||[]),...newHoleData];
+          pinHoleData  =[...(pinHoleData  ||[]),...newHoleData];
+        }
         // Save approach shots
         if(newApprShots.length){
           await sb.from('approach_shots').insert(newApprShots.map(h=>{
@@ -5262,8 +5386,8 @@ function renderAlertsContent(){
     const last10sub = last10dates.length?`${last10dates[0].slice(5)} – ${last10dates[last10dates.length-1].slice(5)}`:'';
     kpiEl.innerHTML =
       kpiCard('Last Round', valLast, d1_vs4, 'kpi-last', '4-rnd avg', `${lastRnd.date.slice(5)} — ${lastRnd.course}`) +
-      kpiCard('4-Round Avg', avg4, d2_vs10, 'kpi-4', '10-rnd avg', last4sub) +
-      kpiCard('10-Round Avg', avg10, null, 'kpi-10', '', last10sub);
+      kpiCard('Recent Performance (4-Round Avg)', avg4, d2_vs10, 'kpi-4', '10-rnd avg', 'Short-term trend · '+last4sub) +
+      kpiCard('Long-Term Average (10 Rounds)', avg10, null, 'kpi-10', '', 'Baseline benchmark · '+last10sub);
   }
 
   // Chart title
@@ -5507,7 +5631,7 @@ function buildMyGame(){
         <div class="mg-weakness-stat" style="color:${statColor}">${m.fmt(m.val)}</div>
         <div class="mg-weakness-goal">${goalStr}</div>
         <div class="mg-weakness-desc">${m.desc}</div>
-        <div class="mg-weakness-link">Analyse in ${m.tabLabel} →</div>
+        <div class="mg-weakness-link">Analyze in ${m.tabLabel} →</div>
       </div>`;
     }).join('');
   }
@@ -5586,6 +5710,7 @@ function navToSection(id){
 // ═══════════════════════════════════════════════════════════════════
 // PIN PERFORMANCE
 // ═══════════════════════════════════════════════════════════════════
+let pinHoleData  = null;
 let pinStat      = 'pm';
 let pinWindow    = 0;
 let pinClub      = 'All';
@@ -5629,20 +5754,24 @@ function setPinClub(cat,btn){
   renderPinGrid();
 }
 
-function buildPinPerformance(){
-  // ── hole_data loaded centrally at login via DataStore ──
-  const pinHoleData = (DataStore.holeData||[]).map(h=>({
-    pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
-    green:h.green, num_putts:parseInt(h.num_putts)||null,
-    short_sided:h.short_sided, appr_club:h.appr_club,
-    appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
-    putt1_len:parseFloat(h.putt1_len)||null,
-    sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
-    round_id:h.round_id, date:h.date||null,
-  }));
-  // Store as module-level for getFilteredPinHoles
-  buildPinPerformance._pinHoleData = pinHoleData;
-  const hd=pinHoleData;
+async function buildPinPerformance(){
+  if(pinHoleData===null && currentPlayer.player_id){
+    try{
+      const {data:hd}=await sb.from('hole_data')
+        .select('pin_loc,par,score,green,num_putts,short_sided,appr_club,appr_lr,appr_sl,putt1_len,sg_approach,round_id,rounds!inner(date)')
+        .eq('player_id',currentPlayer.player_id);
+      pinHoleData=(hd||[]).map(h=>({
+        pin_loc:h.pin_loc, par:parseInt(h.par)||null, score:parseInt(h.score)||null,
+        green:h.green, num_putts:parseInt(h.num_putts)||null,
+        short_sided:h.short_sided, appr_club:h.appr_club,
+        appr_lr:parseFloat(h.appr_lr)||null, appr_sl:parseFloat(h.appr_sl)||null,
+        putt1_len:parseFloat(h.putt1_len)||null,
+        sg_approach:h.sg_approach!=null?parseFloat(h.sg_approach):null,
+        round_id:h.round_id, date:h.rounds?.date||null,
+      }));
+    }catch(e){pinHoleData=[];}
+  }
+  const hd=pinHoleData||[];
   const emEl=document.getElementById('pin-empty');
   const grid=document.getElementById('pin-grid');
   if(!hd.filter(h=>h.pin_loc).length){
@@ -5659,7 +5788,7 @@ function buildPinPerformance(){
 }
 
 function getFilteredPinHoles(){
-  let hd=buildPinPerformance._pinHoleData||[];
+  let hd=pinHoleData||[];
   if(pinClub!=='All'){
     hd=hd.filter(h=>{
       if(!h.appr_club)return false;
@@ -5808,13 +5937,11 @@ async function buildAdminDebug(){
   // 2. hole_data fetch status
   let hdStatus = 'Not fetched yet';
   let hdOk = null;
-  if(!DataStore.loaded){
-    hdStatus = DataStore.error
-      ? 'Fetch FAILED — ' + DataStore.error.message
-      : 'Not loaded — data loads on login';
+  if(puttHoleData === null && tigerHoleData === null){
+    hdStatus = 'Not fetched — navigate to Putting or Tiger Five tab first';
     hdOk = false;
   } else {
-    const count = (DataStore.holeData||[]).length;
+    const count = (puttHoleData||tigerHoleData||[]).length;
     if(count > 0){ hdStatus = `✓ ${count} rows loaded`; hdOk = true; }
     else { hdStatus = '0 rows — migration may not have run, or player_id not linked'; hdOk = false; }
   }
@@ -5865,9 +5992,8 @@ async function buildAdminDebug(){
     row('Rounds in Supabase', roundsCount, null) +
     row('hole_data in Supabase', liveCount, liveOk) +
     row('hole_data in Memory', hdStatus, hdOk) +
-    row('Putting charts ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0) +
-    row('Tiger Five charts ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0) +
-    row('Pin Performance ready', DataStore.loaded&&(DataStore.holeData||[]).length>0 ? '✓ '+DataStore.holeData.length+' rows available' : DataStore.error ? '✗ Fetch failed: '+DataStore.error.message : liveOk ? '⚠ Loaded but 0 rows' : '✗ Need hole_data in Supabase', DataStore.loaded&&(DataStore.holeData||[]).length>0);
+    row('Putting charts ready', (liveOk&&puttHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Putting tab to load' : '✗ Need hole_data in Supabase', liveOk&&puttHoleData?.length>0) +
+    row('Tiger Five charts ready', (liveOk&&tigerHoleData?.length>0) ? '✓ Ready' : liveOk ? 'Navigate to Tiger Five tab to load' : '✗ Need hole_data in Supabase', liveOk&&tigerHoleData?.length>0);
 }
 
 async function buildAdminDashboard(){
@@ -5952,13 +6078,4 @@ async function adminViewPlayer(playerId, playerName){
       <div class="stat-card"><div class="stat-label">GIR %</div><div class="stat-value">${avgGIRVal!=null?avgGIRVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Scrambling</div><div class="stat-value">${avgScramVal!=null?avgScramVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Last Round</div><div class="stat-value" style="font-size:18px">${lastRound.date}</div><div class="stat-sub">${lastRound.course}</div></div>
-      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</div></div>
-    `;
-  }catch(e){
-    statsEl.innerHTML=`<div class="stat-card"><div class="stat-label" style="color:var(--red)">${e.message}</div></div>`;
-  }
-}
-
-</script>
-</body>
-</html>
+      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastR
