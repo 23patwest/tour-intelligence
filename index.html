@@ -449,7 +449,12 @@ try {
       persistSession: true,
       storageKey: 'ti_auth',
       autoRefreshToken: true,
-      detectSessionInUrl: false
+      detectSessionInUrl: false,
+    },
+    // Wrap fetch to prevent Headers objects being passed through postMessage,
+    // which causes: DataCloneError: Headers object could not be cloned
+    global: {
+      fetch: (url, options = {}) => fetch(url, options)
     },
     realtime: { params: { eventsPerSecond: 1 } }
   });
@@ -492,7 +497,7 @@ try {
   </div>
 
   <!-- Sticky note -->
-  <div style="position:relative;margin-top:60px;flex-shrink:0">
+  <div style="position:relative;margin-top:128px;flex-shrink:0">
     <!-- Arrow pointing left toward Select Player -->
     <div style="position:absolute;left:-38px;top:28px;display:flex;align-items:center;gap:0">
       <svg width="36" height="20" viewBox="0 0 36 20" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -779,9 +784,12 @@ try {
         <div>
           <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:12px">Prompts You'll Be Able to Ask</div>
           <div style="display:flex;flex-direction:column;gap:8px">
-            ${['Where am I losing the most strokes?','What should I work on before my next round?','How has my putting trended lately?','What\'s my strongest part of my game?','Analyze my performance on par 5s','Which club category is hurting me most?'].map(p=>`
-              <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">${p}</div>
-            `).join('')}
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">Where am I losing the most strokes?</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">What should I work on before my next round?</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">How has my putting trended lately?</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">What's my strongest part of my game?</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">Analyze my performance on par 5s</div>
+            <div style="background:var(--surface2);border:1px solid var(--border);padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:12px;color:var(--text-dim);opacity:0.7;cursor:not-allowed">Which club category is hurting me most?</div>
           </div>
         </div>
       </div>
@@ -993,8 +1001,8 @@ try {
       </div>
 
       <!-- 3 Weakness cards -->
-      <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
-        Top Focus Areas — based on your last 10 rounds
+      <div id="mg-focus-label" style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin-bottom:14px">
+        Top Focus Areas — based on your last 4 rounds
       </div>
       <div id="mygame-weaknesses" style="display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-bottom:32px"></div>
 
@@ -1709,6 +1717,16 @@ async function loadPlayerFromSupabase(playerRecord){
   const loading=document.getElementById('login-loading');
   const err=document.getElementById('login-error');
   try{
+    // Confirm we have an active session before hitting RLS-protected tables.
+    // Without this, hole_data / rounds queries return 0 rows silently.
+    const { data: sessionData } = await sb.auth.getSession();
+    const session = sessionData?.session;
+    if(!session){
+      console.warn('loadPlayerFromSupabase: no active session — RLS-protected tables will return empty');
+    } else {
+      console.log('loadPlayerFromSupabase: active session for', session.user.email);
+    }
+
     // Fetch all player data in parallel
     const [
       {data:rounds, error:re},
@@ -5497,6 +5515,13 @@ function buildMyGame(){
   const lastRound = sorted[sorted.length-1];
   if(!last4v.length) return;
 
+  // Sync all window-dependent titles every time this builds
+  const _t = id => document.getElementById(id);
+  if(_t('mg-snapshot-title'))  _t('mg-snapshot-title').textContent  = `Last ${mgWindow} Rounds`;
+  if(_t('mg-score-title'))     _t('mg-score-title').textContent     = `Scoring — Last ${mgWindow} Rounds`;
+  if(_t('mg-stats-title'))     _t('mg-stats-title').textContent     = `Key Stats — Last ${mgWindow} Rounds`;
+  if(_t('mg-focus-label'))     _t('mg-focus-label').textContent     = `Top Focus Areas — based on your last ${mgWindow} rounds`;
+
   const avgN = arr => {const v=arr.filter(x=>x!=null&&!isNaN(x));return v.length?v.reduce((a,b)=>a+b,0)/v.length:null;};
   const medN = arr => {const v=[...arr].filter(x=>x!=null&&!isNaN(x)).sort((a,b)=>a-b);if(!v.length)return null;const m=Math.floor(v.length/2);return v.length%2?v[m]:(v[m-1]+v[m])/2;};
 
@@ -6094,4 +6119,13 @@ async function adminViewPlayer(playerId, playerName){
       <div class="stat-card"><div class="stat-label">GIR %</div><div class="stat-value">${avgGIRVal!=null?avgGIRVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Scrambling</div><div class="stat-value">${avgScramVal!=null?avgScramVal.toFixed(1)+'%':'—'}</div></div>
       <div class="stat-card"><div class="stat-label">Last Round</div><div class="stat-value" style="font-size:18px">${lastRound.date}</div><div class="stat-sub">${lastRound.course}</div></div>
-      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastR
+      <div class="stat-card"><div class="stat-label">Last Score</div><div class="stat-value ${lastRound.plus_minus<=4?'stat-good':lastRound.plus_minus>=10?'stat-bad':'stat-neutral'}">${lastRound.score} (${lastRound.plus_minus>=0?'+':''}${lastRound.plus_minus})</div></div>
+    `;
+  }catch(e){
+    statsEl.innerHTML=`<div class="stat-card"><div class="stat-label" style="color:var(--red)">${e.message}</div></div>`;
+  }
+}
+
+</script>
+</body>
+</html>
