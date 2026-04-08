@@ -396,10 +396,15 @@ tr:hover td{background:var(--surface2)}
 .alerts-stat-btn.btn-trend-bad.active{background:rgba(248,113,113,0.18);border-color:var(--red)}
 .alert-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-bottom:28px}
 .alert-kpi{background:var(--surface);border:1px solid var(--border);padding:20px;position:relative}
+.rc-tile{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:14px 12px;position:relative;overflow:hidden;transition:box-shadow 0.2s}
+.rc-tile-label{font-family:'Barlow',sans-serif;font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rc-tile-values{display:flex;align-items:stretch;gap:6px;height:48px}
+.rc-tile-val{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Barlow Condensed',sans-serif;font-size:22px;letter-spacing:1px;border-radius:3px;font-weight:700}
+.rc-tile-avg{flex:1;display:flex;align-items:center;justify-content:center;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-dim);border-radius:3px;background:var(--surface2)}
 .alert-kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
 .alert-kpi.kpi-last::before{background:var(--blue)}
-.alert-kpi.kpi-4::before{background:var(--amber)}
-.alert-kpi.kpi-10::before{background:var(--green)}
+.alert-kpi.kpi-4::before{background:rgba(251,191,36,0.9)}
+.alert-kpi.kpi-10::before{background:rgba(185,28,28,0.9)}
 .alert-kpi-label{font-family:'Barlow',sans-serif;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--text-dim);margin-bottom:8px}
 .alert-kpi-val{font-family:'Barlow Condensed',sans-serif;font-size:44px;letter-spacing:1px;line-height:1}
 .alert-kpi-sub{font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);margin-top:5px}
@@ -717,6 +722,37 @@ try {
           <canvas id="chart-plusminus" height="105"></canvas>
         </div>
       </div>
+
+      <!-- ROUND COMPARISON -->
+      <div style="font-family:'Barlow',sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--text-dim);margin:8px 0 14px">Last Round vs Your Averages</div>
+      <div style="display:grid;grid-template-columns:220px 1fr;gap:24px;align-items:start">
+
+        <!-- Controls sidebar -->
+        <div style="display:flex;flex-direction:column;gap:16px">
+          <div class="card" style="padding:16px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">Latest Rounds</div>
+            <select id="rc-round-select" onchange="buildRoundComparison()" style="width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:8px 10px;font-family:'Barlow',sans-serif;font-size:11px;outline:none"></select>
+          </div>
+          <div class="card" style="padding:16px">
+            <div style="font-family:'Barlow Condensed',sans-serif;font-size:13px;letter-spacing:2px;color:var(--text-dim);text-transform:uppercase;margin-bottom:10px">Select Rounds to Include in Comparison</div>
+            <div style="display:flex;align-items:center;justify-content:center;margin-bottom:8px">
+              <span id="rc-window-label" style="font-family:'Barlow Condensed',sans-serif;font-size:36px;letter-spacing:2px;color:var(--text)">10</span>
+            </div>
+            <input type="range" id="rc-window-slider" min="3" max="30" value="10" oninput="rcSliderChange(this)" style="width:100%;accent-color:var(--blue)">
+          </div>
+          <div style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);line-height:1.6;padding:0 2px">
+            <span style="display:inline-block;width:12px;height:12px;background:rgba(74,222,128,0.7);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Better than avg<br>
+            <span style="display:inline-block;width:12px;height:12px;background:rgba(248,113,113,0.7);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Worse than avg<br>
+            <span style="display:inline-block;width:12px;height:12px;background:rgba(74,222,128,0.25);border-radius:2px;margin-right:4px;vertical-align:middle"></span>Tied / no data
+          </div>
+        </div>
+
+        <!-- Comparison tiles -->
+        <div>
+          <div id="rc-header" style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);margin-bottom:12px;letter-spacing:0.5px"></div>
+          <div id="rc-tiles" style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px"></div>
+        </div>
+      </div>
     </div>
 
 
@@ -737,10 +773,10 @@ try {
       </div>
 
       <!-- Example conversation -->
-      <div style="display:grid;grid-template-columns:1fr 320px;gap:24px;align-items:start">
+      <div style="display:grid;grid-template-columns:1fr 200px;gap:24px;align-items:start">
         <div>
           <div style="font-family:'Barlow',sans-serif;font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-dim);margin-bottom:10px">Example Conversation Preview</div>
-          <div id="caddie-chat" style="background:var(--surface);border:1px solid var(--border);min-height:420px;max-height:560px;overflow-y:auto;padding:24px;display:flex;flex-direction:column;gap:16px;margin-bottom:16px">
+          <div id="caddie-chat" style="background:var(--surface);border:1px solid var(--border);min-height:240px;max-height:300px;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;margin-bottom:12px">
             <!-- Example user message -->
             <div style="display:flex;justify-content:flex-end">
               <div style="max-width:75%;background:rgba(96,165,250,0.15);border:1px solid rgba(96,165,250,0.25);padding:12px 16px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text);line-height:1.5">
@@ -1118,7 +1154,7 @@ try {
           <div style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);margin-bottom:10px">
             Centre bucket = ±10 yds (tighter fairway zone) · green = in fairway zone · outer buckets = 15 yds wide each
           </div>
-          <canvas id="chart-tee-lr-dist" height="150"></canvas>
+          <canvas id="chart-tee-lr-dist" height="110"></canvas>
           <div id="chart-tee-lr-empty" style="display:none;text-align:center;padding:24px;font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim)">No individual tee shot data available — upload from Hole Level Data sheet to unlock</div>
         </div>
       </div>
@@ -1149,9 +1185,17 @@ try {
                   <button class="roll-btn" onclick="setTeeScatterCI(null,this)">None</button>
                 </div>
               </div>
+              <div>
+                <div style="font-family:'Barlow',sans-serif;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:5px;text-align:right">Shots Shown</div>
+                <div class="rolling-controls" id="tee-scatter-recent-btns" style="margin-bottom:0">
+                  <button class="roll-btn active" onclick="setTeeScatterRecent('all',this)">All Time</button>
+                  <button class="roll-btn" onclick="setTeeScatterRecent('last10',this)">Last 10 Rnds</button>
+                  <button class="roll-btn" onclick="setTeeScatterRecent('ellipse',this)">Ellipses Only</button>
+                </div>
+              </div>
             </div>
           </div>
-          <canvas id="chart-tee-scatter" height="200"></canvas>
+          <canvas id="chart-tee-scatter" height="160"></canvas>
         </div>
       </div>
       <div class="chart-grid">
@@ -1310,7 +1354,10 @@ try {
     <div class="section" id="section-tiger">
       <div class="section-header">
         <div class="section-title">The Tiger <span>Five</span></div>
-        <div class="section-meta">Five key metrics that define elite scoring — track your goals</div>
+        <div class="section-meta">Five key metrics that define elite scoring — <strong style="color:var(--blue)">click any card to see its performance trend</strong></div>
+      </div>
+      <div style="font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim);margin-bottom:12px;display:flex;align-items:center;gap:8px">
+        <span style="font-size:16px">👆</span> Click a metric card below to see its rolling trend chart
       </div>
       <div class="tiger-grid" id="tiger-cards"></div>
       <!-- Tiger rolling chart — appears when a card is clicked -->
@@ -1330,19 +1377,23 @@ try {
     <div class="section" id="section-badgood">
       <div class="section-header">
         <div class="section-title">What Went <span>Wrong</span></div>
-        <div class="section-meta">Root cause analysis — clubs responsible for bad scores &amp; common patterns</div>
+        <div class="section-meta">Root cause analysis — click a club bar to filter reasons, or a reason bar to highlight its club</div>
       </div>
       <div class="chart-grid">
         <div class="chart-card">
           <div class="chart-title">Clubs Most Responsible for Bad Scores</div>
+          <div style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);margin-bottom:8px">Click a bar to filter the reasons list →</div>
           <canvas id="chart-bad-clubs" height="95"></canvas>
         </div>
         <div class="chart-card">
           <div class="chart-title">Top Reasons for Bad Scores</div>
-          <div id="bad-reasons-list" style="margin-top:8px;max-height:260px;overflow-y:auto"></div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px">
+            <div id="bad-filter-label" style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim)">All clubs</div>
+            <button id="bad-clear-btn" onclick="clearBadFilter()" style="display:none;font-family:'Barlow',sans-serif;font-size:10px;color:var(--blue);background:none;border:1px solid rgba(96,165,250,0.3);padding:2px 8px;cursor:pointer;border-radius:3px">✕ Clear filter</button>
+          </div>
+          <div id="bad-reasons-list" style="margin-top:4px;max-height:260px;overflow-y:auto"></div>
         </div>
       </div>
-
     </div>
 
 
@@ -1441,8 +1492,12 @@ try {
         <div class="section-title">Shot <span>Dispersion</span></div>
         <div class="section-meta">Approach shot scatter — bivariate confidence ellipses by club category</div>
       </div>
+
+      <!-- Miss Tendency summary — shown ABOVE chart to ground the user -->
+      <div id="disp-miss-box" style="margin-bottom:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--blue);padding:16px 20px;font-family:'Barlow',sans-serif;font-size:13px;color:var(--text-dim);line-height:1.8"></div>
+
       <div class="chart-card chart-full" style="margin-bottom:24px">
-        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:20px">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:16px;margin-bottom:16px">
           <div>
             <div class="chart-title" style="margin-bottom:6px">Approach Shot Dispersion</div>
             <div style="font-family:'Barlow',sans-serif;font-size:10px;color:var(--text-dim);line-height:1.8">
@@ -1469,14 +1524,21 @@ try {
                 <button class="roll-btn" onclick="setDispCI(0.95,this)">95% CI</button>
               </div>
             </div>
+            <div>
+              <div style="font-family:'Barlow',sans-serif;font-size:9px;color:var(--text-dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;text-align:right">Shots Shown</div>
+              <div class="rolling-controls" id="disp-recent-btns" style="margin-bottom:0">
+                <button class="roll-btn active" onclick="setDispRecent('all',this)">All Time</button>
+                <button class="roll-btn" onclick="setDispRecent('last10',this)">Last 10 Rnds</button>
+                <button class="roll-btn" onclick="setDispRecent('ellipse',this)">Ellipses Only</button>
+              </div>
+            </div>
           </div>
         </div>
         <div style="position:relative">
-          <canvas id="chart-dispersion" height="200"></canvas>
+          <canvas id="chart-dispersion" height="150"></canvas>
         </div>
       </div>
       <div class="stats-grid" id="disp-stats"></div>
-      <div id="disp-miss-box" style="margin-top:20px;background:var(--surface2);border:1px solid var(--border);border-left:3px solid var(--blue);padding:20px;font-family:'Barlow',sans-serif;font-size:14px;color:var(--text-dim);line-height:1.8"></div>
     </div>
   </main>
 </div>
@@ -1566,6 +1628,7 @@ const PLAYERS = {
     make_pct:{"0-3":100,"3-5":52.9,"5-8":26.3,"8-12":15.2,"12-20":20.7,"20-35":6.9,"35-50":0,"50+":11.1},
     bad_reasons:{"Pulled tee shot":10,"Thin approach":4,"Pushed tee shot":4,"Poor approach strike":4,"Pushed approach":4,"Poor tee shot strike":3,"3-Putt":3,"Short putt nerves":2},
     bad_clubs:{"Dr":13,"3w":10,"Putter":7,"5i":6,"6i":4,"3H":3,"4i":3,"9i":3},
+    bad_club_reasons:{"Dr":{"Pulled tee shot":7,"Pushed tee shot":3,"Poor tee shot strike":3},"3w":{"Pulled tee shot":3,"Pushed tee shot":1,"Poor tee shot strike":0},"Putter":{"3-Putt":3,"Short putt nerves":2},"5i":{"Poor approach strike":2,"Pushed approach":2,"Thin approach":1},"6i":{"Poor approach strike":2,"Thin approach":2},"4i":{"Thin approach":1,"Poor approach strike":1},"3H":{"Poor approach strike":1,"Pushed approach":1},"9i":{"Pushed approach":2}},
     course_data:[
       {date:"2025-06-01",warmup:"Below Average",sleep:"Average",score:77},
       {date:"2025-06-14",warmup:"Average",sleep:"Average",score:80},
@@ -1634,6 +1697,7 @@ const PLAYERS = {
     make_pct:{"0-3":100,"3-5":72.4,"5-8":48.1,"8-12":31.5,"12-20":18.9,"20-35":10.2,"35-50":4.5,"50+":2.8},
     bad_reasons:{"Missed inside 6ft":4,"3-Putt":3,"Pushed approach":3,"Pulled tee shot":2,"Poor driver strike":2},
     bad_clubs:{"Dr":5,"Putter":4,"5i":3,"3w":3,"6i":2},
+    bad_club_reasons:{"Dr":{"Pulled tee shot":1,"Poor driver strike":2},"Putter":{"Missed inside 6ft":3,"3-Putt":3},"5i":{"Pushed approach":2},"3w":{"Pulled tee shot":1},"6i":{"Pushed approach":1}},
     course_data:[],
     par_scoring:{"3":0.18,"4":0.22,"5":-0.05},
     proximity:18.4,
@@ -1664,8 +1728,16 @@ async function handleLogin(){
   const name=sel.options[sel.selectedIndex]?.text||'';
   err.style.display='none';
   if(!sel.value){err.style.display='block';err.textContent='Please select a player.';return}
-  if(!pin){err.style.display='block';err.textContent='Please enter your PIN.';return}
+  // Demo Player never needs a PIN
+  const isDemo=(name==='Demo Player'||sel.value==='demo_player');
+  if(!isDemo&&!pin){err.style.display='block';err.textContent='Please enter your PIN.';return}
   loading.style.display='block';
+  // Demo Player: always use hardcoded local data, no Supabase needed
+  if(isDemo){
+    loading.style.display='none';
+    currentPlayer={...PLAYERS['demo_player'],player_id:null,is_admin:false};
+    launchApp();return;
+  }
   try{
     // 1. Verify PIN against database
     const {data:players,error:verr}=await sb.rpc('verify_player_pin',{p_name:name,p_pin:pin});
@@ -1795,6 +1867,7 @@ async function loadPlayerFromSupabase(playerRecord){
           par_scoring:stats.par_scoring||fb.par_scoring,
           bad_reasons:stats.bad_reasons||fb.bad_reasons,
           bad_clubs:stats.bad_clubs||fb.bad_clubs,
+          bad_club_reasons:stats.bad_club_reasons||fb.bad_club_reasons||{},
           proximity:stats.proximity||fb.proximity,
         });
       }
@@ -1813,6 +1886,7 @@ async function loadPlayerFromSupabase(playerRecord){
       par_scoring:stats.par_scoring||{},
       bad_reasons:stats.bad_reasons||{},
       bad_clubs:stats.bad_clubs||{},
+      bad_club_reasons:stats.bad_club_reasons||{},
       proximity:stats.proximity||null,
       course_data:[],
     };
@@ -2031,6 +2105,7 @@ function buildDashboard(){
   }).join('');
 
   buildScoring(); // Trends charts now live in dashboard section
+  initRoundComparison();
   // Scoring history with trend line
   const scores_s=s.map(x=>x.score);
   const n_s=scores_s.length;
@@ -2081,6 +2156,98 @@ function buildDashboard(){
     labels:Object.keys(bins),
     datasets:[{data:binVals,backgroundColor:['#4ade80','#86efac','#fbbf24','#fb923c','#f87171','#dc2626'],borderWidth:0}]
   },{...bOpts('# Rounds'),plugins:{...bOpts().plugins,pctLabels:pctLabelPlugin}},[pctLabelPlugin]);
+}
+
+// ===== ROUND COMPARISON =====
+let rcWindow = 10;
+
+function rcSliderChange(slider){
+  rcWindow = parseInt(slider.value);
+  document.getElementById('rc-window-label').textContent = rcWindow;
+  buildRoundComparison();
+}
+
+function initRoundComparison(){
+  const sel = document.getElementById('rc-round-select');
+  if(!sel) return;
+  const rounds = [...currentPlayer.rounds].sort((a,b)=>b.date.localeCompare(a.date));
+  sel.innerHTML = rounds.map((r,i)=>`<option value="${i}">${r.date.slice(5)} — ${r.course}</option>`).join('');
+  const slider = document.getElementById('rc-window-slider');
+  if(slider){ slider.max = Math.max(3, rounds.length-1); slider.value = Math.min(rcWindow, rounds.length-1); rcWindow = parseInt(slider.value); document.getElementById('rc-window-label').textContent = rcWindow; }
+  buildRoundComparison();
+}
+
+function buildRoundComparison(){
+  const sel = document.getElementById('rc-round-select');
+  const tilesEl = document.getElementById('rc-tiles');
+  const headerEl = document.getElementById('rc-header');
+  if(!sel||!tilesEl) return;
+
+  const allRounds = [...currentPlayer.rounds].sort((a,b)=>b.date.localeCompare(a.date));
+  const idx = parseInt(sel.value)||0;
+  const rnd = allRounds[idx];
+  if(!rnd){ tilesEl.innerHTML=''; return; }
+
+  // Comparison pool: rcWindow rounds excluding the selected one
+  const pool = allRounds.filter((_,i)=>i!==idx).slice(0, rcWindow);
+
+  if(headerEl) headerEl.textContent = `Selected Round versus Your Averages (ties = green) · comparing against last ${pool.length} round${pool.length!==1?'s':''}`;
+
+  const avgOf = fn => { const vals=pool.map(fn).filter(v=>v!=null&&!isNaN(v)); return vals.length?vals.reduce((a,b)=>a+b,0)/vals.length:null; };
+
+  const onePuttGirFor = r => {
+    if(r.one_putts==null||r.gir_pct<=0) return null;
+    const gc = Math.max(1,Math.round(r.gir_pct/100*(r.holes||18)));
+    return Math.round(r.one_putts/gc*10)/10;
+  };
+  const fmtN  = (v,d=1) => v!=null ? (Number.isInteger(v)?v:v.toFixed(d)) : '—';
+  const fmtP  = v => v!=null ? v.toFixed(1)+'%' : '—';
+
+  const girHoles = r => r.gir_pct>0 ? Math.round(r.gir_pct/100*(r.holes||18)) : null;
+  const fwHoles  = r => r.fw_pct!=null ? Math.round(r.fw_pct/100*((r.holes||18)===9?5:7)) : null;
+
+  const metrics = [
+    {label:'Total Score',         rVal:rnd.score,                            aVal:avgOf(r=>r.score),              fmt:v=>fmtN(v,1), dir:'low'},
+    {label:'+/- to Par',          rVal:rnd.plus_minus,                       aVal:avgOf(r=>r.plus_minus),         fmt:v=>v!=null?(v>=0?'+':'')+fmtN(v,1):'—', dir:'low'},
+    {label:'Birdies per Round',   rVal:rnd.birdies,                          aVal:avgOf(r=>r.birdies),            fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'Bogey+ per Round',    rVal:(rnd.bogeys||0)+(rnd.doubles_plus||0),aVal:avgOf(r=>(r.bogeys||0)+(r.doubles_plus||0)), fmt:v=>fmtN(v,1), dir:'low'},
+    {label:'Driver Dist',         rVal:rnd.driver_dist,                      aVal:avgOf(r=>r.driver_dist),        fmt:v=>fmtN(v,0), dir:'high'},
+    {label:'Fairways',            rVal:fwHoles(rnd),                         aVal:avgOf(r=>fwHoles(r)),           fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'Greens',              rVal:girHoles(rnd),                        aVal:avgOf(r=>girHoles(r)),          fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'GIR %',               rVal:rnd.gir_pct>0?rnd.gir_pct:null,      aVal:avgOf(r=>r.gir_pct>0?r.gir_pct:null), fmt:fmtP, dir:'high'},
+    {label:'Up and Downs',        rVal:rnd.one_putts,                        aVal:avgOf(r=>r.one_putts),          fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'Scrambling %',        rVal:rnd.scrambling,                       aVal:avgOf(r=>r.scrambling),         fmt:fmtP, dir:'high'},
+    {label:'1-Putts GIR',         rVal:onePuttGirFor(rnd),                   aVal:avgOf(r=>onePuttGirFor(r)),     fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'1-Putts Scrambling',  rVal:rnd.one_putts,                        aVal:avgOf(r=>r.one_putts),          fmt:v=>fmtN(v,1), dir:'high'},
+    {label:'3-Putts',             rVal:rnd.three_putts,                      aVal:avgOf(r=>r.three_putts),        fmt:v=>fmtN(v,1), dir:'low'},
+    {label:'Putts',               rVal:rnd.putts,                            aVal:avgOf(r=>r.putts),              fmt:v=>fmtN(v,1), dir:'low'},
+    {label:'Penalty Strokes',     rVal:rnd.penalties,                        aVal:avgOf(r=>r.penalties),          fmt:v=>fmtN(v,1), dir:'low'},
+    {label:'Doubles+',            rVal:rnd.doubles_plus,                     aVal:avgOf(r=>r.doubles_plus),       fmt:v=>fmtN(v,1), dir:'low'},
+  ];
+
+  // Only show metrics where the selected round has data
+  const shown = metrics.filter(m=>m.rVal!=null);
+
+  tilesEl.innerHTML = shown.map(m=>{
+    const rv = m.rVal;
+    const av = m.aVal;
+    const tol = av!=null ? Math.abs(av)*0.02 : 0; // 2% tolerance for "tied"
+    const better = rv!=null && av!=null && (m.dir==='low' ? rv<av-tol : rv>av+tol);
+    const tied   = rv!=null && av!=null && Math.abs(rv-av)<=tol;
+    const worse  = rv!=null && av!=null && (m.dir==='low' ? rv>av+tol : rv<av-tol);
+    const bg     = (better||tied) ? 'rgba(74,222,128,0.12)' : worse ? 'rgba(248,113,113,0.12)' : 'var(--surface)';
+    const valBg  = (better||tied) ? 'rgba(74,222,128,0.75)' : worse ? 'rgba(248,113,113,0.75)' : 'rgba(148,163,184,0.25)';
+    const valColor = (better||tied)||worse ? '#fff' : 'var(--text)';
+    const rvFmt = m.fmt(rv);
+    const avFmt = av!=null ? m.fmt(av) : '—';
+    return `<div class="rc-tile" style="background:${bg}">
+      <div class="rc-tile-label">${m.label}</div>
+      <div class="rc-tile-values">
+        <div class="rc-tile-val" style="background:${valBg};color:${valColor}">${rvFmt}</div>
+        <div class="rc-tile-avg">${avFmt}</div>
+      </div>
+    </div>`;
+  }).join('');
 }
 
 // ===== SCORING TRENDS =====
@@ -2299,7 +2466,7 @@ function buildTeeLRDist(){
   });
 }
 
-let teeScatterClub='Dr', teeScatterCI=0.50;
+let teeScatterClub='Dr', teeScatterCI=0.50, teeScatterRecent='all', teeScatterEllipseOnly=false;
 const TEE_CHI2={0.50:1.3863,0.75:2.7726,0.95:5.9915};
 
 function computeTeeEllipse(pixPts, chiSqVal){
@@ -2316,11 +2483,32 @@ function computeTeeEllipse(pixPts, chiSqVal){
   return{cx:mx,cy:my,a:Math.sqrt(Math.max(0,lam1))*sc,b:Math.sqrt(Math.max(0,lam2))*sc,angle};
 }
 
+function setTeeScatterRecent(mode,btn){
+  teeScatterRecent=mode;
+  teeScatterEllipseOnly=(mode==='ellipse');
+  btn.closest('.rolling-controls').querySelectorAll('.roll-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+  buildTeeScatter(teeScatterClub);
+}
+
 function buildTeeScatter(club){
   teeScatterClub=club;
   const allShots=currentPlayer.tee_shots||[];
-  const shots=club==='All'?allShots:allShots.filter(s=>s.club===club);
-  document.getElementById('tee-scatter-count').textContent=shots.length+' shots shown';
+
+  // Apply recency filter
+  let shots = club==='All' ? allShots : allShots.filter(s=>s.club===club);
+  if(teeScatterRecent==='last10'){
+    const sortedDates=[...new Set(currentPlayer.rounds.map(r=>r.date))].sort();
+    const last10Dates=new Set(sortedDates.slice(-10));
+    const filtered=shots.filter(s=>s.date&&last10Dates.has(s.date));
+    if(filtered.length>0) shots=filtered;
+  }
+
+  const ellipseOnly = teeScatterEllipseOnly;
+  document.getElementById('tee-scatter-count').textContent = ellipseOnly
+    ? `${shots.length} shots (ellipses only)`
+    : shots.length+' shots shown';
+
   if(shots.length===0){
     const el=document.getElementById('chart-tee-scatter');
     if(el)el.parentElement.innerHTML=`<div class="empty-state" style="padding:30px;text-align:center;font-family:'Barlow',sans-serif;font-size:12px;color:var(--text-dim)">No tee shot data for ${club}</div>`;
@@ -2338,7 +2526,6 @@ function buildTeeScatter(club){
 
   const ciAndGoalPlugin={id:'ciAndGoal',afterDatasetsDraw(chart){
     const ctx=chart.ctx, xs=chart.scales.x, ys=chart.scales.y;
-    // Goal line
     if(goalDist){
       const y0=ys.getPixelForValue(goalDist);
       ctx.save();
@@ -2349,7 +2536,6 @@ function buildTeeScatter(club){
       ctx.fillText('Goal: '+goalDist+' yds (90% of longest fw)',xs.right-4,y0-5);
       ctx.restore();
     }
-    // CI ellipses
     if(teeScatterCI===null)return;
     const chiVal=TEE_CHI2[teeScatterCI];
     const groups=[
@@ -2373,17 +2559,28 @@ function buildTeeScatter(club){
 
   if(charts['chart-tee-scatter']){try{charts['chart-tee-scatter'].destroy()}catch(e){}}
   const el=document.getElementById('chart-tee-scatter');if(!el)return;
+
+  // In ellipse-only mode, render dots invisible (radius 0) so only ellipses show
+  const ptRadius = ellipseOnly ? 0 : 5;
+  const ptHover  = ellipseOnly ? 0 : 7;
+
   charts['chart-tee-scatter']=new Chart(el.getContext('2d'),{
     type:'scatter',
     data:{datasets:[
-      {label:'Fairway ('+fwPts.length+')',data:fwPts,backgroundColor:'rgba(74,222,128,0.65)',pointRadius:5,pointHoverRadius:7},
-      {label:'Miss ('+missPts.length+')',data:missPts,backgroundColor:'rgba(248,113,113,0.65)',pointRadius:5,pointHoverRadius:7}
+      {label:'Fairway ('+fwPts.length+')',data:fwPts,
+        backgroundColor: ellipseOnly?'transparent':'rgba(74,222,128,0.65)',
+        pointRadius:ptRadius,pointHoverRadius:ptHover},
+      {label:'Miss ('+missPts.length+')',data:missPts,
+        backgroundColor: ellipseOnly?'transparent':'rgba(248,113,113,0.65)',
+        pointRadius:ptRadius,pointHoverRadius:ptHover}
     ]},
     options:{
       responsive:true,
       plugins:{
         legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:12,filter:i=>i.text!=='_target'}},
-        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+        tooltip:{
+          enabled:!ellipseOnly,
+          backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
           callbacks:{label(ctx){const p=ctx.raw;const lr=p.x>0?p.x.toFixed(1)+'ft R':Math.abs(p.x).toFixed(1)+'ft L';return[ctx.dataset.label.split(' ')[0]+': '+p.y+' yds',lr];}}}
       },
       scales:{
@@ -3092,7 +3289,7 @@ async function buildTigerFive(){
       <div class="tiger-pct ${m.pass?'val-green':'val-red'}">${m.pct}%</div>
       <div class="tiger-goal">Goal: ≤${m.goal}%</div>
       <div class="tiger-diff ${m.pass?'val-green':'val-red'}">${m.pass?'✓ On Track':'✗ Needs Work'}</div>
-      <div style="font-family:'Barlow',sans-serif;font-size:9px;color:var(--text-dim);margin-top:6px;letter-spacing:0.5px">click for trend →</div>
+      <div style="font-family:'Barlow',sans-serif;font-size:9px;color:var(--blue);margin-top:8px;letter-spacing:0.5px;border-top:1px solid rgba(96,165,250,0.2);padding-top:6px">📈 Click to see trend</div>
     </div>`).join('');
 
   window._tigerPerRound = tigerPerRound;
@@ -3199,23 +3396,71 @@ function showTigerRolling(metricName){
 }
 
 // ===== BAD/GOOD =====
-function buildBadGood(){
-  const bc=currentPlayer.bad_clubs,br=currentPlayer.bad_reasons;
-  const cn=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);
-  mkChart('chart-bad-clubs','bar',{
-    labels:cn,
-    datasets:[{data:cn.map(c=>bc[c]),backgroundColor:'rgba(248,113,113,0.5)',borderColor:C.red,borderWidth:1}]
-  },{...bOpts('# Bad Scores'),indexAxis:'y'});
-  const reasons=Object.entries(br).sort((a,b)=>b[1]-a[1]);
-  const maxR=reasons.length?reasons[0][1]:1;
-  document.getElementById('bad-reasons-list').innerHTML=`<div class="h-bar-list">${
-    reasons.map(([r,c])=>`<div class="h-bar-item">
-      <div class="h-bar-label">${r}</div>
-      <div class="h-bar-track"><div class="h-bar-fill" style="width:${(c/maxR)*100}%;background:rgba(248,113,113,0.6)"></div></div>
-      <div class="h-bar-val">${c}</div>
-    </div>`).join('')
-  }</div>`;
+let badFilterClub = null;
 
+function clearBadFilter(){
+  badFilterClub = null;
+  buildBadGood();
+}
+
+function buildBadGood(){
+  const bc=currentPlayer.bad_clubs, br=currentPlayer.bad_reasons;
+  const bcr=currentPlayer.bad_club_reasons||{};
+  const cn=Object.keys(bc).sort((a,b)=>bc[b]-bc[a]);
+
+  // ── Club chart ────────────────────────────────────────────────────
+  const clubColors=cn.map(c=>badFilterClub===null||badFilterClub===c?'rgba(248,113,113,0.65)':'rgba(248,113,113,0.18)');
+  const clubBorders=cn.map(c=>badFilterClub===null||badFilterClub===c?C.red:'rgba(248,113,113,0.3)');
+
+  if(charts['chart-bad-clubs']){try{charts['chart-bad-clubs'].destroy();}catch(e){}}
+  const el=document.getElementById('chart-bad-clubs');
+  if(el){
+    charts['chart-bad-clubs']=new Chart(el.getContext('2d'),{
+      type:'bar',
+      data:{labels:cn,datasets:[{data:cn.map(c=>bc[c]),backgroundColor:clubColors,borderColor:clubBorders,borderWidth:1}]},
+      options:{
+        ...bOpts('# Bad Scores'),
+        indexAxis:'y',
+        onClick(evt,items){
+          if(!items.length){clearBadFilter();return;}
+          const club=cn[items[0].index];
+          badFilterClub=badFilterClub===club?null:club;
+          buildBadGood();
+        },
+        plugins:{...bOpts().plugins,
+          tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+            callbacks:{label:ctx=>`${ctx.raw} bad score${ctx.raw!==1?'s':''}`}}
+        }
+      }
+    });
+    el.style.cursor='pointer';
+  }
+
+  // ── Reasons panel — filtered by selected club ─────────────────────
+  const labelEl=document.getElementById('bad-filter-label');
+  const clearBtn=document.getElementById('bad-clear-btn');
+  if(labelEl) labelEl.textContent=badFilterClub?`Filtered: ${badFilterClub}`:'All clubs';
+  if(clearBtn) clearBtn.style.display=badFilterClub?'block':'none';
+
+  // If a club is selected AND we have per-club reason data, use it; else fall back to all reasons
+  let reasonsToShow;
+  if(badFilterClub && bcr[badFilterClub] && Object.keys(bcr[badFilterClub]).length){
+    reasonsToShow=Object.entries(bcr[badFilterClub]).sort((a,b)=>b[1]-a[1]);
+  } else if(badFilterClub){
+    // Club selected but no per-club breakdown available — show empty state
+    reasonsToShow=[];
+  } else {
+    reasonsToShow=Object.entries(br).sort((a,b)=>b[1]-a[1]);
+  }
+
+  const maxR=reasonsToShow.length?reasonsToShow[0][1]:1;
+  document.getElementById('bad-reasons-list').innerHTML=reasonsToShow.length
+    ? `<div class="h-bar-list">${reasonsToShow.map(([r,c])=>`<div class="h-bar-item">
+        <div class="h-bar-label">${r}</div>
+        <div class="h-bar-track"><div class="h-bar-fill" style="width:${(c/maxR)*100}%;background:rgba(248,113,113,0.6)"></div></div>
+        <div class="h-bar-val">${c}</div>
+      </div>`).join('')}</div>`
+    : `<div style="padding:20px;text-align:center;font-family:'Barlow',sans-serif;font-size:11px;color:var(--text-dim)">No reason breakdown available for ${badFilterClub}<br><span style="opacity:0.6">Log rounds via Data Entry to capture per-club reasons</span></div>`;
 }
 
 
@@ -3561,12 +3806,19 @@ async function processFile(){
     }
 
     // Bad reasons + clubs
-    const badReasonCounts={},badClubCounts={};
+    const badReasonCounts={},badClubCounts={},badClubReasons={};
     for(const[key,rd]of Object.entries(roundMap)){
       for(const h of rd.holes){
         if(h.badScore){
           const reasons=h.badScore.split(',').map(r=>r.trim()).filter(r=>r);
           reasons.forEach(r=>{badReasonCounts[r]=(badReasonCounts[r]||0)+1});
+          if(h.badClub){
+            const clubs=h.badClub.split(',').map(c=>c.trim()).filter(c=>c);
+            clubs.forEach(c=>{
+              if(!badClubReasons[c])badClubReasons[c]={};
+              reasons.forEach(r=>{badClubReasons[c][r]=(badClubReasons[c][r]||0)+1});
+            });
+          }
         }
         if(h.badClub){
           const clubs=h.badClub.split(',').map(r=>r.trim()).filter(r=>r);
@@ -3577,6 +3829,7 @@ async function processFile(){
     // Top 8 each
     const bad_reasons=Object.fromEntries(Object.entries(badReasonCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
     const bad_clubs=Object.fromEntries(Object.entries(badClubCounts).sort((a,b)=>b[1]-a[1]).slice(0,8));
+    const bad_club_reasons=badClubReasons;
 
     const course_data=[];
 
@@ -3597,7 +3850,7 @@ async function processFile(){
     const playerData={
       name:uploadProfile.name,
       pin:uploadProfile.pin,
-      rounds,approach_cats,make_pct,bad_reasons,bad_clubs,course_data,par_scoring
+      rounds,approach_cats,make_pct,bad_reasons,bad_clubs,bad_club_reasons,course_data,par_scoring
     };
 
         // Save to Supabase
@@ -3901,18 +4154,16 @@ function computeEllipsePixels(pixPts,chiSqVal){
 
 function buildShotDispersion(){
   let shots=currentPlayer.approach_shots||[];
+  const ellipseOnly = (dispRecent==='ellipse');
+
   // Apply recency filter
-  if(dispRecent!=='all' && shots.length>0){
+  if(!ellipseOnly && dispRecent!=='all' && shots.length>0){
     const allRounds=[...currentPlayer.rounds].sort((a,b)=>a.date.localeCompare(b.date));
-    if(dispRecent==='last1'){
-      const lastDate=allRounds[allRounds.length-1]?.date;
-      shots=shots.filter(s=>s.date===lastDate||!s.date); // fall back to all if no date on shots
-      // For shots without date field, use last N approach shots by index
-      if(shots.every(s=>!s.date)) shots=(currentPlayer.approach_shots||[]).slice(-18);
-    } else if(dispRecent==='last10'){
+    if(dispRecent==='last10'){
       const last10Dates=new Set(allRounds.slice(-10).map(r=>r.date));
-      shots=shots.filter(s=>s.date&&last10Dates.has(s.date));
-      if(shots.length===0) shots=(currentPlayer.approach_shots||[]).slice(-180);
+      const filtered=shots.filter(s=>s.date&&last10Dates.has(s.date));
+      if(filtered.length>0) shots=filtered;
+      else shots=(currentPlayer.approach_shots||[]).slice(-180);
     }
   }
   const el=document.getElementById('chart-dispersion');
@@ -3940,13 +4191,14 @@ function buildShotDispersion(){
   // Split all filtered shots into GIR / missed regardless of category
   const girPts=filtered.filter(s=>s.gir).map(p=>({x:p.x,y:p.y,club:p.club,cat:p.cat}));
   const missedPts=filtered.filter(s=>!s.gir).map(p=>({x:p.x,y:p.y,club:p.club,cat:p.cat}));
+  const ptR = ellipseOnly ? 0 : 4;
   const datasets=[
     {label:`GIR (${girPts.length})`,data:girPts,
-      backgroundColor:'rgba(74,222,128,0.70)',pointRadius:4,pointHoverRadius:7},
+      backgroundColor: ellipseOnly?'transparent':'rgba(74,222,128,0.70)',pointRadius:ptR,pointHoverRadius:ellipseOnly?0:7},
     {label:`Missed Green (${missedPts.length})`,data:missedPts,
-      backgroundColor:'rgba(248,113,113,0.65)',pointRadius:4,pointHoverRadius:7},
+      backgroundColor: ellipseOnly?'transparent':'rgba(248,113,113,0.65)',pointRadius:ptR,pointHoverRadius:ellipseOnly?0:7},
   ];
-  // target marker
+  // target marker (always shown)
   datasets.push({label:'_target',data:[{x:0,y:0}],backgroundColor:'rgba(255,255,255,0.95)',
     pointRadius:10,pointStyle:'crossRot',pointBorderWidth:2.5,pointBorderColor:'rgba(255,255,255,0.95)'});
 
@@ -4003,7 +4255,7 @@ function buildShotDispersion(){
       responsive:true,
       plugins:{
         legend:{display:true,labels:{color:C.txt,font:FONT,boxWidth:10,filter:i=>i.text!=='_target'}},
-        tooltip:{backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
+        tooltip:{enabled:!ellipseOnly,backgroundColor:'#162016',titleColor:'#60a5fa',bodyColor:'#e8f0e8',borderColor:'#2a3a2a',borderWidth:1,
           callbacks:{title:ctx=>ctx[0].dataset.label,
             label(ctx){const p=ctx.raw;
               const lr=p.x===0&&p.y===0?'Pin (Target)':p.x>0?`${p.x.toFixed(1)}ft Right`:`${Math.abs(p.x).toFixed(1)}ft Left`;
@@ -5466,10 +5718,10 @@ function renderAlertsContent(){
           borderColor:'rgba(148,163,184,0.3)',backgroundColor:'transparent',
           pointBackgroundColor:'rgba(148,163,184,0.5)',pointRadius:3,tension:0.2,order:3},
         {label:'4-Round Avg',data:ra4,
-          borderColor:C.amber,backgroundColor:'transparent',
-          borderWidth:2.5,pointRadius:0,tension:0.4,order:2},
+          borderColor:'rgba(251,191,36,0.9)',backgroundColor:'transparent',
+          borderWidth:2.5,borderDash:[6,4],pointRadius:0,tension:0.4,order:2},
         {label:'10-Round Avg',data:ra10,
-          borderColor:C.green,backgroundColor:'transparent',
+          borderColor:'rgba(185,28,28,0.9)',backgroundColor:'transparent',
           borderWidth:2.5,pointRadius:0,tension:0.4,order:1},
       ]
     },
